@@ -9,9 +9,12 @@ DATABASES = {
 
 CACHES = {
     'default': {
-        'BACKEND': 'django.core.cache.backends.dummy.DummyCache'
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379/1',
     }
 }
+
+RATELIMIT_USE_CACHE = 'default'
 
 PASSWORD_HASHERS = ['django.contrib.auth.hashers.MD5PasswordHasher']
 
