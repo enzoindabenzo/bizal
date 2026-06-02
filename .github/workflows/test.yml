@@ -31,7 +31,17 @@ jobs:
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
+
+      # ✅ FIX: system dependencies for pycairo / xhtml2pdf
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libcairo2-dev \
+            pkg-config \
+            python3-dev \
+            build-essential
 
       - name: Install dependencies
         run: |
@@ -42,9 +52,14 @@ jobs:
         env:
           DJANGO_SETTINGS_MODULE: bizal.settings.test
           SECRET_KEY: test-secret-key
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: bizal_test
+          DB_USER: bizal
+          DB_PASSWORD: bizal
         run: |
           cd backend
-          coverage run --concurrency=thread manage.py test --settings=bizal.settings.test
+          coverage run manage.py test --settings=bizal.settings.test
           coverage report --show-missing --fail-under=85
 
       - name: Upload coverage report
