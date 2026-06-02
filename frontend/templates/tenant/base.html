@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title id="page-title">BizAL</title>
+  <meta name="description" id="meta-description" content="" />
+  <link rel="icon" id="favicon" href="/static/img/favicon.ico" />
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <link rel="stylesheet" href="/static/css/tenant.css" />
+  <script src="/static/js/app.js" defer></script>
+  <script src="/static/js/tenant.js" defer></script>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="navbar" id="navbar">
+  <div class="nav-brand">
+    <a href="/" class="brand-link">
+      <img id="nav-logo" src="" alt="Logo" class="nav-logo hidden" />
+      <span id="nav-title" class="nav-title">BizAL</span>
+    </a>
+  </div>
+
+  <ul class="nav-links" id="nav-links">
+    <li><a href="/" class="nav-link" data-page="home">Kryefaqja</a></li>
+    <li><a href="/services/" class="nav-link" data-page="services" id="nav-services">Shërbimet</a></li>
+    <li><a href="/menu/" class="nav-link hidden" data-page="menu" id="nav-menu">Menu</a></li>
+    <li><a href="/about/" class="nav-link" data-page="about">Rreth Nesh</a></li>
+    <li><a href="/contact/" class="nav-link" data-page="contact" id="nav-contact">Kontakt</a></li>
+  </ul>
+
+  <div class="nav-auth" id="nav-auth">
+    <button class="btn btn-outline btn-sm" id="btn-login">Hyr</button>
+    <button class="btn btn-primary btn-sm" id="btn-register">Regjistrohu</button>
+  </div>
+
+  <button class="nav-toggle" id="nav-toggle" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<!-- MOBILE DRAWER -->
+<div class="nav-drawer hidden" id="nav-drawer">
+  <a href="/" class="drawer-link">Kryefaqja</a>
+  <a href="/services/" class="drawer-link" id="drawer-services">Shërbimet</a>
+  <a href="/menu/" class="drawer-link hidden" id="drawer-menu">Menu</a>
+  <a href="/about/" class="drawer-link">Rreth Nesh</a>
+  <a href="/contact/" class="drawer-link" id="drawer-contact">Kontakt</a>
+  <div class="drawer-auth" id="drawer-auth"></div>
+</div>
+
+<!-- PAGE CONTENT injected here -->
+<main id="main-content">
+  <slot></slot>
+</main>
+
+<!-- WHATSAPP FLOAT -->
+<a class="whatsapp-btn hidden" id="whatsapp-btn" target="_blank" rel="noopener" aria-label="WhatsApp">
+  <svg viewBox="0 0 24 24" fill="currentColor" width="26" height="26">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+    <path d="M12 0C5.373 0 0 5.373 0 12c0 2.104.549 4.08 1.504 5.797L0 24l6.339-1.485A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.6a9.6 9.6 0 01-4.882-1.327l-.35-.208-3.624.849.878-3.526-.228-.362A9.565 9.565 0 012.4 12 9.6 9.6 0 0112 2.4 9.6 9.6 0 0121.6 12 9.6 9.6 0 0112 21.6z"/>
+  </svg>
+</a>
+
+<!-- FOOTER -->
+<footer class="footer" id="footer">
+  <div class="container footer-grid">
+    <div class="footer-col footer-brand-col">
+      <img id="footer-logo" src="" alt="" class="footer-logo hidden" />
+      <span id="footer-name" class="footer-name"></span>
+      <p id="footer-tagline" class="footer-tagline"></p>
+    </div>
+    <div class="footer-col">
+      <h4 class="footer-heading">Lidhje</h4>
+      <nav class="footer-nav">
+        <a href="/">Kryefaqja</a>
+        <a href="/services/" id="footer-services-link">Shërbimet</a>
+        <a href="/about/">Rreth Nesh</a>
+        <a href="/contact/">Kontakt</a>
+      </nav>
+    </div>
+    <div class="footer-col" id="footer-contact-col">
+      <h4 class="footer-heading">Kontakti</h4>
+      <div id="footer-contact-info"></div>
+    </div>
+    <div class="footer-col hidden" id="footer-social-col">
+      <h4 class="footer-heading">Na Ndiqni</h4>
+      <div id="footer-social-links"></div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div class="container">
+      <p id="footer-copy"></p>
+    </div>
+  </div>
+</footer>
+
+<!-- AUTH MODAL -->
+<div class="modal hidden" id="auth-modal" role="dialog" aria-modal="true">
+  <div class="modal-backdrop"></div>
+  <div class="modal-box modal-sm">
+    <button class="modal-close" id="close-auth" aria-label="Mbyll">✕</button>
+    <div class="auth-tabs" id="auth-tabs">
+      <button class="tab-btn active" id="tab-login">Hyr</button>
+      <button class="tab-btn" id="tab-register">Regjistrohu</button>
+    </div>
+    <div id="auth-form-content"></div>
+    <div id="auth-error" class="error-msg hidden"></div>
+  </div>
+</div>
+
+</body>
+</html>

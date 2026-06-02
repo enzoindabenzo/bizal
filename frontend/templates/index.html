@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="sq" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title id="page-title">BizAL</title>
+  <meta name="description" id="meta-description" content="" />
+  <link rel="icon" id="favicon" href="/static/img/favicon.ico" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <style>
+    /* Tenant page extras */
+    .tenant-loading {
+      min-height: 100vh; display: flex; align-items: center;
+      justify-content: center; flex-direction: column; gap: 20px;
+    }
+    .admin-bar {
+      background: var(--primary); color: #fff;
+      padding: 8px 24px; font-size: 13px; font-weight: 600;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .admin-bar a { color: rgba(255,255,255,.85); text-decoration: none; }
+    .admin-bar a:hover { color: #fff; }
+    .admin-bar-links { display: flex; gap: 16px; }
+    /* Nav drawer tenant */
+    #nav-drawer-tenant {
+      position: fixed; top: var(--nav-h, 64px); left: 0; right: 0; bottom: 0; z-index: 190;
+      background: var(--surface); padding: 16px 20px;
+      display: flex; flex-direction: column; gap: 4px;
+      border-top: 1px solid var(--border);
+      transform: translateY(-8px); opacity: 0; pointer-events: none;
+      transition: transform .2s ease, opacity .2s ease;
+    }
+    #nav-drawer-tenant.open { transform: translateY(0); opacity: 1; pointer-events: all; }
+    #nav-drawer-tenant .drawer-link {
+      padding: 13px 16px; border-radius: var(--radius-sm);
+      color: var(--text); text-decoration: none; font-weight: 500; font-size: 16px;
+      transition: var(--transition); display: block;
+    }
+    #nav-drawer-tenant .drawer-link:hover,
+    #nav-drawer-tenant .drawer-link.active { background: var(--bg-soft); color: var(--primary); }
+    #nav-drawer-tenant .drawer-link.active { font-weight: 700; }
+    /* Listings improved */
+    .service-card {
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+      transition: var(--transition); box-shadow: var(--shadow);
+      display: flex; flex-direction: column;
+    }
+    .service-card:hover { box-shadow: var(--shadow-md); transform: translateY(-3px); border-color: rgba(var(--primary-rgb),.28); }
+    .service-card-img { width: 100%; height: 200px; object-fit: cover; background: var(--bg-elevated); }
+    .service-card-body { padding: 20px; flex: 1; display: flex; flex-direction: column; }
+    .service-card-name { font-weight: 700; font-size: 1.05rem; margin-bottom: 6px; }
+    .service-card-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 14px; flex: 1; line-height: 1.55; }
+    .service-card-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .service-card-price { font-weight: 800; color: var(--primary); font-size: 1.1rem; }
+    .service-card-badge { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; background: rgba(var(--primary-rgb),.1); color: var(--primary); text-transform: uppercase; letter-spacing: .04em; }
+    .service-card-badge.available { background: rgba(16,185,129,.1); color: var(--success); }
+    .service-card-badge.unavailable { background: rgba(239,68,68,.08); color: var(--danger); }
+    /* Empty state */
+    .empty-state { text-align: center; padding: 80px 24px; grid-column: 1/-1; }
+    .empty-state-icon { font-size: 3rem; margin-bottom: 16px; opacity: .5; }
+    .empty-state h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 8px; }
+    .empty-state p { color: var(--text-muted); font-size: 14px; }
+  </style>
+</head>
+<body>
+
+<!-- ADMIN BAR (shown to owner/manager only) -->
+<div class="admin-bar hidden" id="admin-bar">
+  <span id="admin-bar-name">BizAL Admin</span>
+  <div class="admin-bar-links">
+    <a href="#" id="admin-bar-link">⚙️ Paneli Admin</a>
+    <a href="#" id="admin-bar-settings">🎨 Cilësimet</a>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav class="navbar" id="navbar">
+  <div class="nav-brand">
+    <img id="nav-logo" src="" alt="Logo" class="nav-logo hidden" />
+    <span id="nav-title" style="font-weight:800">BizAL</span>
+  </div>
+  <div class="nav-links" id="nav-links" style="display:flex;gap:2px">
+    <a href="#home"     data-section="home"     class="nav-link active">Kryefaqja</a>
+    <a href="#services" data-section="services"  class="nav-link" id="nav-services-link">Shërbimet</a>
+    <a href="#menu"     data-section="menu"      class="nav-link hidden" id="nav-menu-link">Menu</a>
+    <a href="#reviews"  data-section="reviews"   class="nav-link" id="nav-reviews-link">Vlerësime</a>
+    <a href="#blog"     data-section="blog"      class="nav-link hidden" id="nav-blog-link">Blog</a>
+    <a href="#contact"  data-section="contact"   class="nav-link hidden" id="nav-contact-link">Kontakt</a>
+  </div>
+  <div class="nav-right">
+    <button class="theme-toggle" id="theme-toggle" title="Ndrysho temën">🌙</button>
+    <div class="nav-auth" id="nav-auth">
+      <button class="btn btn-outline btn-sm" id="btn-login">Hyr</button>
+      <button class="btn btn-primary btn-sm" id="btn-register">Regjistrohu</button>
+    </div>
+    <button class="nav-toggle" id="nav-toggle" aria-label="Menu">
+      <span style="display:block;width:20px;height:2px;background:currentColor;margin:4px 0;transition:.2s"></span>
+      <span style="display:block;width:20px;height:2px;background:currentColor;margin:4px 0;transition:.2s"></span>
+      <span style="display:block;width:20px;height:2px;background:currentColor;margin:4px 0;transition:.2s"></span>
+    </button>
+  </div>
+</nav>
+
+<!-- MOBILE DRAWER -->
+<div id="nav-drawer-tenant">
+  <a href="#home"     data-section="home"    class="drawer-link">🏠 Kryefaqja</a>
+  <a href="#services" data-section="services" class="drawer-link" id="drawer-services">✨ Shërbimet</a>
+  <a href="#menu"     data-section="menu"     class="drawer-link hidden" id="drawer-menu">🍽️ Menu</a>
+  <a href="#reviews"  data-section="reviews"  class="drawer-link">⭐ Vlerësime</a>
+  <a href="#blog"     data-section="blog"     class="drawer-link hidden" id="drawer-blog">📰 Blog</a>
+  <a href="#contact"  data-section="contact"  class="drawer-link hidden" id="drawer-contact">📞 Kontakt</a>
+  <div style="height:1px;background:var(--border);margin:8px 0"></div>
+  <div style="display:flex;gap:8px;align-items:center;padding:8px 0">
+    <button class="btn btn-outline btn-sm" id="drawer-btn-login" style="flex:1">Hyr</button>
+    <button class="btn btn-primary btn-sm" id="drawer-btn-register" style="flex:1">Regjistrohu</button>
+    <button class="theme-toggle" id="drawer-theme-toggle">🌙</button>
+  </div>
+</div>
+
+<!-- HERO -->
+<section class="hero hidden" id="section-home">
+  <div class="container" style="width:100%">
+    <div class="hero-content">
+      <div class="hero-badges" id="hero-badges"></div>
+      <h1 class="hero-title" id="hero-title">Mirë se vini</h1>
+      <p class="hero-tagline" id="hero-tagline"></p>
+      <div class="hero-cta" style="margin-top:32px">
+        <button class="btn btn-primary btn-lg" id="hero-cta-btn">Shiko Shërbimet</button>
+        <button class="btn btn-ghost btn-lg hidden" id="hero-contact-btn">Na Kontaktoni</button>
+      </div>
+    </div>
+    <div class="hero-stats hidden" id="hero-stats">
+      <div class="stat-card"><span id="stat-listings">—</span><label>Shërbime</label></div>
+      <div class="stat-card"><span id="stat-reviews">—</span><label>Vlerësime</label></div>
+      <div class="stat-card"><span id="stat-years">—</span><label>Vite</label></div>
+    </div>
+  </div>
+</section>
+
+<!-- SERVICES / LISTINGS -->
+<section class="section hidden" id="section-services">
+  <div class="container">
+    <h2 class="section-title" id="services-title">Shërbimet Tona</h2>
+    <div class="search-bar hidden" id="search-bar">
+      <input type="text" id="search-input" placeholder="Kërko..." style="max-width:320px" />
+      <select id="filter-select" style="max-width:200px"><option value="">Të gjitha</option></select>
+    </div>
+    <div class="grid" id="listings-grid" style="margin-top:28px">
+      <div class="loader"><div class="spinner"></div><p>Duke ngarkuar...</p></div>
+    </div>
+    <div class="pagination" id="pagination"></div>
+  </div>
+</section>
+
+<!-- MENU (restaurant) -->
+<section class="section hidden" id="section-menu">
+  <div class="container">
+    <h2 class="section-title">Menu</h2>
+    <div id="menu-categories"></div>
+  </div>
+</section>
+
+<!-- REVIEWS -->
+<section class="section hidden" id="section-reviews">
+  <div class="container">
+    <h2 class="section-title">Çfarë Thonë Klientët Tanë</h2>
+    <div class="reviews-summary hidden" id="reviews-summary"></div>
+    <div class="reviews-grid" id="reviews-grid" style="margin-top:24px"></div>
+    <div class="review-form-wrap hidden" id="review-form-wrap">
+      <h3 style="margin-bottom:16px">Lini një Vlerësim</h3>
+      <div class="star-picker" id="star-picker">
+        <span class="star" data-value="1">★</span>
+        <span class="star" data-value="2">★</span>
+        <span class="star" data-value="3">★</span>
+        <span class="star" data-value="4">★</span>
+        <span class="star" data-value="5">★</span>
+      </div>
+      <textarea id="review-comment" class="form-input" placeholder="Komenti juaj..." rows="4" style="margin-bottom:12px"></textarea>
+      <button class="btn btn-primary" id="submit-review">Dërgo Vlerësimin</button>
+    </div>
+  </div>
+</section>
+
+<!-- BLOG -->
+<section class="section hidden" id="section-blog">
+  <div class="container">
+    <h2 class="section-title">Blog</h2>
+    <div class="blog-grid" id="blog-grid" style="margin-top:32px"></div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section class="section hidden" id="section-contact">
+  <div class="container contact-layout">
+    <div class="contact-info" id="contact-info"></div>
+    <div class="contact-form-wrap">
+      <h2>Na Kontaktoni</h2>
+      <input type="text"  id="contact-name"    class="form-input" placeholder="Emri juaj" />
+      <input type="email" id="contact-email"   class="form-input" placeholder="Email" />
+      <input type="tel"   id="contact-phone"   class="form-input" placeholder="Telefon (opsional)" />
+      <input type="text"  id="contact-subject" class="form-input" placeholder="Subjekti" />
+      <textarea id="contact-message" class="form-input" placeholder="Mesazhi juaj..." rows="5"></textarea>
+      <button class="btn btn-primary btn-block" id="send-contact">Dërgo Mesazhin</button>
+      <div id="contact-feedback" class="feedback hidden" style="margin-top:12px"></div>
+    </div>
+  </div>
+</section>
+
+<!-- BOOKING MODAL -->
+<div class="modal hidden" id="booking-modal">
+  <div class="modal-backdrop"></div>
+  <div class="modal-box">
+    <button class="modal-close" id="close-booking">✕</button>
+    <h2 id="booking-modal-title" style="margin-bottom:20px">Rezervo</h2>
+    <div id="booking-form-content"></div>
+  </div>
+</div>
+
+<!-- AUTH MODAL -->
+<div class="modal hidden" id="auth-modal">
+  <div class="modal-backdrop"></div>
+  <div class="modal-box modal-sm">
+    <button class="modal-close" id="close-auth">✕</button>
+    <div id="auth-tabs">
+      <button class="tab-btn active" id="tab-login">Hyr</button>
+      <button class="tab-btn" id="tab-register">Regjistrohu</button>
+    </div>
+    <div id="auth-form-content" style="margin-top:20px"></div>
+    <div id="auth-error" class="error-msg hidden" style="margin-top:12px"></div>
+  </div>
+</div>
+
+<!-- WHATSAPP FLOAT -->
+<a class="whatsapp-btn hidden" id="whatsapp-btn" target="_blank" rel="noopener" aria-label="WhatsApp">
+  <svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+    <path d="M12 0C5.373 0 0 5.373 0 12c0 2.104.549 4.08 1.504 5.797L0 24l6.339-1.485A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.6a9.6 9.6 0 01-4.882-1.327l-.35-.208-3.624.849.878-3.526-.228-.362A9.565 9.565 0 012.4 12 9.6 9.6 0 0112 2.4 9.6 9.6 0 0121.6 12 9.6 9.6 0 0112 21.6z"/>
+  </svg>
+</a>
+
+<!-- FOOTER -->
+<footer class="footer" id="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <img id="footer-logo" src="" alt="Logo" class="nav-logo hidden" style="margin-bottom:12px" />
+        <div id="footer-name" style="font-weight:800;font-size:1.2rem;margin-bottom:8px"></div>
+        <p id="footer-tagline" style="color:var(--text-muted);font-size:14px;line-height:1.6"></p>
+      </div>
+      <div class="footer-links hidden" id="footer-social">
+        <h4 class="footer-heading">Na Ndiqni</h4>
+        <div id="social-links" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+      <div id="footer-contact-info" class="footer-contact"></div>
+      <div id="footer-hours"></div>
+    </div>
+    <div class="footer-bottom">
+      <p id="footer-copy">© 2025 BizAL. Të gjitha të drejtat e rezervuara.</p>
+    </div>
+  </div>
+</footer>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toast-container"></div>
+
+<script src="/static/js/app.js"></script>
+<script src="/static/js/tenant.js"></script>
+<script src="/static/js/index.js"></script>
+</body>
+</html>

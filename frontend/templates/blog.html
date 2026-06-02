@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Blog — BizAL</title>
+  <link rel="stylesheet" href="/static/css/shared.css" />
+  <link rel="stylesheet" href="/static/css/main.css" />
+  <style>
+    .blog-header { padding: 60px 0 40px; border-bottom: 1px solid var(--border); background: var(--bg-soft); }
+    .blog-header h1 { font-size: 2.5rem; font-weight: 900; margin-bottom: 8px; }
+    .blog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 28px; margin-top: 40px; }
+    .blog-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); overflow: hidden; transition: var(--transition); text-decoration: none; color: var(--text); display: block; }
+    .blog-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-3px); border-color: var(--primary); }
+    .blog-card-img { width: 100%; height: 200px; object-fit: cover; background: var(--bg-soft); }
+    .blog-card-body { padding: 22px; }
+    .blog-card-tag { display: inline-block; background: rgba(var(--primary-rgb),.1); color: var(--primary); font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: .5px; }
+    .blog-card-title { font-size: 1.15rem; font-weight: 700; margin-bottom: 8px; line-height: 1.3; }
+    .blog-card-excerpt { color: var(--text-muted); font-size: 14px; line-height: 1.6; margin-bottom: 14px; }
+    .blog-card-meta { font-size: 12px; color: var(--text-muted); display: flex; gap: 12px; }
+    .empty-state { text-align: center; padding: 80px 24px; color: var(--text-muted); }
+    .empty-state .icon { font-size: 4rem; margin-bottom: 16px; }
+    .modal-article { max-width: 720px; }
+    .article-body { line-height: 1.8; font-size: 15px; color: var(--text); }
+    .article-body p { margin-bottom: 16px; }
+  </style>
+</head>
+<body>
+<nav class="navbar">
+  <div class="nav-brand">
+    <a href="/" class="nav-brand-link"><span class="logo-text">Biz<span class="accent">AL</span></span></a>
+  </div>
+  <div class="nav-center">
+    <ul class="nav-links">
+      <li><a href="/" class="nav-link">Kryefaqja</a></li>
+      <li><a href="#features" class="nav-link">Veçoritë</a></li>
+      <li><a href="#pricing" class="nav-link">Çmimet</a></li>
+      <li><a href="/blog/" class="nav-link active">Blog</a></li>
+    </ul>
+  </div>
+  <div class="nav-right">
+    <button class="theme-toggle" title="Ndrysho temën">🌙</button>
+    <a href="/admin/" class="btn btn-outline btn-sm">Admin</a>
+    <button class="nav-toggle" id="nav-toggle" aria-label="Menu"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+<div class="nav-drawer hidden" id="nav-drawer">
+  <a href="/" class="drawer-link">Kryefaqja</a>
+  <a href="/blog/" class="drawer-link active">Blog</a>
+  <div class="drawer-divider"></div>
+  <div class="drawer-auth">
+    <a href="/admin/" class="btn btn-outline btn-sm">Admin</a>
+    <button class="theme-toggle" style="margin-left:8px">🌙</button>
+  </div>
+</div>
+
+<div class="blog-header">
+  <div class="container">
+    <h1>Blog BizAL</h1>
+    <p style="color:var(--text-muted);font-size:1.05rem">Këshilla, udhëzime dhe risi për bizneset shqiptare</p>
+  </div>
+</div>
+
+<section style="padding:48px 0 80px">
+  <div class="container">
+    <div id="blog-grid" class="blog-grid"></div>
+  </div>
+</section>
+
+<!-- Article modal -->
+<div class="modal hidden" id="article-modal">
+  <div class="modal-backdrop"></div>
+  <div class="modal-box modal-article" style="max-height:85vh;overflow-y:auto">
+    <button class="modal-close" id="close-article">✕</button>
+    <div id="article-content"></div>
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="container footer-grid">
+    <div><span class="logo-text footer-name">Biz<span class="accent">AL</span></span><p class="footer-tagline">Platforma SaaS #1 për bizneset shqiptare.</p></div>
+    <div><h4 class="footer-heading">Lidhje</h4><nav class="footer-nav"><a href="/">Kryefaqja</a><a href="/blog/">Blog</a><a href="/admin/">Admin</a></nav></div>
+  </div>
+  <div class="footer-bottom"><div class="container"><p id="footer-copy">© 2025 BizAL.</p></div></div>
+</footer>
+
+<script src="/static/js/shared.js"></script>
+<script>
+(async function() {
+  const { showToast } = window.BizAL;
+
+  // Blog posts are stored on the main domain (no tenant)
+  // We fetch static content since main domain has no tenant blog
+  const POSTS = [
+    { slug:'si-te-filloni-biznesin-online', title:'Si të Filloni Biznesin Tuaj Online në 2025', excerpt:'Gjithçka që duhet të dini për të lansuar prezencën tuaj dixhitale si biznes shqiptar — hap pas hapi.', tag:'Udhëzues', date:'2025-05-15', icon:'🚀', body:'<p>Fillimi i një biznesi online mund të duket i frikshëm, por me platformën e duhur bëhet e thjeshtë. BizAL ju ofron gjithçka në një vend — nga subdomain-i juaj deri tek sistemi i rezervimeve.</p><p>Hapat kryesorë: 1) Zgjidhni llojin e biznesit, 2) Regjistrohuni dhe merrni subdomain-in tuaj, 3) Personalizoni brendin, 4) Shtoni shërbimet tuaja, 5) Lansoni dhe filloni të merrni rezervime.</p><p>Me planin Starter filloni falas dhe shkallëzoni sipas nevojave tuaja.</p>' },
+    { slug:'rezervimet-online-rrisin-te-ardhurat', title:'Si Rezervimet Online Rrisin të Ardhurat 40%', excerpt:'Studim i bazuar në të dhënat e bizneseve shqiptare që kanë adoptuar sistemet e rezervimit online.', tag:'Statistika', date:'2025-04-28', icon:'📊', body:'<p>Bizneset që adoptojnë rezervimet online shohin mesatarisht 40% rritje në të ardhura brenda 6 muajve të parë. Arsyeja? Klientët rezervojnë 24/7, jo vetëm gjatë orarit të punës.</p><p>Restaurantet me menú QR raportojnë 25% ulje në kohën e pritjes dhe 15% rritje në vlerat e porosive. Klinikat me takim online kanë 60% ulje të no-show-ve.</p>' },
+    { slug:'dark-mode-biznes', title:'Pse Dark Mode po Bëhet Standard për Faqet e Biznesit', excerpt:'Trendet e UX/UI 2025 — si ngjyrat dhe temas ndikojnë në konvertime dhe kënaqësinë e klientëve.', tag:'Design', date:'2025-04-10', icon:'🌙', body:'<p>Sipas studimeve të fundit, 82% e përdoruesve preferojnë dark mode gjatë orëve të vona. BizAL mbështet dark/light mode automatik — klientët tuaj e zgjedhin vetë.</p><p>Investimi në UX të mirë nuk është luksi — është domosdoshmëri konkurruese. Faqet me dark mode të mirëprojektuar kanë 23% më shumë kohë qëndrimi nga vizitorët.</p>' },
+    { slug:'seo-per-biznese-shqiptare', title:'SEO për Biznese Shqiptare: Udhëzuesi i Plotë 2025', excerpt:'Si të dukeni i pari në Google kur klientët kërkojnë shërbime në qytetin tuaj.', tag:'Marketing', date:'2025-03-22', icon:'🔍', body:'<p>SEO lokal është arma sekrete e bizneseve të vogla shqiptare. Filloni me: emër biznesi + qytet në titull, foto cilësore, vlerësime reale nga klientët, dhe adresë të saktë në Google Maps.</p><p>BizAL optimizon automatikisht meta-tag-et, URL-të dhe strukturën e faqes për motorët e kërkimit.</p>' },
+    { slug:'whatsapp-biznes-albania', title:'WhatsApp Business: Si e Përdorin Bizneset Shqiptare', excerpt:'WhatsApp mbetet kanali #1 i komunikimit në Shqipëri. Ja si ta integroni në workflow-n tuaj.', tag:'Komunikim', date:'2025-03-05', icon:'💬', body:'<p>Mbi 85% e shqiptarëve përdorin WhatsApp çdo ditë. Bizneset që integrojnë butonin e WhatsApp në faqet e tyre shohin 3x më shumë pyetje nga klientët.</p><p>BizAL integron automatikisht butonin floating të WhatsApp për planin Pro dhe Enterprise, duke lidhur direkt me numrin tuaj.</p>' },
+    { slug:'pagesa-online-shqiperi', title:'Pagesat Online në Shqipëri: Çfarë Duhet të Dini', excerpt:'Stripe, kartat bankare, dhe metodat lokale — si të pranoni pagesa online pa komplikime.', tag:'Financat', date:'2025-02-18', icon:'💳', body:'<p>BizAL integron Stripe — sistemin global të pagesave të besuar nga miliona biznese. Klientët tuaj mund të paguajnë me kartë Visa, Mastercard, dhe metoda të tjera.</p><p>Planifikoni: depozita rezervimesh (30-50% e vlerës totale), pagesa të plota online, dhe faturim automatik — të gjitha të disponueshme me planin Enterprise.</p>' },
+  ];
+
+  const grid = document.getElementById('blog-grid');
+
+  if (!POSTS.length) {
+    grid.innerHTML = '<div class="empty-state"><div class="icon">📝</div><h3>Nuk ka artikuj ende</h3><p>Artikujt e blogut do të shfaqen këtu.</p></div>';
+    return;
+  }
+
+  grid.innerHTML = POSTS.map(p => `
+    <a href="#" class="blog-card" data-slug="${p.slug}">
+      <div class="blog-card-img" style="display:flex;align-items:center;justify-content:center;font-size:4rem;background:linear-gradient(135deg,var(--bg-soft),rgba(var(--primary-rgb),.1))">${p.icon}</div>
+      <div class="blog-card-body">
+        <span class="blog-card-tag">${p.tag}</span>
+        <div class="blog-card-title">${p.title}</div>
+        <div class="blog-card-excerpt">${p.excerpt}</div>
+        <div class="blog-card-meta">
+          <span>📅 ${p.date}</span>
+          <span>⏱ 3 min lexim</span>
+        </div>
+      </div>
+    </a>`).join('');
+
+  // Open article modal
+  grid.querySelectorAll('.blog-card').forEach(card => {
+    card.addEventListener('click', e => {
+      e.preventDefault();
+      const post = POSTS.find(p => p.slug === card.dataset.slug);
+      if (!post) return;
+      const modal   = document.getElementById('article-modal');
+      const content = document.getElementById('article-content');
+      content.innerHTML = `
+        <div style="font-size:3rem;margin-bottom:16px">${post.icon}</div>
+        <span class="blog-card-tag" style="margin-bottom:14px;display:inline-block">${post.tag}</span>
+        <h2 style="font-size:1.6rem;font-weight:800;margin-bottom:8px;line-height:1.3">${post.title}</h2>
+        <div style="color:var(--text-muted);font-size:13px;margin-bottom:24px">📅 ${post.date} · ⏱ 3 min lexim</div>
+        <div class="article-body">${post.body}</div>
+        <div style="margin-top:32px;padding-top:24px;border-top:1px solid var(--border)">
+          <a href="/#signup" class="btn btn-primary">Fillo me BizAL Falas →</a>
+        </div>`;
+      modal.classList.remove('hidden');
+      document.getElementById('close-article')?.addEventListener('click', () => modal.classList.add('hidden'));
+      modal.querySelector('.modal-backdrop')?.addEventListener('click', () => modal.classList.add('hidden'));
+    });
+  });
+})();
+</script>
+</body>
+</html>

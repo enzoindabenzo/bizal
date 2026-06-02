@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="sq" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title id="page-title">Admin Panel — BizAL</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --primary: #2563EB; --primary-rgb: 37,99,235; --primary-dark: #1D4ED8;
+      --accent: #F59E0B; --success: #10B981; --danger: #EF4444; --warning: #F59E0B;
+      --bg: #F1F5F9; --surface: #FFFFFF; --border: #E2E8F0;
+      --text: #0F172A; --text-muted: #64748B; --text-subtle: #94A3B8;
+      --sidebar-bg: #0F172A;
+      --radius: 12px; --radius-sm: 8px;
+      --shadow: 0 1px 3px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.05);
+      --shadow-md: 0 4px 12px rgba(0,0,0,.08),0 8px 24px rgba(0,0,0,.06);
+      --font: 'Inter', system-ui, sans-serif; --transition: .18s ease;
+    }
+    [data-theme="dark"] {
+      --bg: #0F172A; --surface: #1E293B; --border: #334155;
+      --text: #F1F5F9; --text-muted: #94A3B8; --text-subtle: #64748B;
+      --sidebar-bg: #020617;
+      --shadow: 0 1px 3px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.2);
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{height:100%}
+    body{font-family:var(--font);color:var(--text);background:var(--bg);min-height:100vh;display:flex}
+
+    /* ── Login ── */
+    .login-screen{min-height:100vh;width:100%;display:flex;align-items:center;justify-content:center;background:var(--bg);padding:24px}
+    .login-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:44px 36px;width:100%;max-width:400px;box-shadow:var(--shadow-md)}
+    .login-brand{font-size:1.5rem;font-weight:900;margin-bottom:4px}
+    .login-sub{font-size:14px;color:var(--text-muted);margin-bottom:28px}
+    .login-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(var(--primary-rgb),.1);color:var(--primary);border:1px solid rgba(var(--primary-rgb),.2);padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;margin-bottom:20px}
+
+    /* ── App shell ── */
+    .app-shell{display:flex;width:100%;min-height:100vh}
+
+    /* ── Sidebar ── */
+    .sidebar{width:240px;flex-shrink:0;background:var(--sidebar-bg);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;z-index:50;transition:.3s}
+    .sidebar-header{padding:22px 18px 18px;border-bottom:1px solid rgba(255,255,255,.07)}
+    .sidebar-brand{font-size:1.1rem;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .sidebar-sub{font-size:11px;color:rgba(255,255,255,.35);margin-top:3px;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+    .sidebar-nav{flex:1;padding:14px 10px;display:flex;flex-direction:column;gap:2px}
+    .sidebar-section{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.22);padding:14px 8px 5px}
+    .nav-item{display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:var(--radius-sm);color:rgba(203,213,225,.85);font-size:13.5px;font-weight:500;cursor:pointer;border:none;background:none;width:100%;text-align:left;transition:var(--transition)}
+    .nav-item:hover{background:rgba(255,255,255,.07);color:#fff}
+    .nav-item.active{background:rgba(37,99,235,.28);color:#fff;font-weight:700}
+    .nav-item .ni{width:18px;text-align:center;font-size:15px}
+    .sidebar-footer{padding:14px 10px;border-top:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:8px}
+    .sf-user{flex:1;min-width:0}
+    .sf-name{font-size:13px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .sf-role{font-size:11px;color:rgba(255,255,255,.35)}
+    .sf-logout{background:none;border:none;color:rgba(255,255,255,.35);cursor:pointer;font-size:17px;padding:5px;border-radius:var(--radius-sm);transition:var(--transition)}
+    .sf-logout:hover{color:var(--danger);background:rgba(239,68,68,.1)}
+    .sf-site{display:flex;align-items:center;gap:6px;padding:8px 10px;border-radius:var(--radius-sm);color:rgba(203,213,225,.6);text-decoration:none;font-size:12px;font-weight:500;transition:var(--transition);margin-bottom:2px}
+    .sf-site:hover{background:rgba(255,255,255,.07);color:#fff}
+
+    /* ── Main ── */
+    .main{flex:1;min-width:0;display:flex;flex-direction:column}
+    .topbar{background:var(--surface);border-bottom:1.5px solid var(--border);padding:0 28px;height:62px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:40}
+    .topbar-title{font-size:1.05rem;font-weight:700}
+    .topbar-right{display:flex;align-items:center;gap:10px}
+    .content{padding:28px;flex:1}
+
+    /* ── Stats ── */
+    .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:28px}
+    .stat-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow)}
+    .stat-card-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:8px}
+    .stat-card-value{font-size:1.9rem;font-weight:900;color:var(--primary);line-height:1}
+    .stat-card-sub{font-size:12px;color:var(--text-muted);margin-top:5px}
+    .stat-card.green .stat-card-value{color:var(--success)}
+    .stat-card.amber .stat-card-value{color:var(--warning)}
+
+    /* ── Panel ── */
+    .panel{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:22px}
+    .panel-header{padding:16px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .panel-title{font-size:.95rem;font-weight:700}
+    .panel-body{padding:22px}
+
+    /* ── Buttons ── */
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);font-weight:600;font-size:13px;cursor:pointer;border:2px solid transparent;transition:var(--transition);text-decoration:none;white-space:nowrap}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    .btn-primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+    .btn-primary:hover:not(:disabled){background:var(--primary-dark);border-color:var(--primary-dark)}
+    .btn-outline{background:transparent;color:var(--primary);border-color:var(--primary)}
+    .btn-outline:hover:not(:disabled){background:var(--primary);color:#fff}
+    .btn-ghost{background:transparent;color:var(--text);border-color:var(--border)}
+    .btn-ghost:hover:not(:disabled){background:var(--bg)}
+    .btn-danger{background:var(--danger);color:#fff;border-color:var(--danger)}
+    .btn-danger:hover:not(:disabled){filter:brightness(1.1)}
+    .btn-success{background:var(--success);color:#fff;border-color:var(--success)}
+    .btn-sm{padding:5px 12px;font-size:12px}
+    .btn-xs{padding:3px 8px;font-size:11px;border-radius:5px}
+    .btn-block{width:100%}
+
+    /* ── Table ── */
+    .table-wrap{overflow-x:auto}
+    table{width:100%;border-collapse:collapse;font-size:13.5px}
+    th{padding:9px 14px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);border-bottom:1.5px solid var(--border);white-space:nowrap}
+    td{padding:12px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+    tr:last-child td{border-bottom:none}
+    tr:hover td{background:var(--bg)}
+    .empty-row td{text-align:center;padding:48px;color:var(--text-muted);font-size:14px}
+
+    /* ── Badges ── */
+    .badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
+    .badge-active{background:rgba(16,185,129,.12);color:var(--success)}
+    .badge-inactive{background:rgba(100,116,139,.12);color:var(--text-muted)}
+    .badge-pending{background:rgba(245,158,11,.12);color:var(--warning)}
+    .badge-confirmed{background:rgba(37,99,235,.12);color:var(--primary)}
+    .badge-cancelled{background:rgba(239,68,68,.1);color:var(--danger)}
+    .badge-available{background:rgba(16,185,129,.12);color:var(--success)}
+    .badge-unavailable{background:rgba(239,68,68,.08);color:var(--danger)}
+
+    /* ── Forms ── */
+    .form-group{margin-bottom:14px}
+    .form-label{display:block;font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
+    .form-input,.form-select,.form-textarea{width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-family:var(--font);background:var(--bg);color:var(--text);transition:var(--transition)}
+    .form-textarea{resize:vertical;min-height:90px}
+    .form-input:focus,.form-select:focus,.form-textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(var(--primary-rgb),.12);background:var(--surface)}
+    .form-input::placeholder,.form-textarea::placeholder{color:var(--text-subtle)}
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .form-check{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;font-weight:500}
+    .form-check input{width:17px;height:17px;accent-color:var(--primary)}
+
+    /* ── Modal ── */
+    .modal{position:fixed;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;padding:16px}
+    .modal.hidden{display:none}
+    .modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px)}
+    .modal-box{position:relative;z-index:1;background:var(--surface);border-radius:var(--radius);padding:28px;width:100%;max-width:540px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25);animation:modal-in .18s ease}
+    @keyframes modal-in{from{opacity:0;transform:scale(.96) translateY(6px)}to{opacity:1;transform:scale(1) translateY(0)}}
+    .modal-close{position:absolute;top:14px;right:14px;background:var(--bg);border:none;width:30px;height:30px;border-radius:50%;font-size:15px;cursor:pointer;color:var(--text-muted);display:flex;align-items:center;justify-content:center;transition:var(--transition)}
+    .modal-close:hover{background:var(--danger);color:#fff}
+    .modal-title{font-size:1.1rem;font-weight:800;margin-bottom:20px}
+
+    /* ── Settings card ── */
+    .settings-section{margin-bottom:32px}
+    .settings-section-title{font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+    .color-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    .color-swatch{width:40px;height:40px;border-radius:var(--radius-sm);border:2px solid var(--border);cursor:pointer;transition:var(--transition)}
+    .color-swatch:hover{border-color:var(--primary);transform:scale(1.1)}
+
+    /* ── Toast ── */
+    .toast-wrap{position:fixed;bottom:22px;right:22px;z-index:9999;display:flex;flex-direction:column;gap:7px;pointer-events:none}
+    .toast{background:var(--surface);color:var(--text);padding:12px 16px;border-radius:var(--radius-sm);box-shadow:var(--shadow-md);font-size:13.5px;font-weight:500;border-left:4px solid var(--success);pointer-events:all;animation:toast-in .2s ease;border:1px solid var(--border)}
+    .toast.error{border-left-color:var(--danger)}
+    .toast.warning{border-left-color:var(--warning)}
+    @keyframes toast-in{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:translateX(0)}}
+
+    /* ── Misc ── */
+    .hidden{display:none!important}
+    .search-input{padding:8px 13px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:var(--font);background:var(--bg);color:var(--text);transition:var(--transition)}
+    .search-input:focus{outline:none;border-color:var(--primary);background:var(--surface)}
+    .theme-toggle{width:34px;height:34px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;background:var(--bg);border:1.5px solid var(--border);cursor:pointer;font-size:15px;transition:var(--transition)}
+    .theme-toggle:hover{border-color:var(--primary)}
+    .spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .feedback{padding:10px 13px;border-radius:var(--radius-sm);font-size:13px;border:1px solid transparent;margin-top:10px}
+    .feedback.success{background:rgba(16,185,129,.1);color:var(--success);border-color:rgba(16,185,129,.25)}
+    .feedback.error{background:rgba(239,68,68,.1);color:var(--danger);border-color:rgba(239,68,68,.25)}
+    .img-preview{width:100%;height:160px;object-fit:cover;border-radius:var(--radius-sm);margin-bottom:10px;display:none;border:1px solid var(--border)}
+    @media(max-width:640px){.sidebar{display:none}.form-grid{grid-template-columns:1fr}.content{padding:16px}}
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen" class="login-screen">
+  <div class="login-card">
+    <div class="login-brand" id="login-brand">Admin Panel</div>
+    <div class="login-sub" id="login-sub">Kyçuni për të menaxhuar biznesin tuaj</div>
+    <div class="login-badge">🔐 Akses i kufizuar</div>
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input id="l-email" type="email" class="form-input" placeholder="email@example.com" autocomplete="username" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Fjalëkalim</label>
+      <input id="l-password" type="password" class="form-input" placeholder="••••••••" autocomplete="current-password" />
+    </div>
+    <button class="btn btn-primary btn-block" id="l-btn" style="margin-top:6px;padding:12px">Kyçu →</button>
+    <div id="l-error" class="feedback error hidden"></div>
+    <div style="margin-top:16px;text-align:center">
+      <a href="/" style="font-size:13px;color:var(--text-muted)">← Kthehu te faqja kryesore</a>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" class="app-shell hidden">
+
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-brand" id="sb-brand">Admin Panel</div>
+      <div class="sidebar-sub">Menaxhim Biznesi</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section">Kryesore</div>
+      <button class="nav-item active" data-view="dashboard"><span class="ni">📊</span> Dashboard</button>
+      <button class="nav-item" data-view="bookings"  id="nav-bookings"><span class="ni">📅</span> Rezervimet</button>
+
+      <div class="sidebar-section" id="section-catalog">Katalog</div>
+      <button class="nav-item hidden" data-view="fleet"    id="nav-fleet"   ><span class="ni">🚗</span> Flota</button>
+      <button class="nav-item hidden" data-view="services" id="nav-services"><span class="ni">✨</span> Shërbimet</button>
+      <button class="nav-item hidden" data-view="menu"     id="nav-menu"    ><span class="ni">🍽️</span> Menu</button>
+      <button class="nav-item hidden" data-view="inventory"id="nav-inventory"><span class="ni">📦</span> Inventari</button>
+
+      <div class="sidebar-section">Klientë & Gjenerimi</div>
+      <button class="nav-item" data-view="customers"><span class="ni">👥</span> Klientët</button>
+      <button class="nav-item" data-view="reviews"  id="nav-reviews"  ><span class="ni">⭐</span> Vlerësimet</button>
+      <button class="nav-item hidden" data-view="blog" id="nav-blog"><span class="ni">📰</span> Blog</button>
+
+      <div class="sidebar-section">Cilësimet</div>
+      <button class="nav-item" data-view="settings"><span class="ni">⚙️</span> Cilësimet</button>
+      <button class="nav-item" data-view="staff"    id="nav-staff"><span class="ni">👤</span> Stafi</button>
+    </nav>
+    <div class="sidebar-footer" style="flex-direction:column;align-items:stretch;gap:4px">
+      <a id="sf-view-site" href="/" target="_blank" class="sf-site">↗ Shiko faqen e biznesit</a>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="sf-user">
+          <div class="sf-name" id="sf-name">...</div>
+          <div class="sf-role" id="sf-role">owner</div>
+        </div>
+        <button class="sf-logout" id="sf-logout" title="Dil">⏻</button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-title" id="topbar-title">Dashboard</div>
+      <div class="topbar-right">
+        <button class="theme-toggle" id="theme-toggle">🌙</button>
+        <a id="tb-view-site" href="/" target="_blank" class="btn btn-ghost btn-sm">↗ Faqja</a>
+      </div>
+    </header>
+    <main class="content" id="main-content">
+      <div style="text-align:center;padding:80px;color:var(--text-muted)">
+        <div class="spinner" style="width:30px;height:30px;border-width:3px;margin:0 auto 14px"></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ITEM MODAL (fleet/service/inventory) -->
+<div class="modal hidden" id="item-modal">
+  <div class="modal-backdrop"></div>
+  <div class="modal-box">
+    <button class="modal-close" id="close-item-modal">✕</button>
+    <div class="modal-title" id="item-modal-title">Shto Artikull</div>
+    <div id="item-modal-body"></div>
+  </div>
+</div>
+
+<!-- BOOKING DETAIL MODAL -->
+<div class="modal hidden" id="bk-modal">
+  <div class="modal-backdrop"></div>
+  <div class="modal-box">
+    <button class="modal-close" id="close-bk-modal">✕</button>
+    <div class="modal-title">Detaje Rezervimi</div>
+    <div id="bk-modal-body"></div>
+  </div>
+</div>
+
+<!-- CONFIRM -->
+<div class="modal hidden" id="confirm-modal">
+  <div class="modal-backdrop"></div>
+  <div class="modal-box" style="max-width:380px">
+    <button class="modal-close" id="close-confirm">✕</button>
+    <div class="modal-title" id="confirm-title">Konfirmo</div>
+    <p id="confirm-msg" style="color:var(--text-muted);margin-bottom:22px;font-size:14px"></p>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-ghost" id="confirm-no">Anulo</button>
+      <button class="btn btn-danger" id="confirm-yes">Konfirmo</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<script>
+// ═══════════════════════════════════════════
+// BizAL — Tenant Admin JS
+// URL stays at /admin/ — hash routing inside
+// ═══════════════════════════════════════════
+let TOKEN = null, USER = null, TENANT = null;
+let currentView = 'dashboard';
+let confirmCb = null;
+
+// ── Theme ──────────────────────────────────
+(function(){
+  const s = localStorage.getItem('bizal-theme')||'light';
+  document.documentElement.setAttribute('data-theme',s);
+  document.querySelectorAll('.theme-toggle').forEach(b=>b.textContent=s==='dark'?'☀️':'🌙');
+})();
+document.getElementById('theme-toggle').addEventListener('click',()=>{
+  const c=document.documentElement.getAttribute('data-theme');
+  const n=c==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',n);
+  localStorage.setItem('bizal-theme',n);
+  document.querySelectorAll('.theme-toggle').forEach(b=>b.textContent=n==='dark'?'☀️':'🌙');
+});
+
+// ── Toast ──────────────────────────────────
+function toast(msg,type='success'){
+  const w=document.getElementById('toast-wrap');
+  const el=document.createElement('div');
+  el.className=`toast ${type}`;el.textContent=msg;w.appendChild(el);
+  setTimeout(()=>{el.style.opacity='0';el.style.transition='.3s';setTimeout(()=>el.remove(),300);},3500);
+}
+
+// ── Confirm ────────────────────────────────
+function showConfirm(title,msg,cb){
+  document.getElementById('confirm-title').textContent=title;
+  document.getElementById('confirm-msg').textContent=msg;
+  document.getElementById('confirm-modal').classList.remove('hidden');
+  confirmCb=cb;
+}
+['close-confirm','confirm-no'].forEach(id=>document.getElementById(id).addEventListener('click',()=>{
+  document.getElementById('confirm-modal').classList.add('hidden');confirmCb=null;
+}));
+document.getElementById('confirm-yes').addEventListener('click',()=>{
+  document.getElementById('confirm-modal').classList.add('hidden');
+  if(confirmCb)confirmCb();confirmCb=null;
+});
+
+// ── API ────────────────────────────────────
+const h=()=>({Authorization:'Bearer '+TOKEN,'Content-Type':'application/json'});
+const get=(ep)=>fetch('/api'+ep,{headers:h()});
+const post=(ep,b)=>fetch('/api'+ep,{method:'POST',headers:h(),body:JSON.stringify(b)});
+const patch=(ep,b)=>fetch('/api'+ep,{method:'PATCH',headers:h(),body:JSON.stringify(b)});
+const del=(ep)=>fetch('/api'+ep,{method:'DELETE',headers:h()});
+
+// ── Helpers ────────────────────────────────
+const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const fmtDate=d=>d?new Date(d).toLocaleDateString('sq-AL',{day:'numeric',month:'short',year:'numeric'}):'—';
+const fmtPrice=p=>p!=null?parseFloat(p).toLocaleString('sq-AL',{style:'currency',currency:'ALL',maximumFractionDigits:0}):'—';
+function showFb(id,msg,type){const el=document.getElementById(id);if(!el)return;el.textContent=msg;el.className=`feedback ${type}`;}
+function hideFb(id){const el=document.getElementById(id);if(el){el.className='feedback hidden';el.textContent='';}}
+
+// ── Login ──────────────────────────────────
+document.getElementById('l-btn').addEventListener('click',doLogin);
+document.getElementById('l-password').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+
+async function doLogin(){
+  const email=document.getElementById('l-email').value.trim();
+  const password=document.getElementById('l-password').value;
+  const btn=document.getElementById('l-btn');
+  document.getElementById('l-error').classList.add('hidden');
+  btn.disabled=true;btn.textContent='Duke u kyçur...';
+  try{
+    const r=await fetch('/api/auth/login/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+    const d=await r.json();
+    if(!r.ok){showFb('l-error',d.detail||'Kredenciale të pasakta.','error');document.getElementById('l-error').classList.remove('hidden');return;}
+    TOKEN=d.access;
+    const meR=await fetch('/api/auth/me/',{headers:{Authorization:'Bearer '+TOKEN}});
+    const me=await meR.json();
+    if(!['owner','manager','staff','superadmin'].includes(me.role)){
+      showFb('l-error','Nuk keni leje për të hyrë këtu.','error');
+      document.getElementById('l-error').classList.remove('hidden');TOKEN=null;return;
+    }
+    USER=me;
+    await loadTenantInfo();
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    buildSidebar();
+    const hash=window.location.hash.slice(1);
+    loadView(['dashboard','bookings','fleet','services','menu','inventory','customers','reviews','blog','settings','staff'].includes(hash)?hash:'dashboard');
+  }catch{showFb('l-error','Gabim rrjeti.','error');document.getElementById('l-error').classList.remove('hidden');}
+  finally{btn.disabled=false;btn.textContent='Kyçu →';}
+}
+
+async function loadTenantInfo(){
+  try{
+    const r=await get('/tenant/info/');
+    if(r.ok)TENANT=await r.json();
+  }catch{}
+}
+
+// ── Sidebar build ──────────────────────────
+function buildSidebar(){
+  if(!TENANT)return;
+  const name=TENANT.site_title||TENANT.name||'Admin';
+  document.getElementById('sb-brand').textContent=name;
+  document.getElementById('sf-name').textContent=USER.full_name||USER.email;
+  document.getElementById('sf-role').textContent=USER.role;
+  document.getElementById('page-title').textContent=`Admin — ${name}`;
+
+  // Apply tenant primary color
+  if(TENANT.primary_color){
+    const hex=TENANT.primary_color.replace('#','');
+    const r=parseInt(hex.slice(0,2),16),g=parseInt(hex.slice(2,4),16),b=parseInt(hex.slice(4,6),16);
+    document.documentElement.style.setProperty('--primary',TENANT.primary_color);
+    document.documentElement.style.setProperty('--primary-rgb',`${r},${g},${b}`);
+  }
+
+  // Site links
+  const siteUrl='/';
+  document.getElementById('sf-view-site').href=siteUrl;
+  document.getElementById('tb-view-site').href=siteUrl;
+
+  // Show correct catalog nav items based on business type
+  const bt=TENANT.business_type||'';
+  const isRental=['car_rental','equipment_rental','boat_rental','property_rental'].includes(bt);
+  const isFood=['restaurant','bar','bakery','delivery_kitchen'].includes(bt);
+  const isAppointment=['clinic','barbershop','spa','gym','tattoo','auto_repair','lawyer','language_school','tutoring','driving_school'].includes(bt);
+  const isProduct=['market','pharmacy','bakery','delivery_kitchen'].includes(bt);
+
+  if(isRental)  document.getElementById('nav-fleet')?.classList.remove('hidden');
+  if(isFood)    document.getElementById('nav-menu')?.classList.remove('hidden');
+  if(isAppointment) document.getElementById('nav-services')?.classList.remove('hidden');
+  if(isProduct) document.getElementById('nav-inventory')?.classList.remove('hidden');
+  if(!isRental&&!isFood&&!isAppointment&&!isProduct) document.getElementById('nav-services')?.classList.remove('hidden');
+
+  if(TENANT.plan==='enterprise') document.getElementById('nav-blog')?.classList.remove('hidden');
+  if(['pro','enterprise'].includes(TENANT.plan)) document.getElementById('nav-reviews')?.classList.remove('hidden');
+  if(['owner','manager'].includes(USER.role)) document.getElementById('nav-staff')?.classList.remove('hidden');
+}
+
+// ── Nav router ─────────────────────────────
+document.getElementById('sf-logout').addEventListener('click',()=>{TOKEN=null;USER=null;TENANT=null;document.getElementById('app').classList.add('hidden');document.getElementById('login-screen').classList.remove('hidden');});
+document.querySelectorAll('[data-view]').forEach(btn=>{
+  btn.addEventListener('click',()=>loadView(btn.dataset.view));
+});
+
+window.addEventListener('hashchange',()=>{
+  const hash=window.location.hash.slice(1);
+  if(hash&&TOKEN)loadView(hash);
+});
+
+function setNav(view){
+  document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===view));
+  const T={dashboard:'Dashboard',bookings:'Rezervimet',fleet:'Flota',services:'Shërbimet',menu:'Menu',inventory:'Inventari',customers:'Klientët',reviews:'Vlerësimet',blog:'Blog',settings:'Cilësimet',staff:'Stafi'};
+  document.getElementById('topbar-title').textContent=T[view]||view;
+  window.history.replaceState(null,'','#'+view);
+  currentView=view;
+}
+
+async function loadView(view){
+  setNav(view);
+  const el=document.getElementById('main-content');
+  el.innerHTML=`<div style="text-align:center;padding:80px;color:var(--text-muted)"><div class="spinner" style="width:28px;height:28px;border-width:3px;margin:0 auto 12px"></div></div>`;
+  const views={dashboard:vDashboard,bookings:vBookings,fleet:vFleet,services:vServices,menu:vMenu,inventory:vInventory,customers:vCustomers,reviews:vReviews,blog:vBlog,settings:vSettings,staff:vStaff};
+  if(views[view])await views[view](el);
+}
+
+// ══════════════════════════════════════════
+// VIEWS
+// ══════════════════════════════════════════
+
+// ── Dashboard ─────────────────────────────
+async function vDashboard(el){
+  const [bkR]=await Promise.all([get('/bookings/').catch(()=>null)]);
+  const bookings=bkR?.ok?await bkR.json().then(d=>Array.isArray(d)?d:d.results||[]):[];
+
+  const total=bookings.length;
+  const pending=bookings.filter(b=>b.status==='pending').length;
+  const confirmed=bookings.filter(b=>b.status==='confirmed').length;
+  const today=bookings.filter(b=>b.start_date===new Date().toISOString().split('T')[0]).length;
+
+  el.innerHTML=`
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-card-label">Total Rezervime</div><div class="stat-card-value">${total}</div><div class="stat-card-sub">Gjithsej</div></div>
+      <div class="stat-card amber"><div class="stat-card-label">Në Pritje</div><div class="stat-card-value">${pending}</div><div class="stat-card-sub">Presin konfirmim</div></div>
+      <div class="stat-card green"><div class="stat-card-label">Konfirmuar</div><div class="stat-card-value">${confirmed}</div><div class="stat-card-sub">Aktive</div></div>
+      <div class="stat-card"><div class="stat-card-label">Sot</div><div class="stat-card-value">${today}</div><div class="stat-card-sub">Rezervime sot</div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-header"><span class="panel-title">📅 Rezervimet e Fundit</span><button class="btn btn-sm btn-outline" onclick="loadView('bookings')">Shiko të gjithë</button></div>
+      <div class="panel-body" style="padding:0"><div class="table-wrap">${renderBkTable(bookings.slice(0,8),false)}</div></div>
+    </div>`;
+  bindBkActions(el);
+}
+
+// ── Bookings ───────────────────────────────
+async function vBookings(el){
+  const r=await get('/bookings/');
+  const bks=r?.ok?await r.json().then(d=>Array.isArray(d)?d:d.results||[]):[];
+  el.innerHTML=`
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">📅 Të gjitha Rezervimet (${bks.length})</span>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <input type="text" id="bk-search" class="search-input" placeholder="Kërko sipas emrit..." style="min-width:200px" />
+          <select id="bk-filter" class="search-input" style="min-width:140px">
+            <option value="">Të gjitha</option>
+            <option value="pending">Në Pritje</option>
+            <option value="confirmed">Konfirmuar</option>
+            <option value="cancelled">Anuluar</option>
+          </select>
+        </div>
+      </div>
+      <div class="panel-body" style="padding:0">
+        <div id="bk-table-wrap" class="table-wrap">${renderBkTable(bks,true)}</div>
+      </div>
+    </div>`;
+
+  let filtered=[...bks];
+  const rerender=()=>{el.querySelector('#bk-table-wrap').innerHTML=renderBkTable(filtered,true);bindBkActions(el);};
+  el.querySelector('#bk-search').addEventListener('input',e=>{
+    const q=e.target.value.toLowerCase();
+    filtered=bks.filter(b=>(b.guest_name||'').toLowerCase().includes(q)||(b.guest_email||'').toLowerCase().includes(q)||(b.resource_label||'').toLowerCase().includes(q));
+    const status=el.querySelector('#bk-filter').value;
+    if(status)filtered=filtered.filter(b=>b.status===status);
+    rerender();
+  });
+  el.querySelector('#bk-filter').addEventListener('change',e=>{
+    filtered=e.target.value?bks.filter(b=>b.status===e.target.value):[...bks];
+    rerender();
+  });
+  bindBkActions(el);
+}
+
+function renderBkTable(bks,actions){
+  if(!bks.length)return`<table><tbody><tr class="empty-row"><td colspan="6">Nuk ka rezervime.</td></tr></tbody></table>`;
+  return`<table>
+    <thead><tr><th>Klienti</th><th>Shërbimi</th><th>Data</th><th>Çmimi</th><th>Statusi</th>${actions?'<th>Veprimet</th>':''}</tr></thead>
+    <tbody>${bks.map(b=>`<tr>
+      <td><div style="font-weight:600">${esc(b.guest_name||'—')}</div><div style="font-size:12px;color:var(--text-muted)">${esc(b.guest_email||'')}</div></td>
+      <td style="font-size:13px">${esc(b.resource_label||'—')}</td>
+      <td style="font-size:13px;white-space:nowrap">${fmtDate(b.start_date)}</td>
+      <td style="font-weight:600;color:var(--primary)">${fmtPrice(b.total_price)}</td>
+      <td><span class="badge badge-${b.status}">${bkStatusLabel(b.status)}</span></td>
+      ${actions?`<td><div style="display:flex;gap:5px;flex-wrap:wrap">
+        ${b.status==='pending'?`<button class="btn btn-xs btn-success" data-bk-confirm="${b.id}">✓</button>`:'' }
+        ${b.status!=='cancelled'?`<button class="btn btn-xs btn-danger"  data-bk-cancel="${b.id}">✕</button>`:''}
+        <button class="btn btn-xs btn-ghost" data-bk-view="${b.id}" data-bk-json='${JSON.stringify(b)}'>👁</button>
+      </div></td>`:''}
+    </tr>`).join('')}</tbody></table>`;
+}
+
+function bkStatusLabel(s){return{pending:'⏳ Pritje',confirmed:'✓ Konfirmuar',cancelled:'✕ Anuluar',completed:'✔ Përfunduar'}[s]||s;}
+
+function bindBkActions(el){
+  el.querySelectorAll('[data-bk-confirm]').forEach(btn=>{
+    btn.addEventListener('click',async()=>{
+      const id=btn.dataset.bkConfirm;
+      const r=await patch(`/bookings/${id}/`,{status:'confirmed'});
+      if(r.ok){toast('Rezervimi u konfirmua ✓');loadView(currentView);}else toast('Gabim.','error');
+    });
+  });
+  el.querySelectorAll('[data-bk-cancel]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      showConfirm('Anulo Rezervimin','Jeni i sigurt?',async()=>{
+        const r=await patch(`/bookings/${btn.dataset.bkCancel}/`,{status:'cancelled'});
+        if(r.ok){toast('Rezervimi u anulua.');loadView(currentView);}else toast('Gabim.','error');
+      });
+    });
+  });
+  el.querySelectorAll('[data-bk-view]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      try{const b=JSON.parse(btn.dataset.bkJson);openBkModal(b);}catch{}
+    });
+  });
+}
+
+function openBkModal(b){
+  document.getElementById('bk-modal-body').innerHTML=`
+    <div style="display:flex;flex-direction:column;gap:12px;font-size:14px">
+      <div><strong>Klienti:</strong> ${esc(b.guest_name)} (${esc(b.guest_email)})</div>
+      ${b.guest_phone?`<div><strong>Telefon:</strong> ${esc(b.guest_phone)}</div>`:''}
+      <div><strong>Shërbimi:</strong> ${esc(b.resource_label||'—')}</div>
+      <div><strong>Data:</strong> ${fmtDate(b.start_date)} ${b.end_date&&b.end_date!==b.start_date?'→ '+fmtDate(b.end_date):''}</div>
+      ${b.start_time?`<div><strong>Ora:</strong> ${b.start_time}</div>`:''}
+      <div><strong>Çmimi:</strong> ${fmtPrice(b.total_price)}</div>
+      <div><strong>Statusi:</strong> <span class="badge badge-${b.status}">${bkStatusLabel(b.status)}</span></div>
+      ${b.notes?`<div><strong>Shënime:</strong> ${esc(b.notes)}</div>`:''}
+      <div><strong>Krijuar:</strong> ${fmtDate(b.created_at)}</div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:22px">
+      ${b.status==='pending'?`<button class="btn btn-success" onclick="patch('/bookings/${b.id}/',{status:'confirmed'}).then(r=>{if(r.ok){toast('Konfirmuar ✓');document.getElementById('bk-modal').classList.add('hidden');loadView(currentView);}})">✓ Konfirmo</button>`:''}
+      ${b.status!=='cancelled'?`<button class="btn btn-danger" onclick="showConfirm('Anulo','Jeni i sigurt?',async()=>{const r=await patch('/bookings/${b.id}/',{status:'cancelled'});if(r.ok){toast('Anuluar.');document.getElementById('bk-modal').classList.add('hidden');loadView(currentView);}})">✕ Anulo</button>`:''}
+    </div>`;
+  const m=document.getElementById('bk-modal');
+  m.classList.remove('hidden');
+  document.getElementById('close-bk-modal').onclick=()=>m.classList.add('hidden');
+  m.querySelector('.modal-backdrop').onclick=()=>m.classList.add('hidden');
+}
+
+// ── Fleet (car/property/equipment rentals) ─
+async function vFleet(el){
+  const r=await get('/rentals/');
+  const items=r?.ok?await r.json().then(d=>Array.isArray(d)?d:d.results||[]):[];
+  const label=TENANT?.business_type==='property_rental'?'Prona':TENANT?.business_type==='equipment_rental'?'Pajisjet':'Makinat';
+  el.innerHTML=`
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">🚗 ${label} (${items.length})</span>
+        <button class="btn btn-primary btn-sm" id="add-fleet-btn">+ Shto ${label.slice(0,-1)}</button>
+      </div>
+      <div class="panel-body" style="padding:0">
+        <div class="table-wrap">${renderFleetTable(items)}</div>
+      </div>
+    </div>`;
+  el.querySelector('#add-fleet-btn').addEventListener('click',()=>openItemModal('fleet',null));
+  bindItemActions(el,'fleet',items);
+}
+
+function renderFleetTable(items){
+  if(!items.length)return`<table><tbody><tr class="empty-row"><td colspan="5">Nuk ka artikuj. Shtoni të parën!</td></tr></tbody></table>`;
+  return`<table>
+    <thead><tr><th>Emri / Modeli</th><th>Çmimi/ditë</th><th>Viti</th><th>Statusi</th><th>Veprimet</th></tr></thead>
+    <tbody>${items.map(it=>`<tr>
+      <td><div style="font-weight:600">${esc(it.make?`${it.make} ${it.model||''}`.trim():it.name||'—')}</div>${it.plate_number?`<div style="font-size:12px;color:var(--text-muted)">${esc(it.plate_number)}</div>`:''}</td>
+      <td style="font-weight:600;color:var(--primary)">${fmtPrice(it.daily_rate||it.price_per_day)}</td>
+      <td style="color:var(--text-muted)">${it.year||'—'}</td>
+      <td><span class="badge ${it.is_available!==false?'badge-available':'badge-unavailable'}">${it.is_available!==false?'✓ Disponibël':'✗ I zënë'}</span></td>
+      <td><div style="display:flex;gap:5px">
+        <button class="btn btn-xs btn-outline" data-edit="${it.id}" data-json='${JSON.stringify(it)}'>✏️</button>
+        <button class="btn btn-xs btn-danger"  data-del="${it.id}" data-name="${esc(it.name||it.make||'artikullin')}">🗑</button>
+      </div></td>
+    </tr>`).join('')}</tbody></table>`;
+}
+
+// ── Services (appointments) ────────────────
+async function vServices(el){
+  const r=await get('/appointments/services/');
+  const items=r?.ok?await r.json().then(d=>Array.isArray(d)?d:d.results||[]):[];
+  el.innerHTML=`
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">✨ Shërbimet (${items.length})</span>
+        <button class="btn btn-primary btn-sm" id="add-svc-btn">+ Shto Shërbim</button>
+      </div>
+      <div class="panel-body" style="padding:0">
+        <div class="table-wrap">${renderSvcTable(items)}</div>
+      </div>
+    </div>`;
+  el.querySelector('#add-svc-btn').addEventListener('click',()=>openItemModal('service',null));
+  bindItemActions(el,'service',items);
+}
+
+function renderSvcTable(items){
+  if(!items.length)return`<table><tbody><tr class="empty-row"><td colspan="5">Nuk ka shërbime. Shtoni të parin!</td></tr></tbody></table>`;
+  return`<table>
+    <thead><tr><th>Shërbimi</th><th>Çmimi</th><th>Kohëzgjatja</th><th>Statusi</th><th>Veprimet</th></tr></thead>
+    <tbody>${items.map(it=>`<tr>
+      <td><div style="font-weight:600">${esc(it.name)}</div>${it.description?`<div style="font-size:12px;color:var(--text-muted);max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(it.description)}</div>`:''}</td>
+      <td style="font-weight:600;color:var(--primary)">${fmtPrice(it.price)}</td>
+      <td style="color:var(--text-muted)">${it.duration_minutes?it.duration_minutes+' min':'—'}</td>
+      <td><span class="badge ${it.is_active!==false?'badge-active':'badge-inactive'}">${it.is_active!==false?'Aktiv':'Joaktiv'}</span></td>
+      <td><div style="display:flex;gap:5px">
+        <button class="btn btn-xs btn-outline" data-edit="${it.id}" data-json='${JSON.stringify(it)}'>✏️</button>
+        <button class="btn btn-xs btn-danger"  data-del="${it.id}" data-name="${esc(it.name)}">🗑</button>
+      </div></td>
+    </tr>`).join('')}</tbody></table>`;
+}
+
+// ── Menu ───────────────────────────────────
+async function vMenu(el){
+  const r=await get('/menu/');
+  const cats=r?.ok?await r.json().then(d=>Array.isArray(d)?d:d.results||[]):[];
+  let html=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px">
+      <h2 style="font-size:1.1rem;font-weight:700">🍽️ Menaxho Menunë</h2>
+      <button class="btn btn-primary btn-sm" id="add-cat-btn">+ Shto Kategori</button>
+    </div>`;
+  if(!cats.length){html+=`<div class="panel"><div class="panel-body"><p style="color:var(--text-muted);text-align:center;padding:32px">Nuk ka kategori. Shtoni të parën!</p></div></div>`;}
+  else{
+    cats.forEach(cat=>{
+      html+=`<div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">📂 ${esc(cat.name)} <span style="color:var(--text-muted);font-weight:400;font-size:12px">(${(cat.items||[]).length} artikuj)</span></span>
+          <button class="btn btn-sm btn-primary add-menu-item" data-cat="${cat.id}" data-cat-name="${esc(cat.name)}">+ Shto Artikull</button>
+        </div>
+        <div class="panel-body" style="padding:0">
+          <div class="table-wrap">
+            <table><thead><tr><th>Artikulli</th><th>Çmimi</th><th>Disponibël</th><th>Veprimet</th></tr></thead>
+            <tbody>${(cat.items||[]).map(it=>`<tr>
+              <td><div style="font-weight:600">${esc(it.name)}</div>${it.description?`<div style="font-size:12px;color:var(--text-muted)">${esc(it.description)}</div>`:''}</td>
+              <td style="font-weight:600;color:var(--primary)">${fmtPrice(it.price)}</td>
+              <td><span class="badge ${it.is_available!==false?'badge-available':'badge-inactive'}">${it.is_available!==false?'Po':'Jo'}</span></td>
+              <td><div style="display:flex;gap:5px">
+                <button class="btn btn-xs btn-outline" data-edit-menu="${it.id}" data-json='${JSON.stringify(it)}' data-cat="${cat.id}">✏️</button>
+                <button class="btn btn-xs btn-danger"  data-del-menu="${it.id}" data-name="${esc(it.name)}">🗑</button>
+              </div></td>
+            </tr>`).join('')}
+            ${!(cat.items||[]).length?`<tr class="empty-row"><td colspan="4">Nuk ka artikuj.</td></tr>`:''}
+            </tbody></table>
+          </div>
+        </div>
+      </div>`;
+    });
+  }
+  el.innerHTML=html;
+
+  el.querySelector('#add-cat-btn')?.addEventListener('click',()=>openMenuCatModal(null));
+  el.querySelectorAll('.add-menu-item').forEach(btn=>{
+    btn.addEventListener('click',()=>openMenuItemModal(null,btn.dataset.cat,btn.dataset.catName));
+  });
+  el.querySelectorAll('[data-edit-menu]').forEach(btn=>{
+    btn.addEventListener('click',()=>{try{openMenuItemModal(JSON.parse(btn.dataset.json),btn.dataset.cat,'');}catch{}});
+  });
+  el.querySelectorAll('[data-del-menu]').forEach(btn=>{
+    btn.addEventListener('click',()=>showConfirm('Fshi Artikullin',`Fshi "${btn.dataset.name}"?`,async()=>{
+      const r=await del(`/menu/items/${btn.dataset.delMenu}/`);
+      if(r.ok||r.status===204){toast('U fshi.');loadView('menu');}else toast('Gabim.','error');
+    }));
+  });
+}
+
+function openMenuCatModal(cat){
+  openGenericModal(cat?'✏️ Ndrysho Kategori':'+ Kategori e Re',`
+    <div class="form-group"><label class="form-label">Emri i Kategorisë *</label><input id="mc-name" class="form-input" value="${esc(cat?.name||'')}" /></div>
+    <div class="form-group"><label class="form-label">Përshkrimi</label><textarea id="mc-desc" class="form-textarea">${esc(cat?.description||'')}</textarea></div>
+  `,async()=>{
+    const body={name:document.getElementById('mc-name').value.trim(),description:document.getElementById('mc-desc').value.trim()};
+    const r=cat?await patch(`/menu/categories/${cat.id}/`,body):await post('/menu/categories/',body);
+    if(r.ok){toast(cat?'Kategoria u ndryshua ✓':'Kategoria u shtua ✓');loadView('menu');}
+    else{const e=await r.json().catch(()=>({}));return Object.values(e).flat().join(' ')||'Gabim.';}
+  });
+}
+
+function openMenuItemModal(item,catId,catName){
+  openGenericModal(item?'✏️ Ndrysho Artikull':'+ Artikull i Ri'+(catName?` — ${catName}`:''),`
+    <div class="form-group"><label class="form-label">Emri *</label><input id="mi-name" class="form-input" value="${esc(item?.name||'')}" /></div>
+    <div class="form-group"><label class="form-label">Përshkrimi</label><textarea id="mi-desc" class="form-textarea">${esc(item?.description||'')}</textarea></div>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Çmimi (ALL) *</label><input id="mi-price" type="number" class="form-input" value="${item?.price||''}" /></div>
+      <div class="form-group"><label class="form-label">Alergenë</label><input id="mi-allergens" class="form-input" value="${esc(item?.allergens||'')}" /></div>
+    </div>
+    <div class="form-group"><label class="form-check"><input type="checkbox" id="mi-avail" ${item?.is_available!==false?'checked':''}> Disponibël</label></div>
+  `,async()=>{
+    const body={name:document.getElementById('mi-name').value.trim(),description:document.getElementById('mi-desc').value.trim(),price:document.getElementById('mi-price').value,allergens:document.getElementById('mi-allergens').value.trim(),is_available:document.getElementById('mi-avail').checked,category:catId||item?.category};
+    const r=item?await patch(`/menu/items/${item.id}/`,body):await post('/menu/items/',body);
+    if(r.ok){toast(item?'Artikulli u ndryshua ✓':'Artikulli u shtua ✓');loadView('menu');}
+    else{const e=await r.json().catch(()=>({}));return Object.values(e).flat().join(' ')||'Gabim.';}
+  });
+}
+
+// ── Inventory (products/pharmacy/market) ───
+async function vInventory(el){
+  const r=await get('/inventory/');
+  const items=r?.ok?await r.json().then(d=>Array.isArray(d)?d:d.results||[]):[];
+  el.innerHTML=`
+    <div class="panel">
+      <div class="panel-header"><span class="panel-title">📦 Inventari (${items.length})</span><button class="btn btn-primary btn-sm" id="add-inv-btn">+ Shto Produkt</button></div>
+      <div class="panel-body" style="padding:0"><div class="table-wrap">${renderInvTable(items)}</div></div>
+    </div>`;
+  el.querySelector('#add-inv-btn').addEventListener('click',()=>openItemModal('inventory',null));
+  bindItemActions(el,'inventory',items);
+}
+
+function renderInvTable(items){
+  if(!items.length)return`<table><tbody><tr class="empty-row"><td colspan="5">Nuk ka produkte.</td></tr></tbody></table>`;
+  return`<table>
+    <thead><tr><th>Produkti</th><th>Çmimi</th><th>Stoku</th><th>Kategoria</th><th>Veprimet</th></tr></thead>
+    <tbody>${items.map(it=>`<tr>
+      <td style="font-weight:600">${esc(it.name)}</td>
+      <td style="font-weight:600;color:var(--primary)">${fmtPrice(it.price)}</td>
+      <td><span class="badge ${(it.stock_quantity||0)>0?'badge-available':'badge-unavailable'}">${it.stock_quantity??'—'}</span></td>
+      <td style="color:var(--text-muted);font-size:13px">${esc(it.category||'—')}</td>
+      <td><div style="display:flex;gap:5px">
+        <button class="btn btn-xs btn-outline" data-edit="${it.id}" data-json='${JSON.stringify(it)}'>✏️</button>
+        <button class="btn btn-xs btn-danger"  data-del="${it.id}" data-name="${esc(it.name)}">🗑</button>
+      </div></td>
+    </tr>`).join('')}</tbody></table>`;
+}
+
+// ── Generic item modal ─────────────────────
+function openItemModal(type,item){
+  const isNew=!item;
+  const titles={fleet:'Mjet Transporti',service:'Shërbim',inventory:'Produkt'};
+  const t=titles[type]||'Artikull';
+
+  let fields='';
+  if(type==='fleet'){
+    fields=`
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Marka *</label><input id="f-make" class="form-input" value="${esc(item?.make||item?.name||'')}" /></div>
+        <div class="form-group"><label class="form-label">Modeli</label><input id="f-model" class="form-input" value="${esc(item?.model||'')}" /></div>
+      </div>
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Viti</label><input id="f-year" type="number" class="form-input" value="${item?.year||''}" min="1990" max="${new Date().getFullYear()+1}" /></div>
+        <div class="form-group"><label class="form-label">Targa</label><input id="f-plate" class="form-input" value="${esc(item?.plate_number||'')}" /></div>
+      </div>
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Çmimi/Ditë (ALL) *</label><input id="f-rate" type="number" class="form-input" value="${item?.daily_rate||item?.price_per_day||''}" /></div>
+        <div class="form-group"><label class="form-label">Kategoria</label><input id="f-cat" class="form-input" value="${esc(item?.category||'')}" placeholder="sedan, suv, luxury..." /></div>
+      </div>
+      <div class="form-group"><label class="form-label">Përshkrimi</label><textarea id="f-desc" class="form-textarea">${esc(item?.description||'')}</textarea></div>
+      <div class="form-group"><label class="form-label">URL Foto</label><input id="f-img" type="url" class="form-input" value="${esc(item?.image_url||item?.image||'')}" placeholder="https://..." /></div>
+      <div class="form-group"><label class="form-check"><input type="checkbox" id="f-avail" ${item?.is_available!==false?'checked':''}> Disponibël për rezervim</label></div>`;
+  }else if(type==='service'){
+    fields=`
+      <div class="form-group"><label class="form-label">Emri i Shërbimit *</label><input id="s-name" class="form-input" value="${esc(item?.name||'')}" /></div>
+      <div class="form-group"><label class="form-label">Përshkrimi</label><textarea id="s-desc" class="form-textarea">${esc(item?.description||'')}</textarea></div>
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Çmimi (ALL) *</label><input id="s-price" type="number" class="form-input" value="${item?.price||''}" /></div>
+        <div class="form-group"><label class="form-label">Kohëzgjatja (min)</label><input id="s-dur" type="number" class="form-input" value="${item?.duration_minutes||''}" /></div>
+      </div>
+      <div class="form-group"><label class="form-label">URL Foto</label><input id="s-img" type="url" class="form-input" value="${esc(item?.image||'')}" placeholder="https://..." /></div>
+      <div class="form-group"><label class="form-check"><input type="checkbox" id="s-active" ${item?.is_active!==false?'checked':''}> Aktiv (i dukshëm)</label></div>`;
+  }else{
+    fields=`
+      <div class="form-group"><label class="form-label">Emri *</label><input id="i-name" class="form-input" value="${esc(item?.name||'')}" /></div>
+      <div class="form-group"><label class="form-label">Përshkrimi</label><textarea id="i-desc" class="form-textarea">${esc(item?.description||'')}</textarea></div>
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Çmimi (ALL) *</label><input id="i-price" type="number" class="form-input" value="${item?.price||''}" /></div>
+        <div class="form-group"><label class="form-label">Stoku</label><input id="i-stock" type="number" class="form-input" value="${item?.stock_quantity??''}" /></div>
+      </div>
+      <div class="form-group"><label class="form-label">Kategoria</label><input id="i-cat" class="form-input" value="${esc(item?.category||'')}" /></div>`;
+  }
+
+  openGenericModal(`${isNew?'+':'✏️'} ${t}`,fields,async()=>{
+    let body={},ep='';
+    if(type==='fleet'){
+      body={make:document.getElementById('f-make').value.trim(),model:document.getElementById('f-model').value.trim(),year:document.getElementById('f-year').value||null,plate_number:document.getElementById('f-plate').value.trim(),daily_rate:document.getElementById('f-rate').value,category:document.getElementById('f-cat').value.trim(),description:document.getElementById('f-desc').value.trim(),image_url:document.getElementById('f-img').value.trim(),is_available:document.getElementById('f-avail').checked};
+      ep=item?`/rentals/${item.id}/`:'/rentals/';
+    }else if(type==='service'){
+      body={name:document.getElementById('s-name').value.trim(),description:document.getElementById('s-desc').value.trim(),price:document.getElementById('s-price').value,duration_minutes:document.getElementById('s-dur').value||null,image:document.getElementById('s-img').value.trim(),is_active:document.getElementById('s-active').checked};
+      ep=item?`/appointments/services/${item.id}/`:'/appointments/services/';
+    }else{
+      body={name:document.getElementById('i-name').value.trim(),description:document.getElementById('i-desc').value.trim(),price:document.getElementById('i-price').value,stock_quantity:document.getElementById('i-stock').value||0,category:document.getElementById('i-cat').value.trim()};
+      ep=item?`/inventory/${item.id}/`:'/inventory/';
+    }
+    const r=item?await patch(ep,body):await post(ep,body);
+    if(r.ok){toast(isNew?'U shtua me sukses ✓':'U ndryshua ✓');loadView(currentView);}
+    else{const e=await r.json().catch(()=>({}));return Object.values(e).flat().join(' ')||'Gabim.';}
+  });
+}
+
+function bindItemActions(el,type,items){
+  el.querySelectorAll('[data-edit]').forEach(btn=>{
+    btn.addEventListener('click',()=>{try{const item=JSON.parse(btn.dataset.json);openItemModal(type,item);}catch{}});
+  });
+  el.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const epMap={fleet:`/rentals/${btn.dataset.del}/`,service:`/appointments/services/${btn.dataset.del}/`,inventory:`/inventory/${btn.dataset.del}/`};
+      showConfirm('Fshi Artikullin',`Fshi "${btn.dataset.name}"?`,async()=>{
+        const r=await del(epMap[type]);
+        if(r.ok||r.status===204){toast('U fshi.');loadView(currentView);}else toast('Gabim.','error');
+      });
+    });
+  });
+}
+
+// ── Generic modal helper ───────────────────
+function openGenericModal(title,fieldsHtml,onSubmit){
+  const m=document.getElementById('item-modal');
+  document.getElementById('item-modal-title').textContent=title;
+  document.getElementById('item-modal-body').innerHTML=`
+    ${fieldsHtml}
+    <div id="gm-fb" class="feedback hidden"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px">
+      <button class="btn btn-ghost" id="gm-cancel">Anulo</button>
+      <button class="btn btn-primary" id="gm-save">Ruaj</button>
+    </div>`;
+  m.classList.remove('hidden');
+  document.getElementById('close-item-modal').onclick=()=>m.classList.add('hidden');
+  document.getElementById('gm-cancel').onclick=()=>m.classList.add('hidden');
+  m.querySelector('.modal-backdrop').onclick=()=>m.classList.add('hidden');
+  document.getElementById('gm-save').addEventListener('click',async()=>{
+    const btn=document.getElementById('gm-save');
+    btn.disabled=true;btn.textContent='Duke ruajtur...';
+    const err=await onSubmit();
+    if(err){showFb('gm-fb',err,'error');}else{m.classList.add('hidden');}
+    btn.disabled=false;btn.textContent='Ruaj';
+  });
+}
+
+// ── Customers ─────────────────────────────
+async function vCustomers(el){
+  const r=await get('/bookings/');
+  const bks=r?.ok?await r.json().then(d=>Array.isArray(d)?d:d.results||[]):[];
+  // Deduplicate by email
+  const map=new Map();
+  bks.forEach(b=>{if(b.guest_email&&!map.has(b.guest_email)){map.set(b.guest_email,{name:b.guest_name,email:b.guest_email,phone:b.guest_phone,count:0,last:b.created_at});}if(map.has(b.guest_email))map.get(b.guest_email).count++;});
+  const customers=[...map.values()].sort((a,b)=>b.count-a.count);
+  el.innerHTML=`
+    <div class="panel">
+      <div class="panel-header"><span class="panel-title">👥 Klientët (${customers.length})</span></div>
+      <div class="panel-body" style="padding:0">
+        <div class="table-wrap">
+          <table><thead><tr><th>Emri</th><th>Email</th><th>Telefon</th><th>Rezervime</th><th>Klienti prej</th></tr></thead>
+          <tbody>${customers.length?customers.map(c=>`<tr>
+            <td style="font-weight:600">${esc(c.name||'—')}</td>
+            <td><a href="mailto:${esc(c.email)}" style="color:var(--primary)">${esc(c.email)}</a></td>
+            <td style="color:var(--text-muted)">${esc(c.phone||'—')}</td>
+            <td><span class="badge badge-active">${c.count}</span></td>
+            <td style="color:var(--text-muted);font-size:13px">${fmtDate(c.last)}</td>
+          </tr>`).join(''):`<tr class="empty-row"><td colspan="5">Nuk ka klientë ende.</td></tr>`}
+          </tbody></table>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ── Reviews ────────────────────────────────
+async function vReviews(el){
+  const r=await get('/reviews/');
+  const reviews=r?.ok?await r.json().then(d=>Array.isArray(d)?d:d.results||[]):[];
+  el.innerHTML=`
+    <div class="panel">
+      <div class="panel-header"><span class="panel-title">⭐ Vlerësimet (${reviews.length})</span></div>
+      <div class="panel-body" style="padding:0">
+        <div class="table-wrap">
+          <table><thead><tr><th>Klienti</th><th>Vlerësimi</th><th>Komenti</th><th>Data</th><th>Veprimet</th></tr></thead>
+          <tbody>${reviews.length?reviews.map(rv=>`<tr>
+            <td style="font-weight:600">${esc(rv.user_name||'Klient')}</td>
+            <td><span style="color:var(--accent)">${'★'.repeat(rv.rating)}${'☆'.repeat(5-rv.rating)}</span></td>
+            <td style="color:var(--text-muted);max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(rv.comment||'—')}</td>
+            <td style="font-size:13px;color:var(--text-muted)">${fmtDate(rv.created_at)}</td>
+            <td><button class="btn btn-xs btn-danger" data-del-review="${rv.id}">🗑</button></td>
+          </tr>`).join(''):`<tr class="empty-row"><td colspan="5">Nuk ka vlerësime ende.</td></tr>`}
+          </tbody></table>
+        </div>
+      </div>
+    </div>`;
+  el.querySelectorAll('[data-del-review]').forEach(btn=>{
+    btn.addEventListener('click',()=>showConfirm('Fshi Vlerësimin','Fshi këtë vlerësim?',async()=>{
+      const r=await del(`/reviews/${btn.dataset.delReview}/`);
+      if(r.ok||r.status===204){toast('U fshi.');loadView('reviews');}else toast('Gabim.','error');
+    }));
+  });
+}
+
+// ── Blog ───────────────────────────────────
+async function vBlog(el){
+  const r=await get('/blog/');
+  const posts=r?.ok?await r.json().then(d=>Array.isArray(d)?d:d.results||[]):[];
+  el.innerHTML=`
+    <div class="panel">
+      <div class="panel-header"><span class="panel-title">📰 Blog (${posts.length})</span><button class="btn btn-primary btn-sm" id="add-post-btn">+ Post i Ri</button></div>
+      <div class="panel-body" style="padding:0">
+        <div class="table-wrap">
+          <table><thead><tr><th>Titulli</th><th>Statusi</th><th>Data</th><th>Veprimet</th></tr></thead>
+          <tbody>${posts.length?posts.map(p=>`<tr>
+            <td style="font-weight:600">${esc(p.title)}</td>
+            <td><span class="badge ${p.is_published?'badge-active':'badge-inactive'}">${p.is_published?'Publikuar':'Draft'}</span></td>
+            <td style="font-size:13px;color:var(--text-muted)">${fmtDate(p.published_at||p.created_at)}</td>
+            <td><div style="display:flex;gap:5px">
+              <button class="btn btn-xs btn-outline" data-edit-post="${p.id}" data-json='${JSON.stringify({id:p.id,title:p.title,excerpt:p.excerpt,body:p.body,is_published:p.is_published})}'>✏️</button>
+              <button class="btn btn-xs btn-danger" data-del-post="${p.id}" data-name="${esc(p.title)}">🗑</button>
+            </div></td>
+          </tr>`).join(''):`<tr class="empty-row"><td colspan="4">Nuk ka postime.</td></tr>`}
+          </tbody></table>
+        </div>
+      </div>
+    </div>`;
+  el.querySelector('#add-post-btn').addEventListener('click',()=>openBlogModal(null));
+  el.querySelectorAll('[data-edit-post]').forEach(btn=>{btn.addEventListener('click',()=>{try{openBlogModal(JSON.parse(btn.dataset.json));}catch{}});});
+  el.querySelectorAll('[data-del-post]').forEach(btn=>{
+    btn.addEventListener('click',()=>showConfirm('Fshi Postin',`Fshi "${btn.dataset.name}"?`,async()=>{
+      const r=await del(`/blog/${btn.dataset.delPost}/`);
+      if(r.ok||r.status===204){toast('U fshi.');loadView('blog');}else toast('Gabim.','error');
+    }));
+  });
+}
+
+function openBlogModal(post){
+  openGenericModal(post?'✏️ Ndrysho Post':'+ Post i Ri',`
+    <div class="form-group"><label class="form-label">Titulli *</label><input id="bp-title" class="form-input" value="${esc(post?.title||'')}" /></div>
+    <div class="form-group"><label class="form-label">Excerpt</label><textarea id="bp-excerpt" class="form-textarea" rows="2">${esc(post?.excerpt||'')}</textarea></div>
+    <div class="form-group"><label class="form-label">Përmbajtja *</label><textarea id="bp-body" class="form-textarea" rows="8">${esc(post?.body||'')}</textarea></div>
+    <div class="form-group"><label class="form-check"><input type="checkbox" id="bp-pub" ${post?.is_published?'checked':''}> Publiko tani</label></div>
+  `,async()=>{
+    const body={title:document.getElementById('bp-title').value.trim(),excerpt:document.getElementById('bp-excerpt').value.trim(),body:document.getElementById('bp-body').value.trim(),is_published:document.getElementById('bp-pub').checked};
+    const r=post?await patch(`/blog/${post.id}/`,body):await post('/blog/',body);
+    if(r.ok){toast(post?'Posti u ndryshua ✓':'Posti u publikua ✓');loadView('blog');}
+    else{const e=await r.json().catch(()=>({}));return Object.values(e).flat().join(' ')||'Gabim.';}
+  });
+}
+
+// ── Staff ──────────────────────────────────
+async function vStaff(el){
+  const r=await get('/staff/');
+  const staff=r?.ok?await r.json().then(d=>Array.isArray(d)?d:d.results||[]):[];
+  el.innerHTML=`
+    <div class="panel">
+      <div class="panel-header"><span class="panel-title">👤 Stafi (${staff.length})</span><button class="btn btn-primary btn-sm" id="add-staff-btn">+ Shto Staf</button></div>
+      <div class="panel-body" style="padding:0">
+        <div class="table-wrap">
+          <table><thead><tr><th>Emri</th><th>Email</th><th>Roli</th><th>Statusi</th><th>Veprimet</th></tr></thead>
+          <tbody>${staff.length?staff.map(s=>`<tr>
+            <td style="font-weight:600">${esc(s.full_name||s.email)}</td>
+            <td style="color:var(--text-muted);font-size:13px">${esc(s.email)}</td>
+            <td><span class="badge badge-confirmed">${esc(s.role)}</span></td>
+            <td><span class="badge ${s.is_active?'badge-active':'badge-inactive'}">${s.is_active?'Aktiv':'Joaktiv'}</span></td>
+            <td><button class="btn btn-xs btn-danger" data-del-staff="${s.id}" data-name="${esc(s.full_name||s.email)}">🗑</button></td>
+          </tr>`).join(''):`<tr class="empty-row"><td colspan="5">Nuk ka staf të shtuar.</td></tr>`}
+          </tbody></table>
+        </div>
+      </div>
+    </div>`;
+  el.querySelector('#add-staff-btn').addEventListener('click',()=>openStaffModal());
+  el.querySelectorAll('[data-del-staff]').forEach(btn=>{
+    btn.addEventListener('click',()=>showConfirm('Largo nga Stafi',`Largo "${btn.dataset.name}"?`,async()=>{
+      const r=await del(`/staff/${btn.dataset.delStaff}/`);
+      if(r.ok||r.status===204){toast('U largua.');loadView('staff');}else toast('Gabim.','error');
+    }));
+  });
+}
+
+function openStaffModal(){
+  openGenericModal('+ Shto Anëtar Stafi',`
+    <div class="form-group"><label class="form-label">Email *</label><input id="st-email" type="email" class="form-input" placeholder="staf@example.com" /></div>
+    <div class="form-group">
+      <label class="form-label">Roli</label>
+      <select id="st-role" class="form-select">
+        <option value="staff">Staff</option>
+        <option value="manager">Manager</option>
+      </select>
+    </div>
+  `,async()=>{
+    const body={email:document.getElementById('st-email').value.trim(),role:document.getElementById('st-role').value};
+    const r=await post('/staff/',body);
+    if(r.ok){toast('Anëtari u shtua ✓');loadView('staff');}
+    else{const e=await r.json().catch(()=>({}));return Object.values(e).flat().join(' ')||'Gabim.';}
+  });
+}
+
+// ── Settings ───────────────────────────────
+async function vSettings(el){
+  if(!TENANT){await loadTenantInfo();}
+  const t=TENANT||{};
+  el.innerHTML=`
+    <form id="settings-form">
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">🏢 Informacioni i Biznesit</span></div>
+        <div class="panel-body">
+          <div class="settings-section">
+            <div class="settings-section-title">Të Dhënat Bazë</div>
+            <div class="form-grid">
+              <div class="form-group"><label class="form-label">Emri i Biznesit</label><input id="set-name" class="form-input" value="${esc(t.name||'')}" /></div>
+              <div class="form-group"><label class="form-label">Titulli i Faqes</label><input id="set-title" class="form-input" value="${esc(t.site_title||'')}" /></div>
+            </div>
+            <div class="form-group"><label class="form-label">Tagline / Slogani</label><input id="set-tagline" class="form-input" value="${esc(t.tagline||'')}" /></div>
+            <div class="form-group"><label class="form-label">Përshkrimi Meta</label><textarea id="set-desc" class="form-textarea" rows="2">${esc(t.meta_description||'')}</textarea></div>
+          </div>
+          <div class="settings-section">
+            <div class="settings-section-title">Kontakt & Vendndodhja</div>
+            <div class="form-grid">
+              <div class="form-group"><label class="form-label">Telefon</label><input id="set-phone" class="form-input" value="${esc(t.phone||'')}" /></div>
+              <div class="form-group"><label class="form-label">Email</label><input id="set-email" type="email" class="form-input" value="${esc(t.email||'')}" /></div>
+            </div>
+            <div class="form-grid">
+              <div class="form-group"><label class="form-label">Adresa</label><input id="set-address" class="form-input" value="${esc(t.address||'')}" /></div>
+              <div class="form-group"><label class="form-label">Qyteti</label><input id="set-city" class="form-input" value="${esc(t.city||'')}" /></div>
+            </div>
+            <div class="form-group"><label class="form-label">WhatsApp</label><input id="set-wa" class="form-input" value="${esc(t.whatsapp||'')}" placeholder="+355 6X XXX XXXX" /></div>
+          </div>
+          <div class="settings-section">
+            <div class="settings-section-title">Brendi & Dizajni</div>
+            <div class="form-grid">
+              <div class="form-group"><label class="form-label">Ngjyra Kryesore</label><input id="set-color" type="color" class="form-input" value="${t.primary_color||'#2563EB'}" style="height:44px;padding:4px 8px" /></div>
+              <div class="form-group"><label class="form-label">Viti i Themelimit</label><input id="set-year" type="number" class="form-input" value="${t.founded_year||''}" min="1800" max="${new Date().getFullYear()}" /></div>
+            </div>
+            <div class="form-group"><label class="form-label">URL Logo-s</label><input id="set-logo" type="url" class="form-input" value="${esc(t.logo_url||'')}" placeholder="https://..." /></div>
+          </div>
+          <div class="settings-section">
+            <div class="settings-section-title">Rrjete Sociale</div>
+            <div class="form-grid">
+              <div class="form-group"><label class="form-label">Facebook</label><input id="set-fb" type="url" class="form-input" value="${esc(t.facebook||'')}" placeholder="https://facebook.com/..." /></div>
+              <div class="form-group"><label class="form-label">Instagram</label><input id="set-ig" type="url" class="form-input" value="${esc(t.instagram||'')}" placeholder="https://instagram.com/..." /></div>
+            </div>
+            <div class="form-group"><label class="form-label">TikTok</label><input id="set-tt" type="url" class="form-input" value="${esc(t.tiktok||'')}" placeholder="https://tiktok.com/@..." /></div>
+          </div>
+          <div id="set-fb-msg" class="feedback hidden"></div>
+          <button type="submit" class="btn btn-primary btn-lg" style="margin-top:6px">💾 Ruaj të Gjitha Cilësimet</button>
+        </div>
+      </div>
+    </form>`;
+
+  document.getElementById('settings-form').addEventListener('submit',async e=>{
+    e.preventDefault();
+    const btn=e.target.querySelector('[type=submit]');
+    btn.disabled=true;btn.textContent='Duke ruajtur...';
+    const body={
+      name:document.getElementById('set-name').value.trim(),
+      site_title:document.getElementById('set-title').value.trim(),
+      tagline:document.getElementById('set-tagline').value.trim(),
+      meta_description:document.getElementById('set-desc').value.trim(),
+      phone:document.getElementById('set-phone').value.trim(),
+      email:document.getElementById('set-email').value.trim(),
+      address:document.getElementById('set-address').value.trim(),
+      city:document.getElementById('set-city').value.trim(),
+      whatsapp:document.getElementById('set-wa').value.trim(),
+      primary_color:document.getElementById('set-color').value,
+      founded_year:document.getElementById('set-year').value||null,
+      logo_url:document.getElementById('set-logo').value.trim(),
+      facebook:document.getElementById('set-fb').value.trim(),
+      instagram:document.getElementById('set-ig').value.trim(),
+      tiktok:document.getElementById('set-tt').value.trim(),
+    };
+    const r=await patch('/tenant/settings/',body);
+    if(r.ok){
+      TENANT={...TENANT,...body};
+      buildSidebar();
+      toast('Cilësimet u ruajtën ✓');
+      showFb('set-fb-msg','✓ Cilësimet u ruajtën me sukses!','success');
+    }else{
+      const err=await r.json().catch(()=>({}));
+      showFb('set-fb-msg',Object.values(err).flat().join(' ')||'Gabim.','error');
+    }
+    btn.disabled=false;btn.textContent='💾 Ruaj të Gjitha Cilësimet';
+  });
+}
+</script>
+</body>
+</html>

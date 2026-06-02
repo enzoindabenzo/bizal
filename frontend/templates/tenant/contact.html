@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title id="page-title">BizAL</title>
+  <meta name="description" id="meta-description" content="" />
+  <link rel="icon" id="favicon" href="/static/img/favicon.ico" />
+  <link rel="stylesheet" href="/static/css/shared.css" />
+  <link rel="stylesheet" href="/static/css/tenant.css" />
+</head>
+<body data-page="contact">
+
+{% include "tenant/_nav.html" %}
+
+<div class="page-header">
+  <div class="container">
+    <h1 class="page-header-title">Na Kontaktoni</h1>
+    <p class="page-header-sub">Jemi këtu për çdo pyetje ose rezervim</p>
+  </div>
+</div>
+
+<section class="section">
+  <div class="container contact-layout">
+
+    <!-- LEFT: Info -->
+    <aside class="contact-aside">
+      <h2 class="contact-aside-title">Informacion</h2>
+
+      <div class="contact-info-items" id="contact-info-items">
+        <!-- filled by contact.js -->
+      </div>
+
+      <!-- Social links -->
+      <div class="contact-social hidden" id="contact-social">
+        <h3 class="contact-social-title">Na Ndiqni</h3>
+        <div id="contact-social-links"></div>
+      </div>
+
+      <!-- Hours mini -->
+      <div class="contact-hours hidden" id="contact-hours">
+        <h3 class="contact-hours-title">🕐 Orari</h3>
+        <div id="contact-hours-list"></div>
+      </div>
+    </aside>
+
+    <!-- RIGHT: Form -->
+    <div class="contact-form-card">
+      <h2 class="contact-form-title">Dërgoni Mesazh</h2>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="c-name">Emri <span class="required">*</span></label>
+          <input class="form-input" type="text" id="c-name" placeholder="Emri juaj i plotë" autocomplete="name" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="c-email">Email <span class="required">*</span></label>
+          <input class="form-input" type="email" id="c-email" placeholder="email@juaj.al" autocomplete="email" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="c-phone">Telefon</label>
+          <input class="form-input" type="tel" id="c-phone" placeholder="+355 6X XXX XXXX" autocomplete="tel" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="c-subject">Subjekti</label>
+          <input class="form-input" type="text" id="c-subject" placeholder="Si mund t'ju ndihmojmë?" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="c-message">Mesazhi <span class="required">*</span></label>
+        <textarea class="form-input form-textarea" id="c-message" rows="5" placeholder="Shkruani mesazhin tuaj këtu..."></textarea>
+      </div>
+
+      <button class="btn btn-primary btn-lg btn-block" id="send-contact">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18" style="margin-right:8px">
+          <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/>
+        </svg>
+        Dërgo Mesazhin
+      </button>
+
+      <div id="contact-feedback" class="feedback hidden" style="margin-top:16px"></div>
+    </div>
+  </div>
+</section>
+
+<!-- Reviews on contact page -->
+<section class="section bg-soft hidden" id="reviews-on-contact">
+  <div class="container">
+    <div class="section-header">
+      <h2 class="section-title">Çfarë Thonë Klientët</h2>
+    </div>
+    <div class="reviews-grid" id="contact-reviews-grid"></div>
+    <div class="review-form-card hidden" id="review-form-card">
+      <h3>Lini Vlerësimin Tuaj</h3>
+      <div class="star-picker" id="star-picker">
+        <button class="star" data-value="1" aria-label="1 yll">★</button>
+        <button class="star" data-value="2" aria-label="2 yje">★</button>
+        <button class="star" data-value="3" aria-label="3 yje">★</button>
+        <button class="star" data-value="4" aria-label="4 yje">★</button>
+        <button class="star" data-value="5" aria-label="5 yje">★</button>
+      </div>
+      <textarea class="form-input form-textarea" id="review-comment" rows="3" placeholder="Komenti juaj..."></textarea>
+      <button class="btn btn-primary" id="submit-review">Dërgo Vlerësimin</button>
+    </div>
+  </div>
+</section>
+
+{% include "tenant/_footer.html" %}
+{% include "tenant/_auth_modal.html" %}
+{% include "tenant/_whatsapp.html" %}
+
+<script src="/static/js/shared.js"></script>
+<script src="/static/js/tenant.js"></script>
+<script src="/static/js/pages/contact.js"></script>
+</body>
+</html>

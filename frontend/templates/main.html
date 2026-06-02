@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="sq" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BizAL — Platforma #1 për Bizneset Shqiptare</title>
+  <meta name="description" content="BizAL ndihmon bizneset shqiptare të rriten online." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <link rel="stylesheet" href="/static/css/main.css" />
+</head>
+<body>
+
+<!-- ── NAVBAR ── -->
+<nav class="navbar" id="navbar">
+  <div class="nav-brand">
+    <a href="/" class="nav-brand-link">
+      <span class="logo-text">Biz<span class="accent">AL</span></span>
+    </a>
+  </div>
+  <div class="nav-center">
+    <ul class="nav-links" id="nav-links-desktop" style="list-style:none;display:flex;gap:2px">
+      <li><a href="#business-types" class="nav-link">Bizneset</a></li>
+      <li><a href="#features"       class="nav-link">Veçoritë</a></li>
+      <li><a href="#pricing"        class="nav-link">Çmimet</a></li>
+      <li><a href="/blog/"          class="nav-link">Blog</a></li>
+    </ul>
+  </div>
+  <div class="nav-right">
+    <button class="theme-toggle" id="theme-toggle" title="Ndrysho temën" aria-label="Toggle theme">🌙</button>
+    <div id="nav-auth" style="display:flex;gap:8px">
+      <a href="/admin/" class="btn btn-ghost btn-sm">Admin ↗</a>
+      <a href="#signup" class="btn btn-primary btn-sm">Fillo Falas</a>
+    </div>
+    <button class="nav-toggle" id="nav-toggle" aria-label="Menu" aria-expanded="false">
+      <span style="display:block;width:20px;height:2px;background:currentColor;margin:4px 0;transition:.2s"></span>
+      <span style="display:block;width:20px;height:2px;background:currentColor;margin:4px 0;transition:.2s"></span>
+      <span style="display:block;width:20px;height:2px;background:currentColor;margin:4px 0;transition:.2s"></span>
+    </button>
+  </div>
+</nav>
+
+<!-- ── MOBILE DRAWER ── -->
+<div class="nav-drawer" id="nav-drawer">
+  <a href="#business-types" class="drawer-link">🏢 Bizneset</a>
+  <a href="#features"       class="drawer-link">✨ Veçoritë</a>
+  <a href="#pricing"        class="drawer-link">💳 Çmimet</a>
+  <a href="/blog/"          class="drawer-link">📰 Blog</a>
+  <div class="drawer-divider"></div>
+  <div class="drawer-auth">
+    <a href="/admin/" class="btn btn-ghost btn-sm" style="flex:1">Admin ↗</a>
+    <a href="#signup" class="btn btn-primary btn-sm" style="flex:1">Fillo Falas</a>
+    <button class="theme-toggle" id="drawer-theme-toggle" style="margin-left:4px">🌙</button>
+  </div>
+</div>
+
+<!-- ── HERO ── -->
+<section class="main-hero">
+  <div class="container">
+    <div class="main-hero-badge">🇦🇱 Ndërtuar për bizneset shqiptare dhe Ballkanin</div>
+    <h1>Sistemi Operativ për<br/><span class="gradient-text">Biznesin Tuaj</span></h1>
+    <p class="main-hero-sub">Menaxhoni rezervimet, inventarin, stafin dhe klientët — gjithçka nga një platformë. Subdomain i juaj. Brendi i juaj.</p>
+    <div class="main-hero-actions">
+      <a href="#signup" class="btn btn-primary btn-xl">Fillo 14 Ditë Falas</a>
+      <a href="#business-types" class="btn btn-ghost btn-xl">Shiko Tipet &darr;</a>
+    </div>
+    <div class="main-hero-trust">
+      <span>Pa kartë krediti</span>
+      <span>Setup në 5 minuta</span>
+      <span>Subdomain falas</span>
+    </div>
+    <div class="demo-links">
+      <span class="demo-label">Demo live →</span>
+      <a href="/?tenant=restorant-adriatiku" class="demo-chip">🍽️ Restorant</a>
+      <a href="/?tenant=hertz-albania"       class="demo-chip">🚗 Car Rental</a>
+      <a href="/?tenant=klinika-shendeti"    class="demo-chip">🏥 Klinikë</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── BUSINESS TYPES ── -->
+<section class="section" id="business-types">
+  <div class="container">
+    <h2 class="section-title text-center">Për Çdo Lloj Biznesi</h2>
+    <p class="section-sub text-center">25+ tipologji biznesi — secila me modulet e veta</p>
+    <div class="biz-grid">
+      <div class="biz-card"><span>🍽️</span><h3>Restorant</h3><p>Menu, rezervime</p></div>
+      <div class="biz-card"><span>🏨</span><h3>Hotel</h3><p>Dhoma, kalendar</p></div>
+      <div class="biz-card"><span>🚗</span><h3>Car Rental</h3><p>Flota, bookings</p></div>
+      <div class="biz-card"><span>🏥</span><h3>Klinikë</h3><p>Takime, mjekët</p></div>
+      <div class="biz-card"><span>💈</span><h3>Berber</h3><p>Takime, stilistët</p></div>
+      <div class="biz-card"><span>🏋️</span><h3>Gym</h3><p>Anëtarësimet</p></div>
+      <div class="biz-card"><span>🏪</span><h3>Dyqan</h3><p>Inventar, porosi</p></div>
+      <div class="biz-card"><span>💊</span><h3>Farmaci</h3><p>Katalog, stock</p></div>
+      <div class="biz-card"><span>🏠</span><h3>Prona</h3><p>Listimet, rez.</p></div>
+      <div class="biz-card"><span>⚖️</span><h3>Avokat</h3><p>Takime, çështje</p></div>
+      <div class="biz-card"><span>🎓</span><h3>Shkollë</h3><p>Kurse, studentë</p></div>
+      <div class="biz-card"><span>🔧</span><h3>Servis</h3><p>Takime, shërbime</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FEATURES ── -->
+<section class="section bg-soft" id="features">
+  <div class="container">
+    <h2 class="section-title text-center">Gjithçka që Nevojitet</h2>
+    <p class="section-sub text-center">Një platformë, të gjitha modulet</p>
+    <div class="features-grid">
+      <div class="feature-card"><div class="feature-icon">🌐</div><h3>Subdomain i Juaj</h3><p><code>biznesijuaj.bizal.al</code> — aktiv menjëherë pas regjistrimit</p></div>
+      <div class="feature-card"><div class="feature-icon">📊</div><h3>Analitika në Kohë Reale</h3><p>Të ardhurat, rezervimet dhe vizitorët — gjithçka live</p></div>
+      <div class="feature-card"><div class="feature-icon">💳</div><h3>Pagesa Online</h3><p>Stripe i integruar, depozita dhe abonime të menaxhuara</p></div>
+      <div class="feature-card"><div class="feature-icon">🎨</div><h3>Brendi 100% Juaj</h3><p>Logo, ngjyrat, fontet — personalizim i plotë pa kod</p></div>
+      <div class="feature-card"><div class="feature-icon">👥</div><h3>Stafi &amp; Rolet</h3><p>Owner, manager, staff — akses i ndarë dhe i sigurt</p></div>
+      <div class="feature-card"><div class="feature-icon">⭐</div><h3>Vlerësime Klientësh</h3><p>Transparencë totale — vlerësimet e vërteta rrisin besimin</p></div>
+      <div class="feature-card"><div class="feature-icon">🌙</div><h3>Dark / Light Mode</h3><p>Temë e errët dhe e ndritshme në çdo pajisje automatikisht</p></div>
+      <div class="feature-card"><div class="feature-icon">📱</div><h3>Mobile-First Design</h3><p>Responsive perfekt — duket shkëlqyeshëm kudo</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── PRICING ── -->
+<section class="section" id="pricing">
+  <div class="container">
+    <h2 class="section-title text-center">Çmimet</h2>
+    <p class="section-sub text-center">Fillo falas, shkallëzo kur rritet biznesi</p>
+    <div class="pricing-grid">
+
+      <!-- STARTER -->
+      <div class="pricing-card">
+        <div class="plan-name">Starter</div>
+        <div class="plan-price">€15<span>/muaj</span></div>
+        <div class="plan-billing">ose €12/muaj me pagesë vjetore</div>
+        <ul class="plan-features">
+          <li><span class="feat-check feat-yes">✓</span> Subdomain i juaj</li>
+          <li><span class="feat-check feat-yes">✓</span> Deri 50 listingje</li>
+          <li><span class="feat-check feat-yes">✓</span> Rezervime bazë</li>
+          <li><span class="feat-check feat-yes">✓</span> 1 llogari stafi</li>
+          <li class="dim"><span class="feat-check feat-no">✗</span> Brendi custom</li>
+          <li class="dim"><span class="feat-check feat-no">✗</span> Analitika</li>
+        </ul>
+        <a href="#signup" class="btn btn-outline btn-block">Fillo Tani</a>
+      </div>
+
+      <!-- PRO (featured) -->
+      <div class="pricing-card featured">
+        <div class="plan-badge">✨ Më Popullar</div>
+        <div class="plan-name">Pro</div>
+        <div class="plan-price">€40<span>/muaj</span></div>
+        <div class="plan-billing">ose €32/muaj me pagesë vjetore</div>
+        <ul class="plan-features">
+          <li><span class="feat-check feat-yes">✓</span> Gjithçka nga Starter</li>
+          <li><span class="feat-check feat-yes">✓</span> Brendi i plotë</li>
+          <li><span class="feat-check feat-yes">✓</span> 500 listingje</li>
+          <li><span class="feat-check feat-yes">✓</span> Analitika e avancuar</li>
+          <li><span class="feat-check feat-yes">✓</span> Deri 5 staf</li>
+          <li><span class="feat-check feat-yes">✓</span> Vlerësime + Kontakt</li>
+        </ul>
+        <a href="#signup" class="btn btn-primary btn-block">Provo 14 Ditë Falas</a>
+      </div>
+
+      <!-- ENTERPRISE -->
+      <div class="pricing-card">
+        <div class="plan-name">Enterprise</div>
+        <div class="plan-price">€80<span>+/muaj</span></div>
+        <div class="plan-billing">Çmim i personalizuar sipas nevojave</div>
+        <ul class="plan-features">
+          <li><span class="feat-check feat-yes">✓</span> Gjithçka nga Pro</li>
+          <li><span class="feat-check feat-yes">✓</span> Staf i pakufizuar</li>
+          <li><span class="feat-check feat-yes">✓</span> Blog + Pagesa + CRM</li>
+          <li><span class="feat-check feat-yes">✓</span> CSV &amp; PDF export</li>
+          <li><span class="feat-check feat-yes">✓</span> API akses + Webhook</li>
+          <li><span class="feat-check feat-yes">✓</span> Suport prioritar 24/7</li>
+        </ul>
+        <a href="mailto:hello@bizal.al" class="btn btn-outline btn-block">Na Kontaktoni</a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── SIGNUP ── -->
+<section class="section" id="signup" style="background:linear-gradient(135deg, var(--bg-soft), #EFF6FF)">
+  <div class="container">
+    <div class="signup-box">
+      <h2>Regjistroni Biznesin Tuaj</h2>
+      <p>Subdomain falas · Setup 5 minuta · Pa kartë krediti</p>
+      <div class="signup-form">
+        <input type="text"  id="signup-name" class="form-input" placeholder="Emri i biznesit (p.sh. Hertz Albania)" />
+        <div class="slug-row">
+          <input type="text" id="signup-slug" class="form-input slug-input" placeholder="subdomain" />
+          <span class="slug-suffix">.bizal.al</span>
+          <span id="slug-status" class="slug-status"></span>
+        </div>
+        <select id="signup-type" class="form-input">
+          <option value="">Zgjidhni llojin e biznesit...</option>
+          <option value="restaurant">🍽️ Restorant / Kafene</option>
+          <option value="hotel">🏨 Hotel / Bujtinë</option>
+          <option value="car_rental">🚗 Makinë me Qira</option>
+          <option value="clinic">🏥 Klinikë / Dentist</option>
+          <option value="barbershop">💈 Berber / Salon</option>
+          <option value="gym">🏋️ Palestër / Gym</option>
+          <option value="pharmacy">💊 Farmaci</option>
+          <option value="market">🏪 Dyqan / Market</option>
+          <option value="property_rental">🏠 Prona me Qira</option>
+          <option value="spa">💆 Spa &amp; Wellness</option>
+          <option value="lawyer">⚖️ Avokat / Noter</option>
+          <option value="language_school">🎓 Shkollë Gjuhësh</option>
+        </select>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <input type="text"  id="signup-owner-name" class="form-input" placeholder="Emri juaj i plotë" />
+          <input type="email" id="signup-email"       class="form-input" placeholder="Email" />
+        </div>
+        <input type="password" id="signup-password" class="form-input" placeholder="Fjalëkalim (min 8 karaktere)" />
+        <button class="btn btn-primary btn-xl btn-block" id="signup-btn">Krijo Llogarinë &rarr;</button>
+        <div id="signup-msg" class="feedback hidden" style="margin-top:12px"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer class="footer">
+  <div class="container footer-grid">
+    <div>
+      <span class="footer-name">Biz<span class="accent">AL</span></span>
+      <p class="footer-tagline">Platforma SaaS #1 për bizneset shqiptare dhe Ballkanin.</p>
+    </div>
+    <div>
+      <h4 class="footer-heading">Produkt</h4>
+      <nav class="footer-nav">
+        <a href="#features">Veçoritë</a>
+        <a href="#pricing">Çmimet</a>
+        <a href="/blog/">Blog</a>
+        <a href="#business-types">Tipet e Biznesit</a>
+      </nav>
+    </div>
+    <div>
+      <h4 class="footer-heading">Akses</h4>
+      <nav class="footer-nav">
+        <a href="/admin/">Superadmin Panel</a>
+        <a href="#signup">Regjistrohu</a>
+        <a href="mailto:hello@bizal.al">Kontakt</a>
+      </nav>
+    </div>
+    <div>
+      <h4 class="footer-heading">Demo Live</h4>
+      <nav class="footer-nav">
+        <a href="/?tenant=restorant-adriatiku">🍽️ Restorant</a>
+        <a href="/?tenant=hertz-albania">🚗 Car Rental</a>
+        <a href="/?tenant=klinika-shendeti">🏥 Klinikë</a>
+      </nav>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div class="container">
+      <p id="footer-copy">© 2025 BizAL. Ndërtuar me ❤️ në Shqipëri.</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+// ── Theme persistence ──
+(function() {
+  const saved = localStorage.getItem('bizal-theme') || 'light';
+  document.documentElement.setAttribute('data-theme', saved);
+  const icon = saved === 'dark' ? '☀️' : '🌙';
+  document.querySelectorAll('.theme-toggle').forEach(b => b.textContent = icon);
+})();
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'light';
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('bizal-theme', next);
+  const icon = next === 'dark' ? '☀️' : '🌙';
+  document.querySelectorAll('.theme-toggle').forEach(b => b.textContent = icon);
+}
+
+document.getElementById('theme-toggle')?.addEventListener('click', toggleTheme);
+document.getElementById('drawer-theme-toggle')?.addEventListener('click', toggleTheme);
+
+// ── Mobile drawer ──
+const navToggle = document.getElementById('nav-toggle');
+const navDrawer = document.getElementById('nav-drawer');
+navToggle?.addEventListener('click', () => {
+  const isOpen = navDrawer.classList.toggle('open');
+  navToggle.setAttribute('aria-expanded', isOpen);
+  document.body.style.overflow = isOpen ? 'hidden' : '';
+});
+
+navDrawer?.querySelectorAll('a').forEach(a => {
+  a.addEventListener('click', () => {
+    navDrawer.classList.remove('open');
+    document.body.style.overflow = '';
+  });
+});
+
+// ── Sticky nav ──
+const navbar = document.getElementById('navbar');
+window.addEventListener('scroll', () => {
+  navbar?.classList.toggle('scrolled', window.scrollY > 20);
+}, { passive: true });
+
+// ── Smooth scroll ──
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const target = document.querySelector(a.getAttribute('href'));
+    if (target) {
+      e.preventDefault();
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      window.history.pushState(null, '', a.getAttribute('href'));
+    }
+  });
+});
+
+// ── Slug check ──
+const slugInput  = document.getElementById('signup-slug');
+const slugStatus = document.getElementById('slug-status');
+let slugTimer;
+
+slugInput?.addEventListener('input', () => {
+  clearTimeout(slugTimer);
+  let slug = slugInput.value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+  if (slug !== slugInput.value) slugInput.value = slug;
+  if (!slug || slug.length < 3) {
+    slugStatus.textContent = slug.length ? 'Min 3 karaktere' : '';
+    slugStatus.className = 'slug-status taken';
+    return;
+  }
+  slugStatus.textContent = '...'; slugStatus.className = 'slug-status';
+  slugTimer = setTimeout(async () => {
+    try {
+      const r = await fetch(`/api/tenant/check-slug/?slug=${encodeURIComponent(slug)}`);
+      const d = await r.json();
+      slugStatus.textContent = d.available ? '✓ E lirë' : '✗ E zënë';
+      slugStatus.className = `slug-status ${d.available ? 'ok' : 'taken'}`;
+    } catch { slugStatus.textContent = ''; }
+  }, 450);
+});
+
+// ── Signup ──
+document.getElementById('signup-btn')?.addEventListener('click', async () => {
+  const business_name  = document.getElementById('signup-name')?.value.trim();
+  const slug           = document.getElementById('signup-slug')?.value.trim();
+  const business_type  = document.getElementById('signup-type')?.value;
+  const owner_name     = document.getElementById('signup-owner-name')?.value.trim();
+  const owner_email    = document.getElementById('signup-email')?.value.trim();
+  const owner_password = document.getElementById('signup-password')?.value;
+  const msg = document.getElementById('signup-msg');
+  const btn = document.getElementById('signup-btn');
+
+  if (!business_name || !slug || !business_type || !owner_name || !owner_email || !owner_password) {
+    msg.textContent = 'Ju lutemi plotësoni të gjitha fushat.';
+    msg.className = 'feedback error'; return;
+  }
+  if (owner_password.length < 8) {
+    msg.textContent = 'Fjalëkalimi duhet të ketë të paktën 8 karaktere.';
+    msg.className = 'feedback error'; return;
+  }
+
+  btn.disabled = true; btn.textContent = 'Duke u krijuar...';
+  try {
+    const resp = await fetch('/api/tenant/signup/', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ business_name, slug, business_type, owner_name, owner_email, owner_password }),
+    });
+    const data = await resp.json();
+    if (resp.ok) {
+      msg.className = 'feedback success';
+      msg.innerHTML = `🎉 <strong>${business_name}</strong> u regjistrua me sukses!<br>Subdomain: <strong>${slug}.bizal.al</strong><br>Do ju aktivizojmë brenda 24 orësh.`;
+    } else {
+      msg.textContent = Object.values(data).flat().join(' ') || 'Gabim. Provoni përsëri.';
+      msg.className = 'feedback error';
+    }
+  } catch {
+    msg.textContent = 'Gabim rrjeti. Kontrolloni lidhjen.';
+    msg.className = 'feedback error';
+  }
+  btn.disabled = false; btn.textContent = 'Krijo Llogarinë →';
+});
+</script>
+
+</body>
+</html>

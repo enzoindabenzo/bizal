@@ -1,0 +1,22 @@
+[run]
+source = .
+omit =
+    */migrations/*
+    */tests.py
+    */test_*.py
+    seed.py
+    setup.py
+    manage.py
+    bizal/celery.py
+    bizal/wsgi.py
+    bizal/settings/*
+    venv/*
+
+[report]
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    def __str__
+    if __name__ == .__main__.:
+    raise NotImplementedError
+    pass

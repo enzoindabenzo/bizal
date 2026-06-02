@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title id="page-title">BizAL</title>
+  <meta name="description" id="meta-description" content="" />
+  <link rel="icon" id="favicon" href="/static/img/favicon.ico" />
+  <link rel="stylesheet" href="/static/css/shared.css" />
+  <link rel="stylesheet" href="/static/css/tenant.css" />
+</head>
+<body data-page="menu">
+
+{% include "tenant/_nav.html" %}
+
+<div class="page-header">
+  <div class="container">
+    <h1 class="page-header-title">Menu</h1>
+    <p class="page-header-sub" id="menu-sub">Të gjitha produktet tona</p>
+  </div>
+</div>
+
+<!-- CATEGORY NAV -->
+<div class="filter-bar">
+  <div class="container">
+    <div class="filter-chips" id="category-chips" style="overflow-x:auto;flex-wrap:nowrap;padding-bottom:4px"></div>
+  </div>
+</div>
+
+<section class="section">
+  <div class="container">
+    <div id="menu-container">
+      <div class="skeleton-card" style="height:200px;margin-bottom:24px"></div>
+      <div class="skeleton-card" style="height:200px;margin-bottom:24px"></div>
+    </div>
+  </div>
+</section>
+
+{% include "tenant/_footer.html" %}
+{% include "tenant/_auth_modal.html" %}
+{% include "tenant/_whatsapp.html" %}
+
+<script>
+(async function() {
+  const { API, show, hide, formatPrice } = window.BizAL;
+
+  async function loadMenu() {
+    const container = document.getElementById('menu-container');
+    const chips = document.getElementById('category-chips');
+
+    const resp = await API.get('/menu/');
+    if (!resp.ok) { container.innerHTML = '<p class="text-muted" style="text-align:center;padding:60px">Nuk ka menu aktualisht.</p>'; return; }
+    const data = await resp.json();
+    const categories = data.results || data;
+
+    if (!categories.length) {
+      container.innerHTML = '<p class="text-muted" style="text-align:center;padding:60px">Nuk ka menu aktualisht.</p>';
+      return;
+    }
+
+    // Category quick-links
+    chips.innerHTML = categories.map(c =>
+      `<a href="#cat-${c.id}" class="chip">${c.name}</a>`
+    ).join('');
+
+    container.innerHTML = categories.map(cat => `
+      <div class="menu-section" id="cat-${cat.id}" style="margin-bottom:56px">
+        <h2 style="font-size:1.5rem;font-weight:800;margin-bottom:8px;padding-bottom:12px;border-bottom:3px solid var(--primary)">${cat.name}</h2>
+        ${cat.description ? `<p style="color:var(--text-muted);margin-bottom:20px">${cat.description}</p>` : ''}
+        <div style="display:flex;flex-direction:column;gap:12px">
+          ${(cat.items || []).filter(i => i.is_available).map(item => `
+            <div style="display:flex;align-items:center;gap:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;transition:var(--transition)" class="menu-item-row">
+              ${item.image ? `<img src="${item.image}" alt="${item.name}" style="width:90px;height:90px;object-fit:cover;border-radius:var(--radius-sm);flex-shrink:0" loading="lazy" />` : ''}
+              <div style="flex:1">
+                <div style="font-weight:700;font-size:1.05rem;margin-bottom:4px">${item.name}</div>
+                ${item.description ? `<div style="color:var(--text-muted);font-size:13.5px;margin-bottom:6px">${item.description}</div>` : ''}
+                ${item.allergens ? `<div style="font-size:11px;color:var(--text-muted)">⚠ ${item.allergens}</div>` : ''}
+                ${item.calories ? `<div style="font-size:11px;color:var(--text-muted)">${item.calories} kcal</div>` : ''}
+              </div>
+              <div style="font-size:1.2rem;font-weight:800;color:var(--primary);white-space:nowrap;flex-shrink:0">${formatPrice(item.price)}</div>
+            </div>`).join('')}
+        </div>
+      </div>`).join('');
+  }
+
+  window.addEventListener('tenantReady', () => loadMenu());
+  if (window.__BIZAL_TENANT__) window.dispatchEvent(new CustomEvent('tenantReady', { detail: window.__BIZAL_TENANT__ }));
+})();
+</script>
+<script src="/static/js/shared.js"></script>
+<script src="/static/js/tenant.js"></script>
+</body>
+</html>

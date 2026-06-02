@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title id="page-title">BizAL</title>
+  <meta name="description" id="meta-description" content="" />
+  <link rel="icon" id="favicon" href="/static/img/favicon.ico" />
+  <link rel="stylesheet" href="/static/css/shared.css" />
+  <link rel="stylesheet" href="/static/css/tenant.css" />
+</head>
+<body data-page="home">
+
+<!-- NAV -->
+{% include "tenant/_nav.html" %}
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg" id="hero-bg"></div>
+  <div class="container hero-content">
+    <div class="hero-text">
+      <div class="hero-badge hidden" id="hero-badge"></div>
+      <h1 class="hero-title" id="hero-title">Mirë se vini</h1>
+      <p class="hero-tagline" id="hero-tagline"></p>
+      <div class="hero-actions">
+        <a href="/services/" class="btn btn-primary btn-lg" id="hero-cta">Shiko Shërbimet</a>
+        <a href="/contact/" class="btn btn-outline btn-lg">Na Kontaktoni</a>
+      </div>
+    </div>
+    <div class="hero-stats hidden" id="hero-stats">
+      <div class="stat-item">
+        <span class="stat-num" id="stat-years">0</span>
+        <span class="stat-label">Vite Eksperiencë</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <span class="stat-num" id="stat-reviews-count">0</span>
+        <span class="stat-label">Vlerësime</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <span class="stat-num" id="stat-city"></span>
+        <span class="stat-label">Qyteti</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WHY US -->
+<section class="section features-section">
+  <div class="container">
+    <div class="section-header">
+      <h2 class="section-title" id="why-title">Pse të Zgjidhni Ne?</h2>
+      <p class="section-sub" id="why-sub"></p>
+    </div>
+    <div class="features-grid" id="features-grid">
+      <!-- filled by home.js based on business type -->
+    </div>
+  </div>
+</section>
+
+<!-- SERVICES PREVIEW -->
+<section class="section bg-soft">
+  <div class="container">
+    <div class="section-header">
+      <h2 class="section-title">Shërbimet Tona</h2>
+      <a href="/services/" class="btn btn-outline">Shiko të Gjitha →</a>
+    </div>
+    <div class="grid" id="services-preview">
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+    </div>
+  </div>
+</section>
+
+<!-- REVIEWS PREVIEW -->
+<section class="section reviews-section hidden" id="reviews-section">
+  <div class="container">
+    <div class="section-header">
+      <h2 class="section-title">Çfarë Thonë Klientët</h2>
+    </div>
+    <div class="reviews-summary" id="reviews-summary"></div>
+    <div class="reviews-grid" id="reviews-preview"></div>
+    <div class="text-center" style="margin-top:32px">
+      <a href="/reviews/" class="btn btn-outline">Të gjitha vlerësimet →</a>
+    </div>
+  </div>
+</section>
+
+<!-- HOURS BANNER -->
+<section class="hours-banner hidden" id="hours-banner">
+  <div class="container hours-banner-inner">
+    <div class="hours-icon">🕐</div>
+    <div>
+      <h3 id="hours-title">Orari i Punës</h3>
+      <div id="hours-list" class="hours-list"></div>
+    </div>
+    <a href="/contact/" class="btn btn-primary" style="margin-left:auto">Na Gjeni</a>
+  </div>
+</section>
+
+{% include "tenant/_footer.html" %}
+{% include "tenant/_auth_modal.html" %}
+{% include "tenant/_whatsapp.html" %}
+
+<script src="/static/js/shared.js"></script>
+<script src="/static/js/tenant.js"></script>
+<script src="/static/js/pages/home.js"></script>
+</body>
+</html>

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title id="page-title">BizAL</title>
+  <meta name="description" id="meta-description" content="" />
+  <link rel="icon" id="favicon" href="/static/img/favicon.ico" />
+  <link rel="stylesheet" href="/static/css/shared.css" />
+  <link rel="stylesheet" href="/static/css/tenant.css" />
+</head>
+<body data-page="about">
+
+{% include "tenant/_nav.html" %}
+
+<!-- PAGE HEADER -->
+<div class="page-header">
+  <div class="container">
+    <h1 class="page-header-title" id="about-title">Rreth Nesh</h1>
+    <p class="page-header-sub" id="about-sub"></p>
+  </div>
+</div>
+
+<!-- STORY -->
+<section class="section">
+  <div class="container about-layout">
+    <div class="about-text">
+      <div class="about-badge" id="founded-badge"></div>
+      <h2 class="about-heading" id="story-heading">Historia Jonë</h2>
+      <div id="story-body" class="story-body"></div>
+    </div>
+    <div class="about-sidebar">
+      <div class="info-card" id="info-card">
+        <h3 class="info-card-title">Informacion</h3>
+        <div id="info-items"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOURS -->
+<section class="section bg-soft" id="hours-section">
+  <div class="container">
+    <div class="section-header">
+      <h2 class="section-title">Orari i Punës</h2>
+    </div>
+    <div class="hours-table-wrap">
+      <table class="hours-table" id="hours-table">
+        <tbody id="hours-rows"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- TEAM / PROVIDERS -->
+<section class="section hidden" id="team-section">
+  <div class="container">
+    <div class="section-header">
+      <h2 class="section-title" id="team-title">Ekipi Ynë</h2>
+    </div>
+    <div class="team-grid" id="team-grid"></div>
+  </div>
+</section>
+
+<!-- MAP EMBED -->
+<section class="map-section hidden" id="map-section">
+  <div class="container">
+    <h2 class="section-title">Na Gjeni</h2>
+    <div id="map-address" class="map-address"></div>
+  </div>
+  <div id="map-embed" class="map-embed"></div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="container cta-inner">
+    <div>
+      <h2 class="cta-title" id="cta-title">Gati për të Filluar?</h2>
+      <p class="cta-sub">Rezervoni takimin tuaj sot.</p>
+    </div>
+    <div class="cta-actions">
+      <a href="/services/" class="btn btn-primary btn-lg">Shiko Shërbimet</a>
+      <a href="/contact/" class="btn btn-outline btn-lg">Na Kontaktoni</a>
+    </div>
+  </div>
+</section>
+
+{% include "tenant/_footer.html" %}
+{% include "tenant/_auth_modal.html" %}
+{% include "tenant/_whatsapp.html" %}
+
+<script src="/static/js/shared.js"></script>
+<script src="/static/js/tenant.js"></script>
+<script src="/static/js/pages/about.js"></script>
+</body>
+</html>

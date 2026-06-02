@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title id="page-title">BizAL</title>
+  <meta name="description" id="meta-description" content="" />
+  <link rel="icon" id="favicon" href="/static/img/favicon.ico" />
+  <link rel="stylesheet" href="/static/css/shared.css" />
+  <link rel="stylesheet" href="/static/css/tenant.css" />
+</head>
+<body data-page="services">
+
+{% include "tenant/_nav.html" %}
+
+<!-- PAGE HEADER -->
+<div class="page-header">
+  <div class="container">
+    <h1 class="page-header-title" id="page-heading">Shërbimet Tona</h1>
+    <p class="page-header-sub" id="page-subheading">Gjeni shërbimin e duhur për ju</p>
+  </div>
+</div>
+
+<!-- SEARCH & FILTERS -->
+<div class="filter-bar">
+  <div class="container filter-bar-inner">
+    <div class="search-wrap">
+      <svg class="search-icon" viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
+        <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"/>
+      </svg>
+      <input type="text" id="search-input" class="search-input" placeholder="Kërko..." autocomplete="off" />
+    </div>
+    <div class="filter-chips" id="filter-chips">
+      <!-- injected by services.js based on business type -->
+    </div>
+    <select class="filter-select hidden" id="sort-select">
+      <option value="">Rendit sipas</option>
+      <option value="price_asc">Çmim: i ulët → i lartë</option>
+      <option value="price_desc">Çmim: i lartë → i ulët</option>
+      <option value="name">Emri A→Z</option>
+    </select>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<section class="section">
+  <div class="container">
+    <div class="results-meta" id="results-meta"></div>
+    <div class="grid" id="listings-grid">
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+    </div>
+    <div class="pagination" id="pagination"></div>
+  </div>
+</section>
+
+<!-- BOOKING MODAL -->
+<div class="modal hidden" id="booking-modal" role="dialog" aria-modal="true">
+  <div class="modal-backdrop"></div>
+  <div class="modal-box">
+    <button class="modal-close" id="close-booking" aria-label="Mbyll">✕</button>
+    <h2 class="modal-title" id="booking-modal-title">Rezervo</h2>
+    <div id="booking-form-content"></div>
+  </div>
+</div>
+
+{% include "tenant/_footer.html" %}
+{% include "tenant/_auth_modal.html" %}
+{% include "tenant/_whatsapp.html" %}
+
+<script src="/static/js/shared.js"></script>
+<script src="/static/js/tenant.js"></script>
+<script src="/static/js/pages/services.js"></script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+Django==4.2.13
+djangorestframework==3.15.2
+djangorestframework-simplejwt==5.3.1
+django-cors-headers==4.4.0
+django-ratelimit==4.1.0
+django-redis==5.4.0
+django-storages==1.14.4
+psycopg2-binary==2.9.9
+stripe==10.5.0
+celery==5.4.0
+redis==5.0.8
+Pillow==10.4.0
+whitenoise==6.7.0
+gunicorn==22.0.0
+xhtml2pdf==0.2.16
+coverage==7.6.1

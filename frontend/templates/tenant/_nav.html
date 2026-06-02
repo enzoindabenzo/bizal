@@ -1,0 +1,38 @@
+<nav class="navbar" id="navbar">
+  <div class="nav-brand">
+    <a href="/" class="nav-brand-link">
+      <img id="nav-logo" src="" alt="" class="nav-logo hidden" />
+      <span id="nav-title" class="nav-title">BizAL</span>
+    </a>
+  </div>
+  <div class="nav-center">
+    <ul class="nav-links" id="nav-links">
+      <li><a href="/"          class="nav-link" data-page="home">Kryefaqja</a></li>
+      <li><a href="/services/" class="nav-link" data-page="services" id="nav-services">Shërbimet</a></li>
+      <li><a href="/menu/"     class="nav-link hidden" data-page="menu" id="nav-menu">Menu</a></li>
+      <li><a href="/about/"    class="nav-link" data-page="about">Rreth Nesh</a></li>
+      <li><a href="/contact/"  class="nav-link" data-page="contact">Kontakt</a></li>
+    </ul>
+  </div>
+  <div class="nav-right" id="nav-auth-wrap">
+    <button class="theme-toggle" title="Ndrysho temën">🌙</button>
+    <div id="nav-auth" style="display:flex;gap:8px">
+      <button class="btn btn-outline btn-sm" id="btn-login">Hyr</button>
+      <button class="btn btn-primary btn-sm" id="btn-register">Regjistrohu</button>
+    </div>
+    <button class="nav-toggle" id="nav-toggle" aria-label="Menu"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+<div class="nav-drawer hidden" id="nav-drawer">
+  <a href="/"          class="drawer-link">Kryefaqja</a>
+  <a href="/services/" class="drawer-link" id="drawer-services">Shërbimet</a>
+  <a href="/menu/"     class="drawer-link hidden" id="drawer-menu">Menu</a>
+  <a href="/about/"    class="drawer-link">Rreth Nesh</a>
+  <a href="/contact/"  class="drawer-link">Kontakt</a>
+  <div class="drawer-divider"></div>
+  <div class="drawer-auth" id="drawer-auth">
+    <button class="btn btn-outline btn-sm" style="flex:1" id="drawer-login">Hyr</button>
+    <button class="btn btn-primary btn-sm" style="flex:1" id="drawer-register">Regjistrohu</button>
+    <button class="theme-toggle" style="margin-left:8px">🌙</button>
+  </div>
+</div>
