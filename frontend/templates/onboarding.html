@@ -1,0 +1,932 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="sq" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Konfiguro Biznesin Tënd — BizAL</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="{% static 'css/onboarding.css' %}" />
+  <!-- brand.css intentionally NOT loaded here: it defines its own :root design
+       tokens (--bg, --text, --border, --hint, --surface2, --green, --green-s,
+       --font-b, --red-s) and its own .btn/.btn-primary/.btn-ghost/.card rules
+       under the exact same class names onboarding.css uses. Loading both let
+       brand.css's later <link> win the cascade (equal specificity, later
+       source wins) for every shared property, which silently swapped in the
+       wrong font (--font-b became DM Sans instead of Geist), flattened the
+       button padding/border-radius, and — worst of all — hijacked --red-s
+       (the tenant-brand highlight used for focus rings, selected business-type
+       tiles, and the active step indicator) into a fixed "danger red" instead
+       of tracking --tenant-primary. onboarding.css is fully self-contained
+       (verified: every class onboarding.html uses is defined in it), so it
+       does not need brand.css at all. -->
+</head>
+<body>
+
+<div class="topbar">
+  <a href="/" class="topbar-logo">Biz<b>AL</b></a>
+  <div class="topbar-right">
+    <span class="topbar-user" id="topbar-user" style="display:none">Identifikuar si <b id="topbar-user-email"></b></span>
+    <span class="topbar-step" id="topbar-label">Hapi 1 nga 6</span>
+    <button class="theme-btn" id="tbtn">🌙</button>
+  </div>
+</div>
+
+<div class="progress-bar-wrap">
+  <div class="steps-row" id="steps-row"></div>
+</div>
+
+<div class="main">
+  <div class="card">
+
+    <!-- STEP 1 -->
+    <div class="step-panel active" id="step-1">
+      <div class="step-eyebrow">Hapi 1 — Fillimi</div>
+      <h1 class="step-title">Mirë se vini<br>në BizAL!</h1>
+      <p class="step-desc">Le të konfigurojmë biznesin tuaj. Fillojmë me emrin dhe llojin e aktivitetit.</p>
+      <div class="form-grid single">
+        <div class="field">
+          <label>Emri i biznesit <span class="opt">*</span></label>
+          <input type="text" id="f-name" placeholder="p.sh. Barber Shop Tirana" maxlength="200" oninput="debouncedSlugCheck()">
+        </div>
+        <div class="field">
+          <label>Subdomain juaj <span class="opt">*</span></label>
+          <div style="display:flex;align-items:center;gap:0">
+            <input type="text" id="f-slug" placeholder="barbershop-tirana" maxlength="80" oninput="onSlugInput()" style="border-radius:var(--r) 0 0 var(--r);border-right:none">
+            <span style="padding:10px 13px;background:var(--surface2);border:1px solid var(--border);border-radius:0 var(--r) var(--r) 0;font-size:.82rem;color:var(--muted);white-space:nowrap">.bizal.al</span>
+          </div>
+          <div id="slug-status" style="font-size:.76rem;margin-top:4px;height:16px"></div>
+        </div>
+        <div class="field">
+          <label>Tagline <span class="opt">(opsional)</span></label>
+          <input type="text" id="f-tagline" placeholder="p.sh. Prerje moderne, stil unik" maxlength="300">
+        </div>
+        <div class="field">
+          <label>Lloji i biznesit <span class="opt">*</span></label>
+          <div style="margin-bottom:8px">
+              <input type="text" id="btype-search" placeholder="🔍 Kërko llojin e biznesit..." style="width:100%;padding:9px 13px;border:1px solid var(--border);border-radius:var(--r);font-size:.85rem;background:var(--bg);color:var(--text);outline:none;font-family:var(--font-b)" oninput="filterBtypes(this.value)">
+            </div>
+            <!-- Populated dynamically from GET /api/tenants/business-types/ by
+                 loadBusinessTypeGrid() below. Keeping this in sync with the
+                 backend (instead of a hardcoded list) means any business type
+                 added to tenants/business_type_meta.py shows up here
+                 automatically, matching the admin panel and marketplace. -->
+            <div class="btype-grid" id="btype-grid"></div>
+          <input type="hidden" id="f-business-type">
+        </div>
+        <div class="field">
+          <label>Plani juaj <span class="opt">*</span></label>
+          <!-- Tenant picks their own plan here — this is only used the first
+               time the tenant is created (Auth.post('/tenants/create/', ...)
+               below); switching plans afterwards is done from the admin
+               panel's billing settings via /tenants/me/change-plan/. -->
+          <div class="btype-grid" id="plan-grid" style="grid-template-columns:repeat(2,1fr)">
+            <div class="btype-btn selected" data-val="trial"><span class="icon">🎁</span>Provë falas — 14 ditë</div>
+            <div class="btype-btn" data-val="starter"><span class="icon">🚀</span>Starter — €15/muaj</div>
+            <div class="btype-btn" data-val="pro"><span class="icon">⭐</span>Pro — €40/muaj</div>
+            <div class="btype-btn" data-val="enterprise"><span class="icon">🏢</span>Enterprise — €80+/muaj</div>
+          </div>
+          <input type="hidden" id="f-plan" value="trial">
+        </div>
+      </div>
+      <div class="error-msg" id="err-1"></div>
+      <div class="actions">
+        <div></div>
+        <button class="btn btn-primary" onclick="nextStep(1)">Vazhdo → <div class="spinner" id="sp-1"></div></button>
+      </div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="step-panel" id="step-2">
+      <div class="step-eyebrow">Hapi 2 — Kontakti</div>
+      <h1 class="step-title">Si mund t'ju<br>gjejnë klientët?</h1>
+      <p class="step-desc">Adresa dhe kontaktet shfaqen në faqen tuaj publike dhe ndihmojnë Google t'ju gjejë.</p>
+      <div class="form-grid">
+        <div class="field">
+          <label>Numri i telefonit</label>
+          <input type="tel" id="f-phone" placeholder="+355 69 ...">
+        </div>
+        <div class="field">
+          <label>WhatsApp <span class="opt">(opsional)</span></label>
+          <input type="tel" id="f-whatsapp" placeholder="+355 69 ...">
+        </div>
+        <div class="field full">
+          <label>Email kontakti</label>
+          <input type="email" id="f-email" placeholder="info@biznesijuaj.al">
+        </div>
+        <div class="field full">
+          <label>Adresa</label>
+          <input type="text" id="f-address" placeholder="Rruga, numri...">
+        </div>
+        <div class="field">
+          <label>Qyteti</label>
+          <input type="text" id="f-city" list="city-list" placeholder="Shkruani ose zgjidhni qytetin..." autocomplete="off">
+          <datalist id="city-list">
+            <option value="Tiranë"><option value="Durrës"><option value="Vlorë">
+            <option value="Shkodër"><option value="Elbasan"><option value="Fier">
+            <option value="Korçë"><option value="Berat"><option value="Gjirokastër">
+            <option value="Lushnjë"><option value="Kavajë"><option value="Sarandë">
+            <option value="Pogradec"><option value="Kukës"><option value="Peshkopi">
+            <option value="Lezhë"><option value="Krujë"><option value="Përmet">
+          </datalist>
+        </div>
+        <div class="field">
+          <label>Shteti</label>
+          <input type="text" id="f-country" value="Albania">
+        </div>
+      </div>
+      <div class="form-grid single" style="margin-top:18px">
+        <div class="field">
+          <label>Orari i punës <span class="opt">(opsional — çaktivizoni ditët kur jeni mbyllur)</span></label>
+        </div>
+        <div id="hours-grid"></div>
+      </div>
+      <div class="error-msg" id="err-2"></div>
+      <div class="actions">
+        <button class="btn btn-ghost" onclick="prevStep(2)">← Mbrapa</button>
+        <div style="display:flex;align-items:center;gap:14px">
+          <button class="btn-skip" onclick="skipStep(2)">Kalo tani</button>
+          <button class="btn btn-primary" onclick="nextStep(2)">Vazhdo → <div class="spinner" id="sp-2"></div></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="step-panel" id="step-3">
+      <div class="step-eyebrow">Hapi 3 — Faqja Kryesore</div>
+      <h1 class="step-title">Tregoni historinë<br>tuaj</h1>
+      <p class="step-desc">Ky tekst shfaqet në faqen kryesore të biznesit tuaj. Bëni klientët kuriozë!</p>
+      <div class="form-grid single">
+        <div class="field">
+          <label>Titulli i faqes (Hero)</label>
+          <input type="text" id="f-site-title" placeholder="p.sh. Barbershop i besuar i Tiranës">
+        </div>
+        <div class="field">
+          <label>Historia juaj <span class="opt">(opsional)</span></label>
+          <textarea id="f-story" placeholder="Tregoni pak për biznesin tuaj, misioni, vlerat..."></textarea>
+        </div>
+        <div class="field">
+          <label>Viti i themelimit <span class="opt">(opsional)</span></label>
+          <input type="number" id="f-founded" placeholder="p.sh. 2018" min="1900" max="2026">
+        </div>
+        <div class="field">
+          <label>Meta Description <span class="opt">(SEO)</span></label>
+          <input type="text" id="f-meta" placeholder="Përshkrim i shkurtër për motorët e kërkimit..." maxlength="300">
+        </div>
+      </div>
+      <div class="error-msg" id="err-3"></div>
+      <div class="actions">
+        <button class="btn btn-ghost" onclick="prevStep(3)">← Mbrapa</button>
+        <div style="display:flex;align-items:center;gap:14px">
+          <button class="btn-skip" onclick="skipStep(3)">Kalo tani</button>
+          <button class="btn btn-primary" onclick="nextStep(3)">Vazhdo → <div class="spinner" id="sp-3"></div></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 4 -->
+    <div class="step-panel" id="step-4">
+      <div class="step-eyebrow">Hapi 4 — Rrjetet Sociale</div>
+      <h1 class="step-title">Lidhni profilet<br>tuaja</h1>
+      <p class="step-desc">Opsionale por të rëndësishme — ikonat shfaqen direkt në faqen tuaj.</p>
+      <div class="form-grid single">
+        <div class="field">
+          <label>Facebook</label>
+          <input type="url" id="f-facebook" placeholder="https://facebook.com/biznesijuaj">
+        </div>
+        <div class="field">
+          <label>Instagram</label>
+          <input type="url" id="f-instagram" placeholder="https://instagram.com/biznesijuaj">
+        </div>
+        <div class="field">
+          <label>TikTok</label>
+          <input type="url" id="f-tiktok" placeholder="https://tiktok.com/@biznesijuaj">
+        </div>
+      </div>
+      <div class="error-msg" id="err-4"></div>
+      <div class="actions">
+        <button class="btn btn-ghost" onclick="prevStep(4)">← Mbrapa</button>
+        <div style="display:flex;align-items:center;gap:14px">
+          <button class="btn-skip" onclick="skipStep(4)">Kalo tani</button>
+          <button class="btn btn-primary" onclick="nextStep(4)">Vazhdo → <div class="spinner" id="sp-4"></div></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 5 -->
+    <div class="step-panel" id="step-5">
+      <div class="step-eyebrow">Hapi 5 — Pamja</div>
+      <h1 class="step-title">Personalizoni<br>brandin tuaj</h1>
+      <p class="step-desc">Zgjidhni ngjyrat dhe fontin që reflektojnë identitetin e biznesit tuaj.</p>
+      <div class="form-grid">
+        <div class="field">
+          <label>Ngjyra kryesore</label>
+          <div class="color-row">
+            <div class="color-swatch-wrap">
+              <div class="color-preview" id="preview-primary" style="background:#111111"></div>
+              <input type="color" id="f-primary-color" value="#111111" oninput="updateColor('primary')">
+            </div>
+            <input type="text" id="hex-primary" class="color-hex" value="#111111" oninput="syncHex('primary')" maxlength="7">
+          </div>
+        </div>
+        <div class="field">
+          <label>Ngjyra akçent</label>
+          <div class="color-row">
+            <div class="color-swatch-wrap">
+              <div class="color-preview" id="preview-accent" style="background:#F59E0B"></div>
+              <input type="color" id="f-accent-color" value="#F59E0B" oninput="updateColor('accent')">
+            </div>
+            <input type="text" id="hex-accent" class="color-hex" value="#F59E0B" oninput="syncHex('accent')" maxlength="7">
+          </div>
+        </div>
+        <div class="field full">
+          <label>Fonti</label>
+          <div class="font-options" id="font-options">
+            <button class="font-btn selected" data-font="Inter" style="font-family:Inter">Inter</button>
+            <button class="font-btn" data-font="Roboto" style="font-family:Roboto">Roboto</button>
+            <button class="font-btn" data-font="Montserrat" style="font-family:Montserrat">Montserrat</button>
+            <button class="font-btn" data-font="Poppins" style="font-family:Poppins">Poppins</button>
+            <button class="font-btn" data-font="Lato" style="font-family:Lato">Lato</button>
+            <button class="font-btn" data-font="Playfair Display" style="font-family:'Playfair Display'">Playfair</button>
+          </div>
+          <input type="hidden" id="f-font" value="Inter">
+        </div>
+        <div class="field full">
+          <label>Logo <span class="opt">(opsional)</span></label>
+          <div class="upload-area">
+            <input type="file" id="f-logo" accept="image/*" onchange="previewLogo(this)">
+            <div class="upload-icon">📁</div>
+            <div class="upload-text">Klikoni ose tërhiqni logon këtu<br><strong>PNG, JPG, SVG</strong> deri 2MB</div>
+            <img id="logo-preview" src="" alt="Logo preview">
+          </div>
+        </div>
+      </div>
+      <div class="error-msg" id="err-5"></div>
+      <div class="actions">
+        <button class="btn btn-ghost" onclick="prevStep(5)">← Mbrapa</button>
+        <button class="btn btn-primary" onclick="nextStep(5)">Vazhdo → <div class="spinner" id="sp-5"></div></button>
+      </div>
+    </div>
+
+    <!-- STEP 6 -->
+    <div class="step-panel" id="step-6">
+      <div class="success-wrap">
+        <div class="success-icon">✓</div>
+        <div class="lbl" style="justify-content:center">Hapi i fundit</div>
+        <h1 class="step-title" style="text-align:center;font-size:clamp(1.6rem,4vw,2.2rem)">Biznesi juaj është<br>gati për botën!</h1>
+        <p class="step-desc" style="text-align:center;margin-bottom:0">Konfigurimi bazë u krye me sukses. Ja çfarë keni vendosur:</p>
+        <div class="summary-grid" id="summary-grid"></div>
+        <p style="font-size:.82rem;color:var(--muted);margin-bottom:24px;text-align:center">Mund të ndryshoni çdo gjë nga <strong>Paneli i Administratorit</strong>.</p>
+        <button class="btn btn-primary" style="width:100%;justify-content:center;font-size:.95rem;padding:14px" onclick="finishOnboarding()">
+          Shko te Paneli im →
+          <div class="spinner" id="sp-6"></div>
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="{% static 'js/ui.js' %}"></script>
+<script src="{% static 'js/auth.js' %}"></script>
+<script>
+(function(){
+  const t=localStorage.getItem('bizal-theme')||'light';
+  document.documentElement.setAttribute('data-theme',t);
+  document.getElementById('tbtn').textContent=t==='dark'?'☀️':'🌙';
+})();
+document.getElementById('tbtn').addEventListener('click',()=>{
+  const c=document.documentElement.getAttribute('data-theme')||'light';
+  const n=c==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',n);
+  localStorage.setItem('bizal-theme',n);
+  document.getElementById('tbtn').textContent=n==='dark'?'☀️':'🌙';
+});
+
+let currentStep=1;
+const TOTAL_STEPS=6;
+const STEP_LABELS=['Bazë','Kontakti','Faqja','Social','Pamja','Gati!'];
+
+document.addEventListener('DOMContentLoaded',async ()=>{
+  // L-2 FIX: Guard against expired/missing session. Auth.isLoggedIn() checks
+  // both the in-memory access token and the localStorage refresh token without
+  // making a network call. A user who lands here with no valid session is
+  // redirected to /signup/ with a clear explanation rather than silently
+  // bounced to / by the apiFetch 401 handler.
+  if (!Auth.isLoggedIn()) {
+    window.location.href = '/signup/?next=/onboarding/';
+    return;
+  }
+  // Show which account this business will be tied to. parseJWT() is a
+  // client-side-only decode (no signature check, just reads the payload) —
+  // fine here since it's purely for display, not an auth decision.
+  // Mirrors main.html's checkAuth(): a fresh page load has no in-memory
+  // access token yet (it's memory-only, see auth.js), so fall back to
+  // refreshAccess() before giving up.
+  (async function showLoggedInUser(){
+    let token = Auth.getAccess();
+    if (!token) { try { token = await Auth.refreshAccess(); } catch { return; } }
+    const payload = token ? parseJWT(token) : null;
+    if (payload && payload.email) {
+      document.getElementById('topbar-user-email').textContent = payload.email;
+      document.getElementById('topbar-user').style.display = '';
+    }
+  })();
+  buildProgressBar();
+  const btypeGridReady = loadBusinessTypeGrid();
+  initPlanGrid();
+  initFontButtons();
+  initHoursGrid();
+  // Business signup (su-btn on the main site) already collects the name,
+  // slug, and business type — exactly what step 1 asks for — and creates
+  // the tenant itself. Landing here with ?step=2 (set right after that form
+  // succeeds) skips the now-redundant step 1 instead of asking again.
+  //
+  // L-4 FIX: previously `currentStep` only ever came from this one-time
+  // ?step= query param, which is only present on the link straight out of
+  // signup. Close the tab and reopen /onboarding/ (no query param) and it
+  // fell back to the hardcoded default of 1 — even though the tenant might
+  // already be sitting at, say, onboarding_step=2 on the server. Worse,
+  // step 1's fields (name/slug/business type) were never re-populated from
+  // the tenant that signup already created, so going "← Mbrapa" to look at
+  // them showed a blank form instead of what was actually saved.
+  //
+  // Fix: always fetch the tenant (if one exists) and use it as the single
+  // source of truth — both to resume at the right step and to fill in every
+  // field already saved, on every step, not just the one being resumed at.
+  // ?step=N from the signup redirect still wins when present (it reflects a
+  // decision just made server-side an instant ago), otherwise we resume one
+  // past the last step the server recorded as complete.
+  const requestedStep = parseInt(new URLSearchParams(location.search).get('step'), 10);
+  const meRes = await Auth.get('/tenants/me/').catch(() => null);
+  if (meRes && meRes.ok) {
+    const tenant = await meRes.json();
+    await btypeGridReady;
+    applyTenantDataToForm(tenant);
+    if (tenant.onboarding_complete) {
+      currentStep = TOTAL_STEPS;
+    } else if (requestedStep > 1 && requestedStep <= TOTAL_STEPS) {
+      currentStep = requestedStep;
+    } else {
+      const lastSaved = parseInt(tenant.onboarding_step, 10) || 0;
+      currentStep = Math.min(Math.max(lastSaved + 1, 1), TOTAL_STEPS);
+    }
+    localStorage.setItem('biz_onboarding_step', currentStep);
+  }
+  updateUI();
+});
+
+// Fills in every onboarding field from the tenant record the server already
+// has, so re-opening onboarding (or clicking "← Mbrapa") shows exactly what
+// was registered/saved instead of a blank form the user has to redo.
+function applyTenantDataToForm(t){
+  const set=(id,val)=>{
+    const el=document.getElementById(id);
+    if(el && val!==undefined && val!==null && val!=='') el.value=val;
+  };
+  set('f-name', t.name);
+  set('f-tagline', t.tagline);
+  // The settings endpoint doesn't echo `slug` back (it's immutable after
+  // creation), so the only place we still have it client-side is where
+  // /tenants/create/ stashed it at registration time.
+  set('f-slug', localStorage.getItem('tenant_slug'));
+  if(t.business_type){
+    document.getElementById('f-business-type').value=t.business_type;
+    document.querySelectorAll('#btype-grid .btype-btn').forEach(b=>
+      b.classList.toggle('selected', b.dataset.val===t.business_type));
+  }
+  if(t.plan){
+    document.querySelectorAll('#plan-grid .btype-btn').forEach(b=>
+      b.classList.toggle('selected', b.dataset.val===t.plan));
+    set('f-plan', t.plan);
+  }
+  set('f-phone', t.phone);
+  set('f-whatsapp', t.whatsapp);
+  set('f-email', t.email);
+  set('f-address', t.address);
+  set('f-city', t.city);
+  set('f-country', t.country||'Albania');
+  applyBusinessHoursToForm(t.business_hours);
+  set('f-site-title', t.site_title);
+  set('f-story', t.story);
+  set('f-founded', t.founded_year);
+  set('f-meta', t.meta_description);
+  set('f-facebook', t.facebook);
+  set('f-instagram', t.instagram);
+  set('f-tiktok', t.tiktok);
+  if(t.primary_color){document.getElementById('f-primary-color').value=t.primary_color;updateColor('primary');}
+  if(t.accent_color){document.getElementById('f-accent-color').value=t.accent_color;updateColor('accent');}
+  if(t.font_family){
+    document.getElementById('f-font').value=t.font_family;
+    document.querySelectorAll('.font-btn').forEach(b=>
+      b.classList.toggle('selected', b.dataset.font===t.font_family));
+  }
+}
+
+// Sets a time input's value when restoring previously-saved business hours.
+// Now that hours-from/hours-to are plain text inputs (not a preset-interval
+// <select>), any exact saved HH:MM just drops straight in — no need to
+// synthesize a matching <option> first the way the old select-based
+// version did.
+function setTimeSelectValue(sel,val){
+  if(!sel||!val)return;
+  sel.value=val;
+}
+
+// Reverse of buildBusinessHours(): turns the saved {"E Hënë - E Premte":
+// "09:00 - 18:00", ...} dict back into per-day checkbox + from/to selections.
+// Days not present in the dict are closed (buildBusinessHours never writes
+// closed days out), so every day is reset closed first.
+function applyBusinessHoursToForm(hours){
+  for(let i=0;i<7;i++){
+    const cb=document.getElementById(`hours-open-${i}`);
+    if(!cb) return; // grid not built yet
+    cb.checked=false;
+    toggleHoursDay(i);
+    const cb24=document.getElementById(`hours-24-${i}`);
+    if(cb24){ cb24.checked=false; toggleHours24(i); }
+  }
+  if(!hours) return;
+  Object.entries(hours).forEach(([dayKey,timeVal])=>{
+    if(!timeVal) return;
+    const [from,to]=timeVal.split(' - ').map(s=>s.trim());
+    const dayNames=dayKey.split(' - ').map(s=>s.trim());
+    const startIdx=ALBANIAN_WEEKDAYS.indexOf(dayNames[0]);
+    const endIdx=dayNames.length>1?ALBANIAN_WEEKDAYS.indexOf(dayNames[1]):startIdx;
+    if(startIdx===-1) return;
+    for(let i=startIdx;i<=endIdx;i++){
+      const cb=document.getElementById(`hours-open-${i}`);
+      if(!cb) continue;
+      cb.checked=true;
+      toggleHoursDay(i);
+      if(from) setTimeSelectValue(document.getElementById(`hours-from-${i}`),from);
+      if(to) setTimeSelectValue(document.getElementById(`hours-to-${i}`),to);
+      // A saved "00:00 - 00:00" range only ever comes from the 24h toggle
+      // (a tenant would never deliberately pick identical open/close times
+      // any other way), so restore the checkbox + disabled state for it.
+      if(from==='00:00' && to==='00:00'){
+        const cb24=document.getElementById(`hours-24-${i}`);
+        if(cb24){ cb24.checked=true; toggleHours24(i); }
+      }
+    }
+  });
+}
+
+function buildProgressBar(){
+  const row=document.getElementById('steps-row');
+  row.innerHTML='';
+  for(let i=1;i<=TOTAL_STEPS;i++){
+    if(i>1){
+      const line=document.createElement('div');
+      line.className='step-line';
+      line.id=`line-${i-1}`;
+      row.appendChild(line);
+    }
+    const item=document.createElement('div');
+    item.className='step-item';
+    item.id=`sdot-${i}`;
+    item.innerHTML=`<div class="step-circle">${i}</div><div class="step-label">${STEP_LABELS[i-1]}</div>`;
+    row.appendChild(item);
+  }
+}
+
+function updateUI(){
+  for(let i=1;i<=TOTAL_STEPS;i++){
+    const dot=document.getElementById(`sdot-${i}`);
+    dot.classList.remove('active','done');
+    if(i<currentStep){
+      dot.classList.add('done');
+      dot.querySelector('.step-circle').textContent='✓';
+    } else if(i===currentStep){
+      dot.classList.add('active');
+      dot.querySelector('.step-circle').textContent=i;
+    } else {
+      dot.querySelector('.step-circle').textContent=i;
+    }
+    if(i>1){
+      const line=document.getElementById(`line-${i-1}`);
+      if(line) line.classList.toggle('done',i<=currentStep);
+    }
+  }
+  document.getElementById('topbar-label').textContent=`Hapi ${currentStep} nga ${TOTAL_STEPS}`;
+  document.querySelectorAll('.step-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById(`step-${currentStep}`).classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ── Business type grid — fetched from the backend ──────────────────
+// Same source of truth (GET /api/tenants/business-types/) that the main
+// site's signup form and the /bizneset/ directory use, so the list, icons,
+// and Albanian labels shown here can never drift out of sync with them.
+let btypeCache=null;
+async function fetchBusinessTypes(){
+  if(btypeCache) return btypeCache;
+  try{
+    const r=await fetch('/api/tenants/business-types/');
+    if(r.ok){const d=await r.json();btypeCache=d.results||[];}
+  }catch{}
+  if(!btypeCache) btypeCache=[];
+  return btypeCache;
+}
+
+async function loadBusinessTypeGrid(){
+  const grid=document.getElementById('btype-grid');
+  if(!grid||grid.dataset.loaded==='1')return;
+  const types=await fetchBusinessTypes();
+  if(!types.length){
+    grid.innerHTML='<div style="grid-column:1/-1;font-size:.82rem;color:var(--muted)">Nuk u ngarkuan dot llojet e biznesit. Rifreskoni faqen.</div>';
+    return;
+  }
+  grid.dataset.loaded='1';
+  grid.innerHTML=types.map(t=>`<div class="btype-btn" data-val="${t.value}"><span class="icon">${t.icon}</span>${escHtml(t.label)}</div>`).join('');
+  initBusinessTypeGrid();
+  // Re-apply the search filter's current term (in case the grid finished
+  // loading after the user already started typing) and restore a
+  // previously-chosen type (e.g. coming back from step 2 via "← Mbrapa").
+  const term=document.getElementById('btype-search')?.value||'';
+  if(term) filterBtypes(term);
+  const existing=document.getElementById('f-business-type').value;
+  if(existing){
+    const btn=grid.querySelector(`.btype-btn[data-val="${existing}"]`);
+    if(btn) btn.classList.add('selected');
+  }
+}
+
+// escHtml() comes from ui.js (loaded above) — no need to redefine it here.
+
+function initBusinessTypeGrid(){
+  // Scoped to #btype-grid only — #plan-grid below reuses the same
+  // .btype-btn tile styling for its own, separately-handled click events.
+  document.querySelectorAll('#btype-grid .btype-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('#btype-grid .btype-btn').forEach(b=>b.classList.remove('selected'));
+      btn.classList.add('selected');
+      document.getElementById('f-business-type').value=btn.dataset.val;
+    });
+  });
+}
+
+// ── Plan selection grid — tenant picks their own plan at signup ────
+function initPlanGrid(){
+  document.querySelectorAll('#plan-grid .btype-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('#plan-grid .btype-btn').forEach(b=>b.classList.remove('selected'));
+      btn.classList.add('selected');
+      document.getElementById('f-plan').value=btn.dataset.val;
+    });
+  });
+}
+
+function initFontButtons(){
+  document.querySelectorAll('.font-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('.font-btn').forEach(b=>b.classList.remove('selected'));
+      btn.classList.add('selected');
+      document.getElementById('f-font').value=btn.dataset.font;
+    });
+  });
+}
+
+const ALBANIAN_WEEKDAYS=['E Hënë','E Martë','E Mërkurë','E Enjte','E Premte','E Shtunë','E Diel'];
+// Default: open Monday-Friday, closed Saturday-Sunday — a plausible starting
+// point that's just as easy to flip to a 5-day, 6-day, or any custom pattern
+// (e.g. closed Sunday+Monday, or Tuesday-Saturday only) since every day is
+// independently toggleable with its own hours.
+const HOURS_DEFAULT_OPEN=[true,true,true,true,true,false,false];
+
+// Native <input type="time"> renders with AM/PM in Chrome whenever the OS
+// region is set to a 12-hour locale (e.g. US) — the `lang="en-GB"` attribute
+// that used to be here is NOT honoured by Chromium for form controls, only
+// by Firefox, so business owners on Chrome/US-region machines saw AM/PM
+// regardless. A plain typed "HH:MM" text field we validate ourselves has no
+// locale formatting to fight (always 24h) and, unlike a preset-interval
+// <select>, lets a tenant enter any exact minute (09:07, 13:45, ...)
+// instead of being forced onto a fixed grid of slots.
+function timeInputHtml(id, selected){
+  const val = selected || '';
+  return `<input type="text" id="${id}" class="hours-time-input" value="${val}" placeholder="09:00" inputmode="numeric" maxlength="5" autocomplete="off" oninput="maskTimeInput(this)" onblur="validateTimeInput(this)">`;
+}
+
+// Auto-inserts the ":" as digits are typed (0900 -> 09:00) so people can
+// just type four digits instead of hunting for the colon key.
+function maskTimeInput(el){
+  let digits = el.value.replace(/[^0-9]/g,'').slice(0,4);
+  el.value = digits.length > 2 ? `${digits.slice(0,2)}:${digits.slice(2)}` : digits;
+}
+
+// Clamps whatever was typed into a valid 24h HH:MM on blur (e.g. "9:5" ->
+// "09:05", "25:99" -> "23:59") rather than silently accepting garbage that
+// buildBusinessHours() would otherwise save as-is.
+function validateTimeInput(el){
+  const m = el.value.match(/^(\d{1,2}):?(\d{0,2})$/);
+  if(!m || el.value===''){ return; }
+  const h = Math.min(23, parseInt(m[1],10)||0);
+  const mi = Math.min(59, parseInt(m[2]||'0',10)||0);
+  el.value = `${String(h).padStart(2,'0')}:${String(mi).padStart(2,'0')}`;
+}
+function initHoursGrid(){
+  const grid=document.getElementById('hours-grid');
+  if(!grid||grid.dataset.built)return;
+  grid.dataset.built='1';
+  grid.innerHTML=ALBANIAN_WEEKDAYS.map((day,i)=>`
+    <div class="hours-row${HOURS_DEFAULT_OPEN[i]?'':' closed'}" id="hours-row-${i}">
+      <label class="hours-day-label">
+        <input type="checkbox" id="hours-open-${i}" ${HOURS_DEFAULT_OPEN[i]?'checked':''} onchange="toggleHoursDay(${i})">
+        ${day}
+      </label>
+      <div class="hours-times" id="hours-times-${i}">
+        ${timeInputHtml(`hours-from-${i}`, '09:00')}
+        <span>—</span>
+        ${timeInputHtml(`hours-to-${i}`, '18:00')}
+      </div>
+      <label class="hours-24-label">
+        <input type="checkbox" id="hours-24-${i}" onchange="toggleHours24(${i})">
+        24 orë
+      </label>
+    </div>
+  `).join('');
+}
+
+function toggleHoursDay(i){
+  const row=document.getElementById(`hours-row-${i}`);
+  const open=document.getElementById(`hours-open-${i}`).checked;
+  row.classList.toggle('closed',!open);
+}
+
+// "24 orë" toggle per day. Rather than making tenants stumble onto the
+// 00:00-00:00 coincidence that tenants/hours.py already treats as a full
+// 24h window (00:00 close = end of day = 1440 min), this makes it an
+// explicit control: checking it locks both time inputs to 00:00 (still read
+// normally by buildBusinessHours) and disables them so they can't be
+// accidentally changed; unchecking restores whatever the tenant had picked
+// before.
+function toggleHours24(i){
+  const row=document.getElementById(`hours-row-${i}`);
+  const is24=document.getElementById(`hours-24-${i}`).checked;
+  const fromSel=document.getElementById(`hours-from-${i}`);
+  const toSel=document.getElementById(`hours-to-${i}`);
+  row.classList.toggle('h24',is24);
+  if(is24){
+    fromSel.dataset.prev=fromSel.value;
+    toSel.dataset.prev=toSel.value;
+    fromSel.value='00:00';
+    toSel.value='00:00';
+  }else{
+    if(fromSel.dataset.prev) fromSel.value=fromSel.dataset.prev;
+    if(toSel.dataset.prev) toSel.value=toSel.dataset.prev;
+  }
+  fromSel.disabled=is24;
+  toSel.disabled=is24;
+}
+
+function updateColor(type){
+  const picker=document.getElementById(`f-${type}-color`);
+  document.getElementById(`hex-${type}`).value=picker.value;
+  document.getElementById(`preview-${type}`).style.background=picker.value;
+}
+function syncHex(type){
+  const hex=document.getElementById(`hex-${type}`).value;
+  if(/^#[0-9A-Fa-f]{6}$/.test(hex)){
+    document.getElementById(`f-${type}-color`).value=hex;
+    document.getElementById(`preview-${type}`).style.background=hex;
+  }
+}
+
+function previewLogo(input){
+  const file=input.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const img=document.getElementById('logo-preview');
+    img.src=e.target.result;
+    img.style.display='block';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function nextStep(step){
+  hideError(step);
+  if(step===1){
+    const name=document.getElementById('f-name').value.trim();
+    const btype=document.getElementById('f-business-type').value;
+    const slug=document.getElementById('f-slug').value.trim();
+    const plan=document.getElementById('f-plan')?.value||'trial';
+    if(!name||!btype){showError(step,'Ju lutem plotësoni emrin dhe zgjidhni llojin e biznesit.');return;}
+    if(!slug){showError(step,'Ju lutem plotësoni slug-un e biznesit.');return;}
+    // If user has no tenant yet, create one first
+    const meRes = await Auth.get('/tenants/me/').catch(()=>null);
+    if(!meRes || !meRes.ok){
+      setLoading(step,true);
+      try{
+        const cr = await Auth.post('/tenants/create/',{business_name:name,slug,business_type:btype,plan});
+        if(!cr.ok){const d=await cr.json();showError(step,Object.values(d).flat().join(' '));return;}
+        const cd=await cr.json();
+        if(cd.access) Auth.setTokens(cd.access, cd.refresh||null);
+        if(cd.slug) localStorage.setItem('tenant_slug',cd.slug);
+      }catch(e){showError(step,e.message||'Gabim gjatë krijimit të biznesit.');return;}
+      finally{setLoading(step,false);}
+    }
+  }
+  setLoading(step,true);
+  try{
+    await patchTenant(buildPayload(step),step);
+    localStorage.setItem('biz_onboarding_step',step+1);
+    if(step===5)buildSummary();
+    currentStep=step+1;
+    updateUI();
+  }catch(e){
+    showError(step,e.message||'Gabim gjatë ruajtjes. Provoni sërish.');
+  }finally{
+    setLoading(step,false);
+  }
+}
+
+function prevStep(step){currentStep=step-1;updateUI();}
+
+async function skipStep(step){
+  currentStep=step+1;
+  localStorage.setItem('biz_onboarding_step',currentStep);
+  if(step===5)buildSummary();
+  updateUI();
+}
+
+async function patchTenant(payload,step){
+  const logoFile=step===5?document.getElementById('f-logo').files[0]:null;
+  let res;
+  if(logoFile){
+    // FormData upload — auth.js v3 detects FormData and omits Content-Type
+    // so the browser sets it with the correct multipart boundary automatically.
+    const body=new FormData();
+    Object.entries(payload).forEach(([k,v])=>{if(v!=='')body.append(k,v);});
+    body.append('logo',logoFile);
+    res=await Auth.apiFetch('/tenants/me/',{method:'PATCH',body});
+  }else{
+    res=await Auth.patch('/tenants/me/',payload);
+  }
+  if(!res.ok){
+    const data=await res.json().catch(()=>({}));
+    throw new Error(Object.values(data).flat().join(' ')||`HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+function buildBusinessHours(){
+  const v=id=>document.getElementById(id)?.value?.trim()||'';
+  // One string per day, or null if that day is toggled closed — closed days
+  // are simply omitted from the resulting dict, which is exactly what the
+  // booking system already treats as "closed", so a business that only
+  // works 5 (or any number of) days a week just leaves the rest unchecked.
+  const days=ALBANIAN_WEEKDAYS.map((name,i)=>{
+    const isOpen=document.getElementById(`hours-open-${i}`)?.checked;
+    if(!isOpen) return null;
+    const from=v(`hours-from-${i}`), to=v(`hours-to-${i}`);
+    return (from&&to) ? `${from} - ${to}` : null;
+  });
+  const hours={};
+  let i=0;
+  while(i<7){
+    if(!days[i]){i++;continue;}
+    let j=i;
+    // Group consecutive open days that share identical hours into one
+    // "Day - Day" range key (e.g. Mon-Fri 09:00-18:00), same style as the
+    // rest of the app already uses; a day with different hours (or a gap)
+    // starts its own key instead of being folded in.
+    while(j+1<7 && days[j+1]===days[i]) j++;
+    const key = j>i ? `${ALBANIAN_WEEKDAYS[i]} - ${ALBANIAN_WEEKDAYS[j]}` : ALBANIAN_WEEKDAYS[i];
+    hours[key]=days[i];
+    i=j+1;
+  }
+  return hours;
+}
+function buildPayload(step){
+  const v=id=>document.getElementById(id)?.value?.trim()||'';
+  const payloads={
+    1:{name:v('f-name'),slug:v('f-slug'),tagline:v('f-tagline'),business_type:v('f-business-type'),onboarding_step:1},
+    2:{phone:v('f-phone'),whatsapp:v('f-whatsapp'),email:v('f-email'),address:v('f-address'),city:v('f-city'),country:v('f-country')||'Albania',business_hours:buildBusinessHours(),onboarding_step:2},
+    3:{site_title:v('f-site-title'),story:v('f-story'),founded_year:v('f-founded')?parseInt(v('f-founded')):null,meta_description:v('f-meta'),onboarding_step:3},
+    4:{facebook:v('f-facebook'),instagram:v('f-instagram'),tiktok:v('f-tiktok'),onboarding_step:4},
+    5:{primary_color:document.getElementById('f-primary-color').value,accent_color:document.getElementById('f-accent-color').value,font_family:document.getElementById('f-font').value,onboarding_step:5},
+  };
+  return payloads[step]||{};
+}
+
+async function finishOnboarding(){
+  const sp=document.getElementById('sp-6');
+  sp.style.display='inline-block';
+  try{await patchTenant({onboarding_complete:true,onboarding_step:6},6);}catch(_){}
+  localStorage.removeItem('biz_onboarding_step');
+  const slug=localStorage.getItem('tenant_slug')||new URLSearchParams(location.search).get('tenant')||'';
+  // Route to admin panel — works both on localhost and production
+  const isLocal = window.location.hostname === 'localhost';
+  if (slug) {
+    window.location.href = isLocal
+      ? `http://localhost:8001/?tenant=${slug}`
+      : `https://${slug}.bizal.al/admin/`;
+  } else {
+    window.location.href = '/admin/';
+  }
+}
+
+function buildSummary(){
+  const g=document.getElementById('summary-grid');
+  const PLAN_LABELS={trial:'Provë falas (14 ditë)',starter:'Starter',pro:'Pro',enterprise:'Enterprise'};
+  const items=[
+    ['Biznesi',document.getElementById('f-name').value||'—'],
+    ['Lloji',document.getElementById('f-business-type').value||'—'],
+    ['Plani',PLAN_LABELS[document.getElementById('f-plan')?.value]||'—'],
+    ['Qyteti',document.getElementById('f-city').value||'—'],
+    ['Telefon',document.getElementById('f-phone').value||'—'],
+    ['Orari',(()=>{const h=buildBusinessHours();const entries=Object.entries(h);return entries.length?entries.map(([d,r])=>`${d}: ${r}`).join(' · '):'—';})()],
+    ['Ngjyra',document.getElementById('f-primary-color').value||'—'],
+    ['Fonti',document.getElementById('f-font').value||'—'],
+  ];
+  g.innerHTML=items.map(([l,v])=>`<div class="summary-item"><div class="s-label">${esc(l)}</div><div class="s-val">${esc(v)}</div></div>`).join('');
+}
+
+function showError(step,msg){const el=document.getElementById(`err-${step}`);if(el){el.textContent=msg;el.style.display='block';}}
+function hideError(step){const el=document.getElementById(`err-${step}`);if(el)el.style.display='none';}
+function setLoading(step,on){const sp=document.getElementById(`sp-${step}`);if(sp)sp.style.display=on?'inline-block':'none';}
+
+// ── Slug helpers ─────────────────────────────────────────────
+function slugify(s){return s.toLowerCase().replace(/[^a-z0-9\s-]/g,'').trim().replace(/\s+/g,'-').replace(/-+/g,'-').substring(0,80);}
+function onSlugInput(){
+  const slug=document.getElementById('f-slug');
+  slug.value=slugify(slug.value);
+  checkSlug(slug.value);
+}
+let slugTimer=null;
+function debouncedSlugCheck(){
+  const name=document.getElementById('f-name').value.trim();
+  const slugEl=document.getElementById('f-slug');
+  // Auto-fill slug from name
+  if(slugEl&&!slugEl.dataset.manualEdit){slugEl.value=slugify(name);}
+  clearTimeout(slugTimer);
+  slugTimer=setTimeout(()=>{if(slugEl.value)checkSlug(slugEl.value);},500);
+}
+async function checkSlug(slug){
+  const st=document.getElementById('slug-status');
+  if(!slug||slug.length<3){if(st)st.innerHTML='';return;}
+  if(st)st.innerHTML='<span style="color:var(--muted)">⏳ Duke kontrolluar...</span>';
+  try{
+    const r=await fetch(`/api/tenants/check-slug/?slug=${encodeURIComponent(slug)}`);
+    const d=await r.json();
+    if(st){
+      // MED-6 FIX: escape d.reason before writing to innerHTML to prevent
+      // XSS if the server ever echoes user-supplied content in the reason
+      // field. Currently hardcoded strings only, but this is fragile.
+      if(d.available){
+        st.innerHTML='<span style="color:var(--green)">✓ Ky subdomain është i lirë!</span>';
+      } else {
+        const reason=document.createElement('span');
+        reason.style.color='var(--red)';
+        reason.textContent='✗ '+(d.reason||'Ky subdomain është marrë. Zgjidhni tjetër.');
+        st.innerHTML='';
+        st.appendChild(reason);
+      }
+    }
+  }catch{if(st)st.innerHTML='';}
+}
+document.getElementById('f-slug')?.addEventListener('input',()=>{
+  document.getElementById('f-slug').dataset.manualEdit='1';
+});
+
+// ── Business type search filter ───────────────────────────────
+function filterBtypes(q){
+  const term=q.toLowerCase();
+  document.querySelectorAll('#btype-grid .btype-btn').forEach(btn=>{
+    const text=btn.textContent.toLowerCase();
+    btn.style.display=text.includes(term)?'':'none';
+  });
+}
+
+// ── Step 1 validation: require slug ──────────────────────────
+const _origNextStep=nextStep;
+// Patch step 1 to also validate slug
+const __nextStep=async function(step){
+  if(step===1){
+    const slug=document.getElementById('f-slug')?.value?.trim();
+    if(!slug||slug.length<3){showError(1,'Ju lutem shkruani subdomainin e biznesit (min 3 karaktere).');return;}
+    const st=document.getElementById('slug-status');
+    if(st?.textContent?.includes('✗')){showError(1,'Ky subdomain është i zënë. Zgjidhni tjetër.');return;}
+  }
+  return _origNextStep(step);
+};
+window.nextStep=__nextStep;
+
+// NOTE: there used to be a window.patchTenant override here that tried to
+// re-POST to /api/tenants/signup/ on step 1 with a sentinel
+// '__EXISTING_USER__' password. By the time anyone reaches this page,
+// main.html's "Start Your Business" form has *already* called
+// /api/tenants/signup/ once and stored a real access token + tenant_slug —
+// so that second signup call always failed (the backend's
+// validate_owner_email() unconditionally rejects an email that already has
+// an account), which meant step 1 could never be saved and onboarding was
+// permanently stuck. Step 1 now just PATCHes onto the already-created
+// tenant via the normal patchTenant()/'/api/tenants/me/' path, same as
+// every other step.
+
+</script>
+</body>
+</html>

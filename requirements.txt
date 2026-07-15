@@ -1,0 +1,7 @@
+# BizAL v4 — root requirements
+# Install with: pip install -r requirements.txt
+#
+# The canonical list lives in backend/requirements.txt.
+# This file simply delegates to it so tooling that expects a root
+# requirements.txt (e.g. Railway, Render, CI) works out of the box.
+-r backend/requirements.txt

@@ -1,0 +1,318 @@
+version: '3.9'
+
+# BizAL — local development stack
+# Usage:
+#   docker-compose up -d          # start all services
+#   docker-compose logs -f web    # tail Django logs
+#   docker-compose exec web bash  # shell into the Django container
+#
+# H-2 FIX: This file is the DEVELOPMENT stack. It uses Dockerfile.dev,
+# bizal.settings.dev, DEBUG=True, and Django's runserver. For production
+# deployments, use docker-compose.prod.yml (builds from the root Dockerfile,
+# uses bizal.settings.production, and runs gunicorn). Do NOT follow the old
+# README instructions that called this file the "production stack".
+
+services:
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: bizal
+      POSTGRES_USER: bizal
+      POSTGRES_PASSWORD: bizal_dev_pw
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    expose:
+      - "5432"  # LOW-5 FIX: internal only; removed host binding to avoid exposing Postgres on host network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bizal"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    # HIGH-2 FIX: require a password and do NOT expose 6379 to the host
+    # network. Use expose (internal only) so other services can reach it but
+    # the host and LAN cannot. Set REDIS_PASSWORD in your .env file.
+    command: redis-server --requirepass "${REDIS_PASSWORD:?REDIS_PASSWORD must be set in .env}"
+    expose:
+      - "6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    restart: unless-stopped
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py sync_celery_schedule &&
+             python manage.py collectstatic --noinput &&
+             python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - ./backend:/app
+      - ./frontend:/frontend
+      - media_data:/app/media
+    expose:
+      - "8000"  # MED-2 FIX: internal only; nginx proxies via Docker network
+    environment:
+      # FIX: was bizal.settings.dev, which didn't exist — every service
+      # using it failed at startup with ModuleNotFoundError. dev.py is now
+      # created at backend/bizal/settings/dev.py.
+      TZ: Europe/Tirane  # L-1 FIX: match Django TIME_ZONE; prevents datetime.date.today() returning UTC
+      DJANGO_SETTINGS_MODULE: bizal.settings.dev
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
+      # FIX: settings/base.py reads DB_HOST/DB_NAME/DB_USER/DB_PASSWORD/
+      # DB_PORT individually — it never parses a combined DATABASE_URL.
+      # The old DATABASE_URL line below was silently ignored, DB_HOST fell
+      # back to its 'localhost' default, and the web container tried (and
+      # failed) to reach Postgres on its own loopback interface instead of
+      # the `db` service.
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: bizal
+      DB_USER: bizal
+      DB_PASSWORD: bizal_dev_pw
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      # FIX (HIGH-1): base.py reads REDIS_CACHE_URL for the Django cache backend
+      # (used by rate-limiting, tenant lookup cache, Stripe idempotency guard, etc).
+      # Without this, Django falls back to redis://127.0.0.1:6379/1 which does not
+      # exist inside the container, silently breaking every cache-dependent feature.
+      REDIS_CACHE_URL: redis://:${REDIS_PASSWORD}@redis:6379/1
+      REDIS_RESULT_URL: redis://:${REDIS_PASSWORD}@redis:6379/2  # HIGH-4 FIX v36: result backend isolated from broker
+      DEBUG: "True"
+      FRONTEND_BASE_URL: http://localhost:8000
+    healthcheck:  # HIGH-1 FIX: nginx uses service_healthy condition on web/spa
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  spa:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    restart: unless-stopped
+    # spa runs migrate (idempotent — whichever service starts first applies
+    # the schema; the second call is a fast no-op) but does NOT run
+    # collectstatic. web's collectstatic writes staticfiles.json to the shared
+    # ./backend volume, and spa now depends_on web (service_healthy) so the
+    # manifest is guaranteed to exist before spa starts. Running collectstatic
+    # from both services simultaneously would risk a corrupted manifest from
+    # two concurrent non-atomic writes.
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py runserver 0.0.0.0:8001"
+    volumes:
+      - ./backend:/app
+      - ./frontend:/frontend
+      - media_data:/app/media
+    expose:
+      - "8001"  # internal to Docker network; nginx proxies here
+    ports:
+      - "8001:8001"  # also publish to host so the live demo is reachable at localhost:8001
+    environment:
+      # M-1 FIX: spa was missing TZ, so datetime.date.today() and
+      # datetime.datetime.now() would use UTC instead of Europe/Tirane.
+      # Appointments created 00:00-02:00 Albanian time via this service
+      # would compute end_time against yesterday date. Match web/celery.
+      TZ: Europe/Tirane
+      DJANGO_SETTINGS_MODULE: bizal.settings.dev
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: bizal
+      DB_USER: bizal
+      DB_PASSWORD: bizal_dev_pw
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      REDIS_CACHE_URL: redis://:${REDIS_PASSWORD}@redis:6379/1
+      REDIS_RESULT_URL: redis://:${REDIS_PASSWORD}@redis:6379/2  # HIGH-4 FIX v36: result backend isolated from broker
+      DEBUG: "True"
+      # MED-1 FIX: Both web and spa must use the same FRONTEND_BASE_URL (port 8000).
+      # The spa service previously set this to http://localhost:8001, causing
+      # password-reset emails sent via the spa container to contain localhost:8001
+      # links that are unreachable outside the Docker host. The main domain
+      # (port 8000) handles the reset-password route for both services.
+      FRONTEND_BASE_URL: http://localhost:8000
+    healthcheck:  # HIGH-1 FIX
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health/"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      web:
+        condition: service_healthy  # HIGH-1 FIX: guarantees web has run collectstatic
+                                    # and written staticfiles.json before spa starts.
+
+  celery:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    restart: unless-stopped
+    command: ["celery", "-A", "bizal", "worker", "--loglevel=info", "--concurrency=2"]
+    volumes:
+      - ./backend:/app
+    environment:
+      DJANGO_SETTINGS_MODULE: bizal.settings.dev
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
+      # HIGH-1 / MED-3 FIX (defense-in-depth): set TZ so datetime.date.today()
+      # and crond-style tooling inside Celery workers use Europe/Tirane, matching
+      # the Django TIME_ZONE. Primary fix is timezone.localdate() in tasks.py.
+      TZ: Europe/Tirane
+      # FIX: see the matching comment on the web service above — base.py
+      # never reads DATABASE_URL, only the individual DB_* vars below.
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: bizal
+      DB_USER: bizal
+      DB_PASSWORD: bizal_dev_pw
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      REDIS_CACHE_URL: redis://:${REDIS_PASSWORD}@redis:6379/1
+      REDIS_RESULT_URL: redis://:${REDIS_PASSWORD}@redis:6379/2  # HIGH-4 FIX v36: result backend isolated from broker
+      # FIX (CONN_MAX_AGE + Celery): forces CONN_MAX_AGE=0 for this worker
+      # only (see settings/dev.py). Without this, the worker inherits the
+      # same 60s persistent-connection setting as web/gunicorn, and a
+      # connection opened by the parent process before --concurrency=2
+      # forks its children gets shared across both forked workers —
+      # surfacing as random "connection already closed" / SSL errors under
+      # load. bizal/celery.py's worker_process_init handler is a backstop
+      # for this same issue if this env var is ever missing.
+      CELERY_WORKER_RUNNING: "true"
+    depends_on:
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+      web:
+        condition: service_healthy  # HIGH-1 FIX: guarantees migrate + sync_celery_schedule have run before worker starts
+
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    restart: unless-stopped
+    command: ["celery", "-A", "bizal", "beat", "--loglevel=info", "--scheduler", "django_celery_beat.schedulers:DatabaseScheduler"]
+    volumes:
+      - ./backend:/app
+    environment:
+      DJANGO_SETTINGS_MODULE: bizal.settings.dev
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
+      TZ: Europe/Tirane  # HIGH-1 / MED-3 FIX: match Django TIME_ZONE
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: bizal
+      DB_USER: bizal
+      DB_PASSWORD: bizal_dev_pw
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      REDIS_CACHE_URL: redis://:${REDIS_PASSWORD}@redis:6379/1
+      REDIS_RESULT_URL: redis://:${REDIS_PASSWORD}@redis:6379/2  # HIGH-4 FIX v36: result backend isolated from broker
+      # beat doesn't fork worker children the way `celery worker` does, so
+      # it isn't exposed to the fork-inherited-connection failure mode —
+      # but it's a single long-lived process holding one DB connection for
+      # potentially a long time, and there's no real cost to closing it
+      # between scheduler ticks, so set it here too for consistency.
+      CELERY_WORKER_RUNNING: "true"
+    depends_on:
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+      web:
+        condition: service_healthy  # HIGH-1 FIX: guarantees migrate + sync_celery_schedule have run before beat starts
+
+  # Daily pg_dump, gzipped, written to the postgres_backups volume.
+  # In production, also set BACKUP_S3_BUCKET (+ AWS credentials below) so
+  # the dump is copied off-host — the local volume alone does not survive
+  # the Docker host dying. See docker/db-backup/backup.sh for the full
+  # rationale and an NFS alternative if you'd rather not use S3.
+  db-backup:
+    build:
+      context: ./docker/db-backup
+    restart: unless-stopped
+    environment:
+      TZ: Europe/Tirane  # L-1 FIX: match all other services; db-backup Dockerfile bakes this in
+                          # but explicit env var ensures no deployment override silently shifts
+                          # the 03:00 cron window to UTC (01:00 Albanian time in winter).
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: bizal
+      DB_USER: bizal
+      # LOW-6 FIX (v36): Mandatory substitution — fail loud if unset in production.
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set in .env}
+      BACKUP_RETENTION_DAYS: "7"
+      # ── Production off-host destination — unset in dev on purpose ──────
+      # Leaving these unset (as they are here) makes the backup local-only,
+      # which is fine for a throwaway dev DB. Set real values in your
+      # production .env / compose override:
+      #   BACKUP_S3_BUCKET=bizal-db-backups
+      #   BACKUP_S3_PREFIX=production            (optional, default shown)
+      #   AWS_ACCESS_KEY_ID=...
+      #   AWS_SECRET_ACCESS_KEY=...
+      #   AWS_DEFAULT_REGION=eu-central-1
+      #   BACKUP_S3_ENDPOINT_URL=...              (optional — non-AWS S3-compatible storage)
+      BACKUP_S3_BUCKET: ${BACKUP_S3_BUCKET:-}
+      BACKUP_S3_PREFIX: ${BACKUP_S3_PREFIX:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-eu-central-1}
+      BACKUP_S3_ENDPOINT_URL: ${BACKUP_S3_ENDPOINT_URL:-}
+    volumes:
+      - postgres_backups:/backups
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # MED-1 FIX: Add nginx service so nginx/nginx.conf rate-limit zones are
+  # actually active in the dev/staging stack. Without this, all rate-limit
+  # keys fall back to empty string (X-Real-IP header not set) and every
+  # request shares one bucket — effectively disabling rate limiting.
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      # H-1 FIX: mount the media volume so nginx can serve user-uploaded files
+      # (logos, product/menu/blog images, avatars) directly via the /media/
+      # location block added to nginx/nginx.conf. Without this mount the nginx
+      # container has no access to /app/media and all /media/... requests 404.
+      - media_data:/app/media:ro
+    depends_on:  # HIGH-1 FIX: wait for upstream services to be healthy, not just started
+      web:
+        condition: service_healthy
+      spa:
+        condition: service_healthy
+    healthcheck:  # LOW-5 FIX: allows downstream CI/deploy to wait for nginx ready
+      # AUDIT FIX: nginx's server_name directives only match bizal.al /
+      # www.bizal.al / *.bizal.al, never bare "localhost", so a Host-less
+      # curl fell through to the default_server's `return 444;` and the
+      # healthcheck could never pass. Send a matching Host header instead.
+      test: ["CMD", "curl", "-f", "-H", "Host: bizal.al", "http://localhost/health/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  pg_data:
+  media_data:
+  postgres_backups:

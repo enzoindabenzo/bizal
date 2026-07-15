@@ -1,0 +1,398 @@
+version: '3.9'
+
+# BizAL — PRODUCTION stack
+#
+# H-2 FIX: This is the correct file to use for production deployments.
+# docker-compose.yml is the development stack (DEBUG=True, Dockerfile.dev,
+# Django runserver). This file:
+#   - Builds from the root Dockerfile (gunicorn, non-root user, baked image)
+#   - Uses bizal.settings.production (activates all safety guards, requires
+#     real SECRET_KEY, enforces DEBUG=False, checks ALLOWED_HOSTS, etc.)
+#   - Does NOT hardcode DEBUG=True — value is read from .env (must be absent
+#     or "False"; production.py raises ImproperlyConfigured if DEBUG=True)
+#   - Mounts media_data into the nginx service (fixes H-1)
+#
+# Usage:
+#   cp .env.example .env          # fill in all required secrets
+#   docker compose -f docker-compose.prod.yml up -d --build
+
+services:
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    expose:
+      - "5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-bizal}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --requirepass "${REDIS_PASSWORD}"
+    expose:
+      - "6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    entrypoint: ["/entrypoint.sh"]
+    volumes:
+      - media_data:/app/media
+    expose:
+      - "8000"
+    environment:
+      TZ: Europe/Tirane
+      DJANGO_SETTINGS_MODULE: bizal.settings.production
+      SECRET_KEY: ${SECRET_KEY}
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      REDIS_CACHE_URL: redis://:${REDIS_PASSWORD}@redis:6379/1
+      REDIS_RESULT_URL: redis://:${REDIS_PASSWORD}@redis:6379/2
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS}
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      STRIPE_PRICE_STARTER: ${STRIPE_PRICE_STARTER}
+      STRIPE_PRICE_PRO: ${STRIPE_PRICE_PRO}
+      STRIPE_PRICE_ENTERPRISE: ${STRIPE_PRICE_ENTERPRISE}
+      EMAIL_HOST: ${EMAIL_HOST:-smtp.gmail.com}
+      EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
+      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+      EMAIL_PORT: ${EMAIL_PORT:-587}
+      EMAIL_USE_TLS: ${EMAIL_USE_TLS:-True}
+      EMAIL_USE_SSL: ${EMAIL_USE_SSL:-False}
+      DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-noreply@bizal.al}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@bizal.al}
+      # Do NOT set DEBUG here — production.py raises ImproperlyConfigured if
+      # DEBUG=True is detected. Leave it unset or explicitly "False" in .env.
+      # ── AI / Chatbot (OPTIONAL — omit or leave blank to disable chatbot) ──
+      # HIGH-1 FIX: these keys are not interpolated in the YAML above, so Docker
+      # Compose would never forward them to the container despite being in .env.
+      # With an explicit environment: block, only listed variables are injected.
+      GROQ_API_KEY_1: ${GROQ_API_KEY_1:-}
+      GROQ_API_KEY_2: ${GROQ_API_KEY_2:-}
+      GROQ_API_KEY_3: ${GROQ_API_KEY_3:-}
+      OPENROUTER_API_KEY_1: ${OPENROUTER_API_KEY_1:-}
+      OPENROUTER_API_KEY_2: ${OPENROUTER_API_KEY_2:-}
+      OPENROUTER_API_KEY_3: ${OPENROUTER_API_KEY_3:-}
+      # ── Monitoring (OPTIONAL) ──
+      # HIGH-2 FIX: same issue as above — SENTRY_DSN/APP_VERSION must be listed
+      # here to reach the container; .env alone is not enough.
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      APP_VERSION: ${APP_VERSION:-unknown}
+    healthcheck:
+      # NOTE: ALLOWED_HOSTS must include 'localhost' and '127.0.0.1' for this to pass.
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  spa:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    # M-1 FIX: with no entrypoint override, Compose falls back to the image's
+    # own ENTRYPOINT (/entrypoint.sh), which runs migrate + sync_celery_schedule
+    # + collectstatic. web already does all three and spa depends_on web being
+    # healthy, so re-running migrate/sync_celery_schedule here is redundant
+    # (harmless since both are idempotent, but it wastes startup time).
+    # Override the entrypoint so spa only runs collectstatic, then gunicorn.
+    #
+    # M-3 FIX (v43): collectstatic failure (e.g. transient DB blip if any future
+    # AppConfig.ready() queries the DB, or a missing STATICFILES_DIRS entry)
+    # previously caused the `&&` chain to exit non-zero, the spa container to
+    # exit immediately, its health check to never fire, and nginx
+    # (depends_on: spa: service_healthy) to wait indefinitely — stalling the
+    # entire prod stack with no obvious error. `|| true` promotes a collectstatic
+    # failure to a warning: the error is printed to the container log but gunicorn
+    # still starts. spa runs its own collectstatic — web and spa do NOT share a
+    # staticfiles volume; each container has its own /app/staticfiles. Both
+    # build from the same image so content is identical; running collectstatic
+    # independently in each container is correct and intentional.
+    # MEDIUM-1 FIX (v52): exec-form list eliminates double-shell.
+    # A YAML folded scalar (>) produces a *string* command; Docker Compose always
+    # wraps a string command in /bin/sh -c "...", so entrypoint:[] + string command
+    # still gave: /bin/sh -c "sh -c '...'". exec gunicorn replaced only the inner
+    # sh; the outer /bin/sh survived as PID 1's child and intercepted SIGTERM on
+    # docker stop, adding latency and reducing shutdown reliability.
+    # Exec-form (a YAML list) passes ["sh","-c","..."] directly to the runtime with
+    # no shell wrapping; exec gunicorn then replaces sh as PID 1.
+    entrypoint: []
+    command:
+      - "sh"
+      - "-c"
+      - |-
+        python manage.py collectstatic --noinput;
+        STATIC_EXIT=$?;
+        if [ $STATIC_EXIT -ne 0 ]; then
+          echo "CRITICAL: collectstatic exited with code $STATIC_EXIT -- static files may be stale or missing. Check STATICFILES_DIRS and volume mounts." >&2;
+          echo "COLLECTSTATIC_FAILED=1" >&2;
+          python -c "
+        import os, sys
+        try:
+            import sentry_sdk
+            sentry_sdk.init(
+                dsn=os.environ.get('SENTRY_DSN', ''),
+                environment='production',
+                release=os.environ.get('APP_VERSION', 'unknown'),
+            )
+            sentry_sdk.capture_message('collectstatic failed at startup', level='error')
+            sentry_sdk.flush()
+        except Exception:
+            pass
+        " 2>/dev/null || true;
+        fi;
+        exec gunicorn bizal.wsgi:application --bind 0.0.0.0:8001 --workers 2 --threads 2 --timeout 120
+    volumes:
+      - media_data:/app/media
+    expose:
+      - "8001"
+    environment:
+      TZ: Europe/Tirane
+      DJANGO_SETTINGS_MODULE: bizal.settings.production
+      SECRET_KEY: ${SECRET_KEY}
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      REDIS_CACHE_URL: redis://:${REDIS_PASSWORD}@redis:6379/1
+      REDIS_RESULT_URL: redis://:${REDIS_PASSWORD}@redis:6379/2
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS}
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      STRIPE_PRICE_STARTER: ${STRIPE_PRICE_STARTER}
+      STRIPE_PRICE_PRO: ${STRIPE_PRICE_PRO}
+      STRIPE_PRICE_ENTERPRISE: ${STRIPE_PRICE_ENTERPRISE}
+      EMAIL_HOST: ${EMAIL_HOST:-smtp.gmail.com}
+      EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
+      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+      EMAIL_PORT: ${EMAIL_PORT:-587}
+      EMAIL_USE_TLS: ${EMAIL_USE_TLS:-True}
+      EMAIL_USE_SSL: ${EMAIL_USE_SSL:-False}
+      DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-noreply@bizal.al}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@bizal.al}
+      # HIGH-1 FIX: chatbot API keys (same fix as web service above).
+      GROQ_API_KEY_1: ${GROQ_API_KEY_1:-}
+      GROQ_API_KEY_2: ${GROQ_API_KEY_2:-}
+      GROQ_API_KEY_3: ${GROQ_API_KEY_3:-}
+      OPENROUTER_API_KEY_1: ${OPENROUTER_API_KEY_1:-}
+      OPENROUTER_API_KEY_2: ${OPENROUTER_API_KEY_2:-}
+      OPENROUTER_API_KEY_3: ${OPENROUTER_API_KEY_3:-}
+      # HIGH-2 FIX: monitoring (same fix as web service above).
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      APP_VERSION: ${APP_VERSION:-unknown}
+    healthcheck:
+      # NOTE: ALLOWED_HOSTS must include 'localhost' and '127.0.0.1' for this to pass.
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health/"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+
+  celery:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    # MED-1 FIX: bypass /entrypoint.sh so celery workers don't run migrate +
+    # sync_celery_schedule + collectstatic on every restart. Those steps are
+    # handled by `web` (which celery implicitly depends on via the beat service).
+    # celery workers serve no static files and need no DB schema changes of their own.
+    entrypoint: []
+    command: ["celery", "-A", "bizal", "worker", "--loglevel=info", "--concurrency=2"]
+    # MED-8 FIX: removed `media_data:/app/media` mount. Celery tasks in this
+    # codebase only send emails, update DB rows, and call external APIs — they
+    # never read or write media files. The mount was an unnecessary shared
+    # volume dependency and needlessly gave a compromised task write access
+    # to the user-upload directory.
+    environment:
+      TZ: Europe/Tirane
+      DJANGO_SETTINGS_MODULE: bizal.settings.production
+      SECRET_KEY: ${SECRET_KEY}
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      REDIS_CACHE_URL: redis://:${REDIS_PASSWORD}@redis:6379/1
+      REDIS_RESULT_URL: redis://:${REDIS_PASSWORD}@redis:6379/2
+      CELERY_WORKER_RUNNING: "true"
+      # LOW-1 FIX: production.py iterates ALLOWED_HOSTS at import time for the
+      # glob-syntax guard. Include it for consistency and future-safety.
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS}
+      # CRIT-2 FIX: production.py raises ImproperlyConfigured at import time if
+      # FRONTEND_BASE_URL is absent. Without this both Celery processes crash on
+      # startup and no async tasks ever run in production.
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL}
+      # HIGH-3 FIX: email tasks call send_mail(fail_silently=False). Without
+      # these, SMTP auth fails and tasks are permanently lost after 3 retries.
+      EMAIL_HOST: ${EMAIL_HOST:-smtp.gmail.com}
+      EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
+      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+      EMAIL_PORT: ${EMAIL_PORT:-587}
+      EMAIL_USE_TLS: ${EMAIL_USE_TLS:-True}
+      EMAIL_USE_SSL: ${EMAIL_USE_SSL:-False}
+      DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-noreply@bizal.al}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@bizal.al}
+      # HIGH-2 FIX: forward Sentry DSN so exceptions in Celery tasks are tracked.
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      APP_VERSION: ${APP_VERSION:-unknown}
+    depends_on:
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+      web:
+        condition: service_healthy  # HIGH-1 FIX: guarantees migrate + sync_celery_schedule have run; not transitive via beat
+
+  celery-beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    # MED-1 FIX: bypass /entrypoint.sh (same reasoning as celery service above).
+    # celery-beat depends_on web: service_healthy, guaranteeing migrate +
+    # sync_celery_schedule have already completed before beat starts.
+    entrypoint: []
+    command: ["celery", "-A", "bizal", "beat", "--loglevel=info", "--scheduler", "django_celery_beat.schedulers:DatabaseScheduler"]
+    # MED-8 FIX: removed `media_data:/app/media` mount — see celery worker
+    # service above for rationale; celery-beat never touches media files.
+    environment:
+      TZ: Europe/Tirane
+      DJANGO_SETTINGS_MODULE: bizal.settings.production
+      SECRET_KEY: ${SECRET_KEY}
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      REDIS_CACHE_URL: redis://:${REDIS_PASSWORD}@redis:6379/1
+      REDIS_RESULT_URL: redis://:${REDIS_PASSWORD}@redis:6379/2
+      CELERY_WORKER_RUNNING: "true"
+      # LOW-1 FIX: include ALLOWED_HOSTS for consistency and future-safety.
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS}
+      # CRIT-2 FIX: production.py raises ImproperlyConfigured at import time if
+      # FRONTEND_BASE_URL is absent. Without this both Celery processes crash on
+      # startup and no async tasks ever run in production.
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL}
+      # HIGH-3 FIX: email tasks call send_mail(fail_silently=False). Without
+      # these, SMTP auth fails and tasks are permanently lost after 3 retries.
+      EMAIL_HOST: ${EMAIL_HOST:-smtp.gmail.com}
+      EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
+      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+      EMAIL_PORT: ${EMAIL_PORT:-587}
+      EMAIL_USE_TLS: ${EMAIL_USE_TLS:-True}
+      EMAIL_USE_SSL: ${EMAIL_USE_SSL:-False}
+      DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-noreply@bizal.al}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@bizal.al}
+      # HIGH-2 FIX: forward Sentry DSN so beat-scheduled task failures are tracked.
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      APP_VERSION: ${APP_VERSION:-unknown}
+    depends_on:
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+      # L-5 FIX (v43): celery-beat uses DatabaseScheduler, which reads the
+      # django_celery_beat_periodictask table. The `web` service runs
+      # `sync_celery_schedule` in entrypoint.sh (after migrate) to seed that
+      # table from CELERY_BEAT_SCHEDULE. If celery-beat starts before `web`
+      # finishes sync_celery_schedule, the table is empty and no periodic
+      # tasks fire — including trial expiry, reminders, and analytics cleanup.
+      # Waiting for `web` to be healthy guarantees migrate + sync have run.
+      web:
+        condition: service_healthy
+
+  db-backup:
+    build:
+      context: ./docker/db-backup
+    restart: unless-stopped
+    environment:
+      TZ: Europe/Tirane
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      BACKUP_RETENTION_DAYS: "7"
+      BACKUP_S3_BUCKET: ${BACKUP_S3_BUCKET:-}
+      BACKUP_S3_PREFIX: ${BACKUP_S3_PREFIX:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-eu-central-1}
+      BACKUP_S3_ENDPOINT_URL: ${BACKUP_S3_ENDPOINT_URL:-}
+    volumes:
+      - postgres_backups:/backups
+    depends_on:
+      db:
+        condition: service_healthy
+
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      # H-1 FIX: mount media volume so nginx serves /media/ directly.
+      # production.py sets DEBUG=False so Django's static() helper never
+      # registers a /media/ route; nginx must serve these files itself.
+      - media_data:/app/media:ro
+    depends_on:
+      web:
+        condition: service_healthy
+      spa:
+        condition: service_healthy
+    healthcheck:
+      # AUDIT FIX: see docker-compose.yml — bare "localhost" Host header
+      # never matches nginx's server_name, healthcheck would always fail.
+      test: ["CMD", "curl", "-f", "-H", "Host: bizal.al", "http://localhost/health/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  pg_data:
+  media_data:
+  postgres_backups:

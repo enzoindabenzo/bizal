@@ -1,0 +1,10 @@
+# Dev/test dependencies. Referenced by Dockerfile.dev only — NOT installed in production.
+# M-3 FIX: Extracted from requirements.txt so these packages are absent from the
+# production image. flower exposes a Celery monitoring UI on :5555 with no auth by
+# default; coverage/pytest add ~50MB and unnecessary attack surface.
+-r requirements.txt
+coverage==7.6.1
+flower==2.0.1
+pytest==8.2.2
+pytest-django==4.8.0
+pytest-cov==5.0.0

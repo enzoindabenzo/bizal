@@ -1,0 +1,245 @@
+{% extends 'admin/base_site.html' %}
+{% load i18n %}
+
+{# ─────────────────────────────────────────────────────────────────────
+   BizAL — django-admin dashboard.
+
+   Overrides Unfold's own admin/index.html (same block structure — see
+   the vendored template in django_unfold/templates/admin/index.html) to
+   add a KPI + analytics dashboard above the app list, organized into
+   three clear sections:
+     1. Overview   — KPI cards (bizal_kpis)
+     2. Analytics  — Chart.js charts fed by bizal_analytics (all real,
+                      directly-queried counts — see bizal/dashboard.py's
+                      module docstring for why there's no revenue chart)
+     3. Activity   — recent tenants / expiring trials / webhook failures /
+                      activity log, as link-out panels
+   Populated by bizal.dashboard.dashboard_callback via
+   UNFOLD['DASHBOARD_CALLBACK'].
+───────────────────────────────────────────────────────────────────── #}
+
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block extrahead %}
+    {{ block.super }}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js" defer></script>
+{% endblock %}
+
+{% block content %}
+
+{% with kpis=bizal_kpis analytics=bizal_analytics %}
+<div class="bizal-dashboard">
+
+  <div class="bizal-section-title">{% translate "Overview" %}</div>
+  <div class="bizal-kpi-grid">
+    <div class="bizal-kpi-card">
+      <div class="bizal-kpi-value">{{ kpis.total_tenants }}</div>
+      <div class="bizal-kpi-label">Tenantë gjithsej</div>
+    </div>
+    <div class="bizal-kpi-card">
+      <div class="bizal-kpi-value">{{ kpis.active_tenants }}</div>
+      <div class="bizal-kpi-label">Aktivë</div>
+    </div>
+    <div class="bizal-kpi-card{% if kpis.inactive_tenants %} is-warning{% endif %}">
+      <div class="bizal-kpi-value">{{ kpis.inactive_tenants }}</div>
+      <div class="bizal-kpi-label">Joaktivë</div>
+    </div>
+    <div class="bizal-kpi-card">
+      <div class="bizal-kpi-value">{{ kpis.new_this_week }}</div>
+      <div class="bizal-kpi-label">Të rinj (7 ditë)</div>
+    </div>
+    <div class="bizal-kpi-card">
+      <div class="bizal-kpi-value">{{ kpis.trial_count }}</div>
+      <div class="bizal-kpi-label">Në provë</div>
+    </div>
+    <div class="bizal-kpi-card{% if kpis.trials_expiring_soon %} is-danger{% endif %}">
+      <div class="bizal-kpi-value">{{ kpis.trials_expiring_soon }}</div>
+      <div class="bizal-kpi-label">Prova skadon &le;3 ditë</div>
+    </div>
+  </div>
+
+  <div class="bizal-section-title">{% translate "Analytics" %}</div>
+  <div class="bizal-analytics-grid">
+    <div class="bizal-chart-card">
+      <h2>Tenantë të rinj &mdash; 30 ditët e fundit</h2>
+      <p class="bizal-chart-sub">{{ analytics.signups_total_30d }} regjistrime gjithsej</p>
+      <div class="bizal-chart-canvas-wrap"><canvas id="bizal-chart-signups"></canvas></div>
+    </div>
+    <div class="bizal-chart-card">
+      <h2>Shpërndarja e planeve</h2>
+      <p class="bizal-chart-sub">Sipas planit aktual</p>
+      <div class="bizal-chart-canvas-wrap"><canvas id="bizal-chart-plans"></canvas></div>
+    </div>
+  </div>
+  <div class="bizal-analytics-grid" style="grid-template-columns: 1fr;">
+    <div class="bizal-chart-card">
+      <h2>Aktiviteti i platformës &mdash; 14 ditët e fundit</h2>
+      <p class="bizal-chart-sub">Ngjarje nga ActivityLog, çdo ditë</p>
+      <div class="bizal-chart-canvas-wrap"><canvas id="bizal-chart-activity"></canvas></div>
+    </div>
+  </div>
+
+  <div class="bizal-section-title">{% translate "Activity" %}</div>
+  <div class="bizal-panels">
+
+    <div class="bizal-panel">
+      <h2>Tenantë të rinj</h2>
+      {% if bizal_recent_tenants %}
+        <ul>
+          {% for t in bizal_recent_tenants %}
+            <li>
+              <a href="{% url 'admin:tenants_tenant_change' t.pk %}">{{ t.name }}</a>
+              <span class="bizal-badge plan-{{ t.plan }}">{{ t.get_plan_display }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div class="bizal-empty">Asnjë tenant ende.</div>
+      {% endif %}
+    </div>
+
+    <div class="bizal-panel">
+      <h2>Prova që po skadojnë</h2>
+      {% if bizal_expiring_trials %}
+        <ul>
+          {% for t in bizal_expiring_trials %}
+            <li>
+              <a href="{% url 'admin:tenants_trialtenant_change' t.pk %}">{{ t.name }}</a>
+              <span class="bizal-muted">{{ t.trial_ends_at|date:"d M, H:i" }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div class="bizal-empty">Asnjë provë nuk skadon së shpejti.</div>
+      {% endif %}
+    </div>
+
+    <div class="bizal-panel">
+      <h2>Webhook-e të dështuara</h2>
+      {% if bizal_recent_webhook_failures %}
+        <ul>
+          {% for w in bizal_recent_webhook_failures %}
+            <li>
+              <a href="{% url 'admin:payments_webhookevent_change' w.pk %}">{{ w.event_type }}</a>
+              <span class="bizal-badge status-failed">{{ w.created_at|date:"d M, H:i" }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div class="bizal-empty">Asnjë dështim i fundit. 🎉</div>
+      {% endif %}
+    </div>
+
+    <div class="bizal-panel">
+      <h2>Aktiviteti i fundit</h2>
+      {% if bizal_recent_activity %}
+        <ul>
+          {% for a in bizal_recent_activity %}
+            <li>
+              <span>{{ a.description|default:a.verb }}{% if a.tenant %} &middot; {{ a.tenant.name }}{% endif %}</span>
+              <span class="bizal-muted">{{ a.created_at|date:"d M, H:i" }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div class="bizal-empty">Asnjë aktivitet i regjistruar ende.</div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  // Chart.js is loaded with `defer`, and this listener itself only runs
+  // after DOMContentLoaded, but guard anyway in case the CDN script fails
+  // to load (offline dev, ad-blocker, etc.) — the rest of the dashboard
+  // (KPIs, activity panels, app list) should still work with no charts
+  // rather than throwing a JS error that could break other admin widgets
+  // on the same page.
+  if (typeof Chart === 'undefined') return;
+
+  var isDark = document.documentElement.classList.contains('dark')
+    || window.matchMedia('(prefers-color-scheme: dark)').matches;
+  var gridColor = isDark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.06)';
+  var tickColor = isDark ? '#a8a29e' : '#78716c';
+  Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
+  Chart.defaults.color = tickColor;
+
+  new Chart(document.getElementById('bizal-chart-signups'), {
+    type: 'line',
+    data: {
+      labels: {{ analytics.signups_labels|safe }},
+      datasets: [{
+        label: 'Tenantë të rinj',
+        data: {{ analytics.signups_values|safe }},
+        borderColor: '#f59e0b',
+        backgroundColor: 'rgba(245,158,11,.12)',
+        fill: true,
+        tension: .3,
+        pointRadius: 0,
+        borderWidth: 2,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { maxTicksLimit: 8 } },
+        y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: gridColor } },
+      },
+    },
+  });
+
+  new Chart(document.getElementById('bizal-chart-plans'), {
+    type: 'doughnut',
+    data: {
+      labels: {{ analytics.plan_labels|safe }},
+      datasets: [{
+        data: {{ analytics.plan_values|safe }},
+        backgroundColor: {{ analytics.plan_colors|safe }},
+        borderWidth: 0,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12 } } },
+    },
+  });
+
+  new Chart(document.getElementById('bizal-chart-activity'), {
+    type: 'bar',
+    data: {
+      labels: {{ analytics.activity_labels|safe }},
+      datasets: [{
+        label: 'Ngjarje',
+        data: {{ analytics.activity_values|safe }},
+        backgroundColor: '#78716c',
+        borderRadius: 3,
+        maxBarThickness: 22,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false } },
+        y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: gridColor } },
+      },
+    },
+  });
+});
+</script>
+{% endwith %}
+
+    <div class="flex flex-col lg:flex-row lg:gap-8">
+        <div class="grow">
+            {% include "unfold/helpers/app_list_default.html" %}
+        </div>
+
+        {% include "unfold/helpers/history.html" %}
+    </div>
+{% endblock %}

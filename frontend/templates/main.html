@@ -1,0 +1,2236 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="sq" data-theme="light">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>BizAL — Platforma #1 për Bizneset Shqiptare</title>
+  <meta name="description" content="BizAL ndihmon bizneset shqiptare të rriten online." />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="{% static 'css/main.css' %}" />
+  <link rel="stylesheet" href="{% static 'css/brand.css' %}" />
+</head>
+
+<body>
+
+  <div class="toast-wrap" id="toast-wrap"></div>
+
+  <nav id="nav">
+    <a href="#" class="nav-logo" data-pg="home">Biz<b>AL</b></a>
+    <div class="nav-mid">
+      <a href="#" class="nl" data-pg="home">Home</a>
+      <a href="#" class="nl" data-pg="bizneset">Bizneset</a>
+      <a href="#" class="nl" data-pg="vecorite">Veçoritë</a>
+      <a href="#" class="nl" data-pg="cmimet">Çmimet</a>
+      <a href="#" class="nl" data-pg="vlereismet">Vlerësimet</a>
+      <a href="#" class="nl" data-pg="blog">Blog</a>
+      <a href="#" class="nl" data-pg="about">Rreth</a>
+    </div>
+    <div class="nav-r">
+      <button class="theme-btn" id="tbtn">🌙</button>
+      <a href="#" class="btn btn-out btn-sm" data-pg="login">Hyr</a>
+      <a href="#" class="btn btn-red btn-sm" data-pg="signup">Fillo Falas</a>
+      <button class="hbg" id="hbg" aria-label="Menu"><span></span><span></span><span></span></button>
+    </div>
+  </nav>
+
+  <div class="drawer" id="drawer">
+    <div class="d-bg" id="dbg"></div>
+    <div class="d-panel">
+      <a href="#" class="dl" data-pg="home">Home</a>
+      <a href="#" class="dl" data-pg="bizneset">Bizneset</a>
+      <a href="#" class="dl" data-pg="vecorite">Veçoritë</a>
+      <a href="#" class="dl" data-pg="cmimet">Çmimet</a>
+      <a href="#" class="dl" data-pg="vlereismet">Vlerësimet</a>
+      <a href="#" class="dl" data-pg="blog">Blog</a>
+      <a href="#" class="dl" data-pg="about">Rreth Nesh</a>
+      <a href="#" class="dl" data-pg="contact">Kontakt</a>
+      <a href="#" class="dl" data-pg="login">Hyr në Llogari</a>
+      <div class="d-sep"></div>
+      <a href="#" class="btn btn-red btn-sm" data-pg="signup">Fillo Falas</a>
+    </div>
+  </div>
+
+  <!-- HOME -->
+  <div id="pg-home" class="pg on">
+    <section class="hero">
+      <div class="hero-orb hero-orb-1"></div>
+      <div class="hero-orb hero-orb-2"></div>
+      <div class="hero-orb hero-orb-3"></div>
+      <div class="hero-grid"></div>
+      <div class="wrap">
+        <div class="hero-badge fi">
+          <span class="hero-badge-dot"><span class="pulse"></span> Live</span>
+          500+ biznese aktive &nbsp;·&nbsp; 🇦🇱 Ndërtuar për Shqipëri
+        </div>
+        <h1 class="fi fi1">Sistemi operativ<br><em>për biznesin tuaj.</em></h1>
+        <p class="hero-sub fi fi2">Menaxhoni rezervimet, inventarin, stafin dhe klientët — gjithçka nga një platformë me
+          subdomainin tuaj.</p>
+        <div class="hero-btns fi fi3">
+          <a href="#" class="btn btn-red btn-lg" data-pg="signup">Fillo 14 Ditë Falas</a>
+          <a href="#" class="btn btn-out btn-lg" data-pg="bizneset">Shiko tipologjitë</a>
+        </div>
+        <div class="hero-trust fi fi3">
+          <span class="ti"><span class="tick">✓</span>Pa kartë krediti</span>
+          <span class="ti"><span class="tick">✓</span>Setup 5 minuta</span>
+          <span class="ti"><span class="tick">✓</span>Subdomain falas</span>
+          <span class="ti"><span class="tick">✓</span>Support 24/7</span>
+        </div>
+        <div class="stats fi fi4">
+          <div class="st"><span class="st-n" data-count="500">0</span><span class="st-l">Biznese aktive</span></div>
+          <div class="st"><span class="st-n" data-count="25" data-sfx="+">0</span><span class="st-l">Tipologji</span>
+          </div>
+          <div class="st"><span class="st-n" data-count="12000">0</span><span class="st-l">Rezervime / muaj</span></div>
+          <div class="st"><span class="st-n" data-count="4.9" data-dec>0</span><span class="st-l">Vlerësim ⭐</span>
+          </div>
+        </div>
+        <div class="demos fi fi4">
+          <span class="dlbl">Demo live →</span>
+          <a href="https://restorant-adriatiku.bizal.al" data-demo-slug="restorant-adriatiku" target="_blank" class="dpill">🍽️ Restorant</a>
+          <a href="https://hertz-albania.bizal.al" data-demo-slug="hertz-albania" target="_blank" class="dpill">🚗 Car Rental</a>
+          <a href="https://klinika-shendeti.bizal.al" data-demo-slug="klinika-shendeti" target="_blank" class="dpill">🏥 Klinikë</a>
+          <a href="https://barber-kings-tirana.bizal.al" data-demo-slug="barber-kings-tirana" target="_blank" class="dpill">💈 Salon</a>
+        </div>
+      </div>
+    </section>
+    <footer class="footer">
+      <div class="wrap fg">
+        <div>
+          <span class="f-logo">Biz<b>AL</b></span>
+          <p class="f-tag">Platforma SaaS #1 për bizneset shqiptare.</p>
+          <div class="f-soc"><a href="#" class="fsb">📘</a><a href="#" class="fsb">📸</a><a href="#" class="fsb">💼</a>
+          </div>
+        </div>
+        <div>
+          <div class="fh">Platforma</div>
+          <div class="fn">
+            <a href="#" data-pg="bizneset">Bizneset</a>
+            <a href="#" data-pg="vecorite">Veçoritë</a>
+            <a href="#" data-pg="cmimet">Çmimet</a>
+            <a href="#" data-pg="vlereismet">Vlerësimet</a>
+          </div>
+        </div>
+        <div>
+          <div class="fh">Kompania</div>
+          <div class="fn">
+            <a href="#" data-pg="about">Rreth Nesh</a>
+            <a href="#" data-pg="contact">Kontakt</a>
+            <a href="#" data-pg="blog">Blog</a>
+          </div>
+        </div>
+        <div>
+          <div class="fh">Demo Live</div>
+          <div class="fn">
+            <a href="https://restorant-adriatiku.bizal.al" data-demo-slug="restorant-adriatiku" target="_blank">🍽️ Restorant</a>
+            <a href="https://hertz-albania.bizal.al" data-demo-slug="hertz-albania" target="_blank">🚗 Car Rental</a>
+            <a href="https://klinika-shendeti.bizal.al" data-demo-slug="klinika-shendeti" target="_blank">🏥 Klinikë</a>
+            <a href="https://barber-kings-tirana.bizal.al" data-demo-slug="barber-kings-tirana" target="_blank">💈 Salon</a>
+          </div>
+        </div>
+      </div>
+      <div class="f-bot">
+        <div class="wrap">
+          <div class="f-bot-in">
+            <p>© 2026 BizAL. Ndërtuar me ❤️ në Shqipëri.</p>
+            <div class="f-blinks"><a href="#" data-pg="privatesia">Privatësia</a><a href="#" data-pg="kushte">Kushtet</a><a href="#" data-pg="privatesia">Cookies</a></div>
+          </div>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- BIZNESET -->
+  <div id="pg-bizneset" class="pg">
+    <div class="pg-body">
+      <div class="pg-hdr pg-hdr-border">
+        <div class="wrap">
+          <div class="lbl">Tipologjitë</div>
+          <h1 id="biz-type-count">Lloje biznesi</h1>
+          <p>Secila kategori vjen me modulet e veta — rezervime, inventar, staf, analytics</p>
+        </div>
+      </div>
+      <section class="sect">
+        <div class="wrap">
+          <div class="biz-grid" id="biz-grid" data-loaded="0">
+          </div>
+          <div
+            style="margin-top:64px;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-xl);padding:44px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:22px;box-shadow:var(--sh-md);position:relative;overflow:hidden;">
+            <div
+              style="position:absolute;inset:0;background:linear-gradient(135deg,var(--red-s) 0%,transparent 50%);pointer-events:none">
+            </div>
+            <div style="position:relative">
+              <h3 style="font-family:var(--font-d);font-size:1.2rem;font-weight:700;margin-bottom:8px">Nuk e gjeni
+                tipologjinë tuaj?</h3>
+              <p style="color:var(--muted);font-size:.88rem;font-weight:400">Mund të shtojmë çdo lloj biznesi — na
+                kontaktoni</p>
+            </div>
+            <a href="#" class="btn btn-dark" data-pg="contact" style="position:relative">Na Kontaktoni →</a>
+          </div>
+        </div>
+      </section>
+      <footer class="footer">
+        <div class="wrap fg">
+          <div><span class="f-logo">Biz<b>AL</b></span>
+            <p class="f-tag">Platforma SaaS #1 për bizneset shqiptare.</p>
+          </div>
+          <div>
+            <div class="fh">Platforma</div>
+            <div class="fn">
+              <a href="#" data-pg="home">Home</a>
+              <a href="#" data-pg="vecorite">Veçoritë</a>
+              <a href="#" data-pg="cmimet">Çmimet</a>
+            </div>
+          </div>
+          <div>
+            <div class="fh">Kompania</div>
+            <div class="fn">
+              <a href="#" data-pg="about">Rreth Nesh</a>
+              <a href="#" data-pg="contact">Kontakt</a>
+            </div>
+          </div>
+          <div>
+            <div class="fh">Demo Live</div>
+            <div class="fn">
+              <a href="https://restorant-adriatiku.bizal.al" data-demo-slug="restorant-adriatiku" target="_blank">🍽️ Restorant</a>
+              <a href="https://hertz-albania.bizal.al" data-demo-slug="hertz-albania" target="_blank">🚗 Car Rental</a>
+              <a href="https://klinika-shendeti.bizal.al" data-demo-slug="klinika-shendeti" target="_blank">🏥 Klinikë</a>
+              <a href="https://barber-kings-tirana.bizal.al" data-demo-slug="barber-kings-tirana" target="_blank">💈 Salon</a>
+            </div>
+          </div>
+        </div>
+        <div class="f-bot">
+          <div class="wrap">
+            <div class="f-bot-in">
+              <p>© 2026 BizAL.</p>
+              <div class="f-blinks"><a href="#" data-pg="kushte">Kushtet</a><a href="#" data-pg="privatesia">Privatësia</a></div>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <!-- VEÇORITË -->
+  <div id="pg-vecorite" class="pg">
+    <div class="pg-body">
+      <div class="pg-hdr pg-hdr-border">
+        <div class="wrap">
+          <div class="lbl">Veçoritë</div>
+          <h1>Gjithçka që nevojitet</h1>
+          <p>Një platformë, të gjitha modulet — pa nevojë për mjete të tjera</p>
+        </div>
+      </div>
+      <section class="sect">
+        <div class="wrap">
+          <div class="feats">
+            <div class="fc"><span class="fn2">01</span>
+              <div class="ft">Subdomain i juaj</div>
+              <p class="fp"><code>biznesijuaj.bizal.al</code> — aktiv menjëherë, pa konfigurim teknik</p>
+            </div>
+            <div class="fc"><span class="fn2">02</span>
+              <div class="ft">Analitika në kohë reale</div>
+              <p class="fp">Të ardhurat, rezervimet dhe vizitorët — gjithçka live në dashboard</p>
+            </div>
+            <div class="fc"><span class="fn2">03</span>
+              <div class="ft">Pagesa online</div>
+              <p class="fp">Stripe i integruar — depozita dhe abonime me kartë menjëherë</p>
+            </div>
+            <div class="fc"><span class="fn2">04</span>
+              <div class="ft">Brendi 100% juaj</div>
+              <p class="fp">Logo, ngjyrat, fontet — personalizim i plotë pa kod</p>
+            </div>
+            <div class="fc"><span class="fn2">05</span>
+              <div class="ft">Stafi & rolet</div>
+              <p class="fp">Owner, manager, staff — akses i ndarë dhe i sigurt</p>
+            </div>
+            <div class="fc"><span class="fn2">06</span>
+              <div class="ft">Vlerësime klientësh</div>
+              <p class="fp">Vlerësimet e vërteta ndërtojnë besim dhe rrisin konvertimet</p>
+            </div>
+            <div class="fc"><span class="fn2">07</span>
+              <div class="ft">Mobile-first design</div>
+              <p class="fp">Responsive perfekt — shkëlqyeshëm në çdo pajisje</p>
+            </div>
+            <div class="fc"><span class="fn2">08</span>
+              <div class="ft">Njoftime automatike</div>
+              <p class="fp">SMS & email konfirmim rezervimesh — klientët informohen vetë</p>
+            </div>
+            <div class="fc"><span class="fn2">09</span>
+              <div class="ft">Blog & SEO</div>
+              <p class="fp">Krijoni përmbajtje dhe optimizoni faqen për Google lokal</p>
+            </div>
+            <div class="fc"><span class="fn2">10</span>
+              <div class="ft">Inventar & Stock</div>
+              <p class="fp">Menaxhim produktesh me njoftime automatike për stok të ulët</p>
+            </div>
+            <div class="fc"><span class="fn2">11</span>
+              <div class="ft">CRM & Leads</div>
+              <p class="fp">Pipeline klientësh me shënime dhe ndjekje automatike</p>
+            </div>
+            <div class="fc"><span class="fn2">12</span>
+              <div class="ft">API & Webhooks</div>
+              <p class="fp">Integrohuni me ERP, kontabilitet, e-commerce dhe sisteme të tjera</p>
+            </div>
+          </div>
+          <div class="lbl" style="margin-top:72px;margin-bottom:10px">Çfarë përfshin çdo plan</div>
+          <div
+            style="overflow-x:auto;border:1.5px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--sh-md)">
+            <table class="feat-table">
+              <thead>
+                <tr>
+                  <th style="width:42%">Veçoria</th>
+                  <th>Starter</th>
+                  <th>Pro</th>
+                  <th>Enterprise</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Subdomain & brendi bazë</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓</td>
+                </tr>
+                <tr>
+                  <td>Rezervime & bookings</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓</td>
+                </tr>
+                <tr>
+                  <td>Vlerësime klientësh</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓</td>
+                </tr>
+                <tr>
+                  <td>Menu / Services (limiti varet nga plani)</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓</td>
+                </tr>
+                <tr>
+                  <td>Brendi custom (logo, ngjyra)</td>
+                  <td class="no">—</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓</td>
+                </tr>
+                <tr>
+                  <td>Blog & faqe custom</td>
+                  <td class="no">—</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓</td>
+                </tr>
+                <tr>
+                  <td>Njoftime SMS & Email</td>
+                  <td class="no">—</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓</td>
+                </tr>
+                <tr>
+                  <td>Staf (max 5)</td>
+                  <td class="no">—</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓</td>
+                </tr>
+                <tr>
+                  <td>Pagesa online (Stripe)</td>
+                  <td class="no">—</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓</td>
+                </tr>
+                <tr>
+                  <td>Analytics & raporte</td>
+                  <td class="no">—</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓</td>
+                </tr>
+                <tr>
+                  <td>CSV / PDF export</td>
+                  <td class="no">—</td>
+                  <td class="no">—</td>
+                  <td class="yes">✓</td>
+                </tr>
+                <tr>
+                  <td>CRM & pipeline</td>
+                  <td class="no">—</td>
+                  <td class="no">—</td>
+                  <td class="yes">✓</td>
+                </tr>
+                <tr>
+                  <td>API akses + Webhooks</td>
+                  <td class="no">—</td>
+                  <td class="no">—</td>
+                  <td class="yes">✓</td>
+                </tr>
+                <tr>
+                  <td>Domain custom</td>
+                  <td class="no">—</td>
+                  <td class="no">—</td>
+                  <td class="yes">✓</td>
+                </tr>
+                <tr>
+                  <td>Chatbot AI për vizitorët</td>
+                  <td class="no">—</td>
+                  <td class="no">—</td>
+                  <td class="yes">✓</td>
+                </tr>
+                <tr>
+                  <td>Staf i pakufizuar</td>
+                  <td class="no">—</td>
+                  <td class="no">—</td>
+                  <td class="yes">✓</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="margin-top:36px;text-align:center"><a href="#" class="btn btn-red btn-lg" data-pg="cmimet">Shiko
+              çmimet →</a></div>
+        </div>
+      </section>
+      <footer class="footer">
+        <div class="wrap fg">
+          <div><span class="f-logo">Biz<b>AL</b></span>
+            <p class="f-tag">Platforma SaaS #1 për bizneset shqiptare.</p>
+          </div>
+          <div>
+            <div class="fh">Platforma</div>
+            <div class="fn">
+              <a href="#" data-pg="home">Home</a>
+              <a href="#" data-pg="cmimet">Çmimet</a>
+            </div>
+          </div>
+          <div>
+            <div class="fh">Kompania</div>
+            <div class="fn">
+              <a href="#" data-pg="about">Rreth Nesh</a>
+              <a href="#" data-pg="contact">Kontakt</a>
+            </div>
+          </div>
+          <div>
+            <div class="fh">Demo Live</div>
+            <div class="fn">
+              <a href="https://restorant-adriatiku.bizal.al" data-demo-slug="restorant-adriatiku" target="_blank">🍽️ Restorant</a>
+              <a href="https://hertz-albania.bizal.al" data-demo-slug="hertz-albania" target="_blank">🚗 Car Rental</a>
+              <a href="https://klinika-shendeti.bizal.al" data-demo-slug="klinika-shendeti" target="_blank">🏥 Klinikë</a>
+              <a href="https://barber-kings-tirana.bizal.al" data-demo-slug="barber-kings-tirana" target="_blank">💈 Salon</a>
+            </div>
+          </div>
+        </div>
+        <div class="f-bot">
+          <div class="wrap">
+            <div class="f-bot-in">
+              <p>© 2026 BizAL.</p>
+              <div class="f-blinks"><a href="#" data-pg="kushte">Kushtet</a><a href="#" data-pg="privatesia">Privatësia</a></div>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <!-- ÇMIMET -->
+  <div id="pg-cmimet" class="pg">
+    <div class="pg-body">
+      <div class="pg-hdr pg-hdr-border">
+        <div class="wrap">
+          <div class="lbl">Çmimet</div>
+          <h1>Transparent & i drejtë</h1>
+          <p>Fillo falas, shkallëzo kur rritet biznesi — pa surpriza</p>
+        </div>
+      </div>
+      <section class="sect">
+        <div class="wrap">
+          <div class="plans">
+            <div class="pc">
+              <div class="pname">Starter</div>
+              <div class="pprice">€15<sub>/muaj</sub></div>
+              <div class="pbill">ose €12/muaj me pagesë vjetore · kurseni 20%</div>
+              <ul class="plist">
+                <li class="y"><span class="pdot y">✓</span>Subdomain i juaj</li>
+                <li class="y"><span class="pdot y">✓</span>Deri 50 listingje</li>
+                <li class="y"><span class="pdot y">✓</span>Rezervime bazë</li>
+                <li class="y"><span class="pdot y">✓</span>Vlerësime klientësh</li>
+                <li class="n"><span class="pdot n">—</span>Brendi custom</li>
+                <li class="n"><span class="pdot n">—</span>Analitika e avancuar</li>
+                <li class="n"><span class="pdot n">—</span>Blog & pagesa online</li>
+              </ul>
+              <a href="#" class="btn btn-out btn-bl" data-pg="signup" data-plan="starter">Fillo Tani</a>
+            </div>
+            <div class="pc feat">
+              <div class="ptag">Më popullar</div>
+              <div class="pname">Pro</div>
+              <div class="pprice">€40<sub>/muaj</sub></div>
+              <div class="pbill">ose €32/muaj me pagesë vjetore · kurseni 20%</div>
+              <ul class="plist">
+                <li class="y"><span class="pdot y">✓</span>Gjithçka nga Starter</li>
+                <li class="y"><span class="pdot y">✓</span>Brendi i plotë custom</li>
+                <li class="y"><span class="pdot y">✓</span>Deri 100 listingje</li>
+                <li class="y"><span class="pdot y">✓</span>Pagesa online (Stripe)</li>
+                <li class="y"><span class="pdot y">✓</span>Deri 5 staf</li>
+                <li class="y"><span class="pdot y">✓</span>Blog + pagesa online</li>
+                <li class="y"><span class="pdot y">✓</span>Njoftime SMS & Email</li>
+              </ul>
+              <a href="#" class="btn btn-red btn-bl" data-pg="signup" data-plan="trial">Provo 14 Ditë Falas</a>
+            </div>
+            <div class="pc">
+              <div class="pname">Enterprise</div>
+              <div class="pprice">€80<sub>+/muaj</sub></div>
+              <div class="pbill">Çmim i personalizuar sipas nevojave tuaja</div>
+              <ul class="plist">
+                <li class="y"><span class="pdot y">✓</span>Gjithçka nga Pro</li>
+                <li class="y"><span class="pdot y">✓</span>Staf i pakufizuar</li>
+                <li class="y"><span class="pdot y">✓</span>CRM i integruar</li>
+                <li class="y"><span class="pdot y">✓</span>CSV & PDF export</li>
+                <li class="y"><span class="pdot y">✓</span>API akses + Webhook</li>
+                <li class="y"><span class="pdot y">✓</span>Domain custom</li>
+                <li class="y"><span class="pdot y">✓</span>Chatbot AI për vizitorët</li>
+                <li class="y"><span class="pdot y">✓</span>Suport prioritar 24/7</li>
+              </ul>
+              <a href="#" class="btn btn-out btn-bl" data-pg="signup" data-plan="enterprise">Fillo Tani</a>
+            </div>
+          </div>
+          <div class="lbl" style="margin-top:72px">Pyetje të shpeshta mbi çmimet</div>
+          <div class="faq-wrap" style="max-width:100%">
+            <div class="fq"><button class="fq-q" onclick="this.closest('.fq').classList.toggle('open')"><span>A kam
+                  nevojë për kartë krediti për periudhën falas?</span><span class="fq-ic">▼</span></button>
+              <div class="fq-a">Jo. Prova 14-ditore e planit Pro aktivizohet pa kartë krediti. Plotësoni vetëm emailin
+                dhe fjalëkalimin.</div>
+            </div>
+            <div class="fq"><button class="fq-q" onclick="this.closest('.fq').classList.toggle('open')"><span>A mund të
+                  ndrysho planin në çdo kohë?</span><span class="fq-ic">▼</span></button>
+              <div class="fq-a">Po. Rritja e planit bëhet menjëherë, reduktimi hyn në fuqi në faturën e ardhshme mujore.
+              </div>
+            </div>
+            <div class="fq"><button class="fq-q" onclick="this.closest('.fq').classList.toggle('open')"><span>Si
+                  funksionon faturimi?</span><span class="fq-ic">▼</span></button>
+              <div class="fq-a">Faturimi bëhet çdo muaj ose çdo vit (me 20% zbritje). Pranoj kartë krediti/debiti
+                nëpërmjet Stripe.</div>
+            </div>
+            <div class="fq"><button class="fq-q" onclick="this.closest('.fq').classList.toggle('open')"><span>A ka
+                  tarifë instalimi apo tarifa të fshehura?</span><span class="fq-ic">▼</span></button>
+              <div class="fq-a">Jo. Paguani vetëm çmimin e planit. Pa tarifa instalimi, pa tarifa setup, pa surpriza.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <footer class="footer">
+        <div class="wrap fg">
+          <div><span class="f-logo">Biz<b>AL</b></span>
+            <p class="f-tag">Platforma SaaS #1 për bizneset shqiptare.</p>
+          </div>
+          <div>
+            <div class="fh">Platforma</div>
+            <div class="fn">
+              <a href="#" data-pg="home">Home</a>
+              <a href="#" data-pg="vecorite">Veçoritë</a>
+            </div>
+          </div>
+          <div>
+            <div class="fh">Kompania</div>
+            <div class="fn">
+              <a href="#" data-pg="about">Rreth Nesh</a>
+              <a href="#" data-pg="contact">Kontakt</a>
+            </div>
+          </div>
+          <div>
+            <div class="fh">Demo Live</div>
+            <div class="fn">
+              <a href="https://restorant-adriatiku.bizal.al" data-demo-slug="restorant-adriatiku" target="_blank">🍽️ Restorant</a>
+              <a href="https://hertz-albania.bizal.al" data-demo-slug="hertz-albania" target="_blank">🚗 Car Rental</a>
+              <a href="https://klinika-shendeti.bizal.al" data-demo-slug="klinika-shendeti" target="_blank">🏥 Klinikë</a>
+              <a href="https://barber-kings-tirana.bizal.al" data-demo-slug="barber-kings-tirana" target="_blank">💈 Salon</a>
+            </div>
+          </div>
+        </div>
+        <div class="f-bot">
+          <div class="wrap">
+            <div class="f-bot-in">
+              <p>© 2026 BizAL.</p>
+              <div class="f-blinks"><a href="#" data-pg="kushte">Kushtet</a><a href="#" data-pg="privatesia">Privatësia</a></div>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <!-- VLERËSIMET -->
+  <div id="pg-vlereismet" class="pg">
+    <div class="pg-body">
+      <div class="pg-hdr pg-hdr-border">
+        <div class="wrap">
+          <div class="lbl">Vlerësimet</div>
+          <h1>Çfarë thonë klientët</h1>
+          <p>Mbi 500 biznese shqiptare besojnë BizAL çdo ditë</p>
+        </div>
+      </div>
+      <section class="sect">
+        <div class="wrap">
+          <div class="rev-sum">
+            <div class="big-sc" id="avg-sc">—</div>
+            <div class="sc-meta">
+              <div class="stars" id="avg-stars-el"></div>
+              <div class="sc-tot" id="sc-tot">duke ngarkuar...</div>
+            </div>
+            <div class="bar-rows" id="bar-rows"></div>
+          </div>
+          <div class="revs-grid" id="revs-grid">
+            <div class="loading">
+              <div class="spin"></div>Duke ngarkuar vlerësimet...
+            </div>
+          </div>
+          <div class="rev-frm">
+            <h3>Lini vlerësimin tuaj</h3>
+            <p>Keni përdorur BizAL? Na tregoni për përvojën tuaj.</p>
+            <div class="sp" id="sp">
+              <button class="spb" data-v="1">⭐</button><button class="spb" data-v="2">⭐</button><button class="spb"
+                data-v="3">⭐</button><button class="spb" data-v="4">⭐</button><button class="spb" data-v="5">⭐</button>
+            </div>
+            <span class="splbl" id="splbl">Zgjidhni vlerësimin tuaj</span>
+            <div class="g2"><input type="text" id="rv-nm" class="inp" placeholder="Emri juaj" /><input type="text"
+                id="rv-bz" class="inp" placeholder="Emri i biznesit" /></div>
+            <textarea id="rv-bd" class="inp" style="margin-top:11px" rows="3"
+              placeholder="Tregoni për përvojën tuaj me BizAL..."></textarea>
+            <button class="btn btn-red" id="rv-sub" style="margin-top:14px">Dërgo Vlerësimin →</button>
+            <div class="fb" id="rv-fb"></div>
+          </div>
+        </div>
+      </section>
+      <footer class="footer">
+        <div class="wrap fg">
+          <div><span class="f-logo">Biz<b>AL</b></span>
+            <p class="f-tag">Platforma SaaS #1 për bizneset shqiptare.</p>
+          </div>
+          <div>
+            <div class="fh">Platforma</div>
+            <div class="fn">
+              <a href="#" data-pg="home">Home</a>
+              <a href="#" data-pg="cmimet">Çmimet</a>
+            </div>
+          </div>
+          <div>
+            <div class="fh">Kompania</div>
+            <div class="fn">
+              <a href="#" data-pg="about">Rreth Nesh</a>
+              <a href="#" data-pg="contact">Kontakt</a>
+            </div>
+          </div>
+          <div>
+            <div class="fh">Demo Live</div>
+            <div class="fn">
+              <a href="https://restorant-adriatiku.bizal.al" data-demo-slug="restorant-adriatiku" target="_blank">🍽️ Restorant</a>
+              <a href="https://hertz-albania.bizal.al" data-demo-slug="hertz-albania" target="_blank">🚗 Car Rental</a>
+              <a href="https://klinika-shendeti.bizal.al" data-demo-slug="klinika-shendeti" target="_blank">🏥 Klinikë</a>
+              <a href="https://barber-kings-tirana.bizal.al" data-demo-slug="barber-kings-tirana" target="_blank">💈 Salon</a>
+            </div>
+          </div>
+        </div>
+        <div class="f-bot">
+          <div class="wrap">
+            <div class="f-bot-in">
+              <p>© 2026 BizAL.</p>
+              <div class="f-blinks"><a href="#" data-pg="kushte">Kushtet</a><a href="#" data-pg="privatesia">Privatësia</a></div>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <!-- BLOG -->
+  <div id="pg-blog" class="pg">
+    <div class="pg-body">
+      <div class="pg-hdr pg-hdr-border">
+        <div class="wrap">
+          <div class="lbl">Blog</div>
+          <h1>Blog BizAL</h1>
+          <p>Këshilla, udhëzime dhe risi për bizneset shqiptare</p>
+        </div>
+      </div>
+      <section style="padding:56px 0 100px">
+        <div class="wrap">
+          <div class="blog-grid" id="blog-grid">
+            <div class="loading">
+              <div class="spin"></div>Duke ngarkuar artikujt...
+            </div>
+          </div>
+        </div>
+      </section>
+      <footer class="footer">
+        <div class="wrap fg">
+          <div><span class="f-logo">Biz<b>AL</b></span>
+            <p class="f-tag">Platforma SaaS #1 për bizneset shqiptare.</p>
+          </div>
+          <div>
+            <div class="fh">Platforma</div>
+            <div class="fn">
+              <a href="#" data-pg="home">Home</a>
+              <a href="#" data-pg="cmimet">Çmimet</a>
+            </div>
+          </div>
+          <div>
+            <div class="fh">Kompania</div>
+            <div class="fn">
+              <a href="#" data-pg="about">Rreth Nesh</a>
+              <a href="#" data-pg="contact">Kontakt</a>
+            </div>
+          </div>
+          <div>
+            <div class="fh">Demo Live</div>
+            <div class="fn">
+              <a href="https://restorant-adriatiku.bizal.al" data-demo-slug="restorant-adriatiku" target="_blank">🍽️ Restorant</a>
+              <a href="https://hertz-albania.bizal.al" data-demo-slug="hertz-albania" target="_blank">🚗 Car Rental</a>
+              <a href="https://klinika-shendeti.bizal.al" data-demo-slug="klinika-shendeti" target="_blank">🏥 Klinikë</a>
+              <a href="https://barber-kings-tirana.bizal.al" data-demo-slug="barber-kings-tirana" target="_blank">💈 Salon</a>
+            </div>
+          </div>
+        </div>
+        <div class="f-bot">
+          <div class="wrap">
+            <div class="f-bot-in">
+              <p>© 2026 BizAL.</p>
+              <div class="f-blinks"><a href="#" data-pg="kushte">Kushtet</a><a href="#" data-pg="privatesia">Privatësia</a></div>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <div class="modal" id="art-modal">
+    <div class="m-bg" id="m-bg"></div>
+    <div class="m-box"><button class="m-cls" id="m-cls">✕</button>
+      <div id="art-cnt"></div>
+    </div>
+  </div>
+
+  <!-- ABOUT -->
+  <div id="pg-about" class="pg">
+    <div class="pg-body">
+      <div class="pg-hdr pg-hdr-border">
+        <div class="wrap">
+          <div class="lbl">Rreth nesh</div>
+          <h1>Historia e BizAL</h1>
+          <p>Platforma SaaS e ndërtuar me dashuri për bizneset shqiptare</p>
+        </div>
+      </div>
+      <section class="sect">
+        <div class="wrap">
+          <div class="ab-grid">
+            <div class="ab-text">
+              <div class="lbl">Misioni ynë</div>
+              <h2 style="margin-bottom:22px">Digjitalizimi i<br><span class="italic">biznesit shqiptar</span></h2>
+              <p>BizAL lindi nga nevoja reale — mijëra biznese shqiptare menaxhonin gjithçka me fletore dhe telefon.
+                Sot, ne u ofrojmë atyre një platformë profesionale.</p>
+              <p>Ndërtuar me teknologjinë më të fundit, BizAL vë bizneset tuaja në qendër të çdo vendimi.</p>
+              <div class="vals">
+                <div class="vi"><span class="vi-ic">🏗️</span>
+                  <div>
+                    <h4>Ndërtuar lokal</h4>
+                    <p>Ekipi ynë është në Tiranë — kuptojmë sfidat reale</p>
+                  </div>
+                </div>
+                <div class="vi"><span class="vi-ic">🔒</span>
+                  <div>
+                    <h4>Siguri & privatësi</h4>
+                    <p>GDPR compliant, hosting në serverë europianë</p>
+                  </div>
+                </div>
+                <div class="vi"><span class="vi-ic">🚀</span>
+                  <div>
+                    <h4>Inovacion i vazhdueshëm</h4>
+                    <p>Çdo javë feature të reja bazuar në feedback</p>
+                  </div>
+                </div>
+                <div class="vi"><span class="vi-ic">🤝</span>
+                  <div>
+                    <h4>Partneritet afatgjatë</h4>
+                    <p>Jo vetëm softuer — partneri juaj i rritjes dixhitale</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="ab-vis">
+                <span class="flag-anim">🇦🇱</span>
+                <div
+                  style="font-family:var(--font-d);font-size:1.25rem;margin-bottom:7px;font-weight:700;position:relative">
+                  Made in Albania</div>
+                <div style="font-size:.82rem;color:var(--muted);position:relative;font-weight:400">Ndërtuar me ❤️ në
+                  Tiranë</div>
+                <div class="ab-sts">
+                  <div class="as"><span class="as-n">2023</span><span class="as-l">Themelimi</span></div>
+                  <div class="as"><span class="as-n">12+</span><span class="as-l">Ekipi</span></div>
+                  <div class="as"><span class="as-n">500+</span><span class="as-l">Biznese</span></div>
+                  <div class="as"><span class="as-n">99.9%</span><span class="as-l">Uptime</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section class="sect-sm" style="background:var(--surface);border-top:1px solid var(--border)">
+        <div class="wrap tc">
+          <div class="lbl" style="justify-content:center">Ekipi</div>
+          <h2>Njerëzit pas BizAL</h2>
+          <div class="team">
+            <div class="tc2">
+              <div class="tav" style="background:linear-gradient(135deg,#C0251B,#d42e23)">AK</div>
+              <div class="tnm">Artan K.</div>
+              <div class="trl">CEO & Founder</div>
+            </div>
+            <div class="tc2">
+              <div class="tav" style="background:linear-gradient(135deg,#1A6B42,#00b894)">SB</div>
+              <div class="tnm">Sara B.</div>
+              <div class="trl">Head of Design</div>
+            </div>
+            <div class="tc2">
+              <div class="tav" style="background:linear-gradient(135deg,#553285,#6c5ce7)">DM</div>
+              <div class="tnm">Denis M.</div>
+              <div class="trl">Lead Engineer</div>
+            </div>
+            <div class="tc2">
+              <div class="tav" style="background:linear-gradient(135deg,#B8860B,#e6a817)">EH</div>
+              <div class="tnm">Elira H.</div>
+              <div class="trl">Customer Success</div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <footer class="footer">
+        <div class="wrap fg">
+          <div><span class="f-logo">Biz<b>AL</b></span>
+            <p class="f-tag">Platforma SaaS #1 për bizneset shqiptare.</p>
+          </div>
+          <div>
+            <div class="fh">Platforma</div>
+            <div class="fn">
+              <a href="#" data-pg="home">Home</a>
+              <a href="#" data-pg="cmimet">Çmimet</a>
+            </div>
+          </div>
+          <div>
+            <div class="fh">Kompania</div>
+            <div class="fn">
+              <a href="#" data-pg="contact">Kontakt</a>
+            </div>
+          </div>
+          <div>
+            <div class="fh">Demo Live</div>
+            <div class="fn">
+              <a href="https://restorant-adriatiku.bizal.al" data-demo-slug="restorant-adriatiku" target="_blank">🍽️ Restorant</a>
+              <a href="https://hertz-albania.bizal.al" data-demo-slug="hertz-albania" target="_blank">🚗 Car Rental</a>
+              <a href="https://klinika-shendeti.bizal.al" data-demo-slug="klinika-shendeti" target="_blank">🏥 Klinikë</a>
+              <a href="https://barber-kings-tirana.bizal.al" data-demo-slug="barber-kings-tirana" target="_blank">💈 Salon</a>
+            </div>
+          </div>
+        </div>
+        <div class="f-bot">
+          <div class="wrap">
+            <div class="f-bot-in">
+              <p>© 2026 BizAL.</p>
+              <div class="f-blinks"><a href="#" data-pg="kushte">Kushtet</a><a href="#" data-pg="privatesia">Privatësia</a></div>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <!-- KUSHTET E PËRDORIMIT -->
+  <div id="pg-kushte" class="pg">
+    <div class="pg-body">
+      <div class="pg-hdr pg-hdr-border">
+        <div class="wrap">
+          <div class="lbl">Dokumente ligjore</div>
+          <h1>Kushtet e Përdorimit</h1>
+          <p>Përditësuar më: 5 Korrik 2026</p>
+        </div>
+      </div>
+      <section class="sect">
+        <div class="wrap" style="max-width:820px">
+          <div class="a-body">
+            <p>Këto Kushte të Përdorimit ("Kushtet") rregullojnë përdorimin e platformës BizAL
+              (bizal.al), përfshirë çdo nën-domain biznesi ("Platforma"), të ofruar nga BizAL. Duke
+              krijuar një llogari ose duke përdorur Platformën, ju pranoni këto Kushte në tërësi. Nëse
+              nuk jeni dakord me to, ju lutem mos e përdorni Platformën.</p>
+
+            <h3 style="font-family:var(--font-d);font-weight:700;font-size:1.15rem;margin:30px 0 10px">1. Përshkrimi i shërbimit</h3>
+            <p>BizAL është një platformë SaaS (Software-as-a-Service) multi-tenant që u lejon
+              bizneseve shqiptare të krijojnë faqen e tyre online, të menaxhojnë rezervime, porosi,
+              staf, klientë dhe analitikë, përmes një paneli administrimi dhe një dyqani/vitrine
+              publike të dedikuar për secilin biznes ("Tenant").</p>
+
+            <h3 style="font-family:var(--font-d);font-weight:700;font-size:1.15rem;margin:30px 0 10px">2. Llogaria dhe regjistrimi</h3>
+            <p>Për të krijuar një biznes në BizAL ose për të përdorur shërbimet e një biznesi që
+              përdor BizAL, duhet të regjistroni një llogari me informacion të saktë e të plotë. Jeni
+              përgjegjës për konfidencialitetin e fjalëkalimit tuaj dhe për çdo veprimtari që ndodh nën
+              llogarinë tuaj.</p>
+
+            <h3 style="font-family:var(--font-d);font-weight:700;font-size:1.15rem;margin:30px 0 10px">3. Abonimet, çmimet dhe pagesat</h3>
+            <p>Planet me pagesë ofrojnë një periudhë prove falas prej 14 ditësh. Pas përfundimit të
+              provës, abonimi vazhdon automatikisht sipas planit të zgjedhur dhe faturohet përmes
+              procesorit tonë të pagesave (Stripe), përveç rasteve kur anulohet më parë. Çmimet
+              aktuale të planeve publikohen në faqen e Çmimeve dhe mund të ndryshojnë me njoftim
+              paraprak. Anulimi mund të bëhet në çdo kohë nga paneli i llogarisë; nuk ofrohen
+              rimbursime për periudha të faturuara pjesërisht, përveçse kur kërkohet ndryshe nga
+              ligji.</p>
+
+            <h3 style="font-family:var(--font-d);font-weight:700;font-size:1.15rem;margin:30px 0 10px">4. Përdorimi i lejuar</h3>
+            <p>Ju pranoni të mos përdorni Platformën për qëllime të paligjshme, për të shpërndarë
+              përmbajtje mashtruese, dëmshme ose që shkelin të drejtat e palëve të treta, dhe të mos
+              përpiqeni të prishni sigurinë apo funksionimin normal të Platformës (p.sh. skanime
+              sigurie të paautorizuara, sulme mbi infrastrukturën, apo abuzim i API-ve).</p>
+
+            <h3 style="font-family:var(--font-d);font-weight:700;font-size:1.15rem;margin:30px 0 10px">5. Pronësia e të dhënave dhe përmbajtjes</h3>
+            <p>Çdo biznes ("Tenant") mban pronësinë e plotë të të dhënave, klientëve, produkteve dhe
+              përmbajtjes që ngarkon në Platformë. BizAL vepron si përpunues i të dhënave në emër të
+              biznesit dhe nuk pretendon pronësi mbi to. Në rast mbylljeje të llogarisë, biznesi mund
+              të kërkojë eksportimin e të dhënave të veta brenda afateve të arsyeshme.</p>
+
+            <h3 style="font-family:var(--font-d);font-weight:700;font-size:1.15rem;margin:30px 0 10px">6. Pronësia intelektuale</h3>
+            <p>Emri BizAL, logo, dizajni dhe kodi burimor i Platformës mbeten pronësi e BizAL. Këto
+              Kushte nuk ju japin asnjë të drejtë mbi markën apo teknologjinë tonë, përveç të drejtës
+              së kufizuar për ta përdorur Platformën sipas këtyre Kushteve.</p>
+
+            <h3 style="font-family:var(--font-d);font-weight:700;font-size:1.15rem;margin:30px 0 10px">7. Kufizimi i përgjegjësisë</h3>
+            <p>Platforma ofrohet "siç është", pa garanci të asnjë lloji. Në masën e lejuar nga ligji,
+              BizAL nuk mban përgjegjësi për humbje indirekte, të përfituara ose dëme rrjedhëse që
+              vijnë nga përdorimi ose pamundësia për të përdorur Platformën.</p>
+
+            <h3 style="font-family:var(--font-d);font-weight:700;font-size:1.15rem;margin:30px 0 10px">8. Ndërprerja e shërbimit</h3>
+            <p>BizAL mund të pezullojë ose mbyllë llogari që shkelin këto Kushte, pas njoftimi kur
+              është e mundur. Ju mund të mbyllni llogarinë tuaj në çdo kohë nga paneli i llogarisë.</p>
+
+            <h3 style="font-family:var(--font-d);font-weight:700;font-size:1.15rem;margin:30px 0 10px">9. Ndryshimet në Kushte</h3>
+            <p>Këto Kushte mund të përditësohen herë pas here. Ndryshimet thelbësore do të
+              njoftohen përmes Platformës ose email-it të regjistruar. Vazhdimi i përdorimit pas
+              ndryshimeve nënkupton pranimin e tyre.</p>
+
+            <h3 style="font-family:var(--font-d);font-weight:700;font-size:1.15rem;margin:30px 0 10px">10. Ligji i zbatueshëm</h3>
+            <p>Këto Kushte rregullohen nga legjislacioni i Republikës së Shqipërisë. Çdo mosmarrëveshje
+              do të trajtohet nga gjykatat kompetente shqiptare, përveçse kur ligji parashikon
+              ndryshe.</p>
+
+            <h3 style="font-family:var(--font-d);font-weight:700;font-size:1.15rem;margin:30px 0 10px">11. Na kontaktoni</h3>
+            <p>Për pyetje rreth këtyre Kushteve, na shkruani në <a href="mailto:support@bizal.al" style="color:var(--red)">support@bizal.al</a>.</p>
+          </div>
+        </div>
+      </section>
+      <footer class="footer">
+        <div class="wrap fg">
+          <div><span class="f-logo">Biz<b>AL</b></span>
+            <p class="f-tag">Platforma SaaS #1 për bizneset shqiptare.</p>
+          </div>
+          <div>
+            <div class="fh">Platforma</div>
+            <div class="fn">
+              <a href="#" data-pg="home">Home</a>
+              <a href="#" data-pg="cmimet">Çmimet</a>
+            </div>
+          </div>
+          <div>
+            <div class="fh">Kompania</div>
+            <div class="fn">
+              <a href="#" data-pg="about">Rreth Nesh</a>
+              <a href="#" data-pg="contact">Kontakt</a>
+            </div>
+          </div>
+          <div>
+            <div class="fh">Demo Live</div>
+            <div class="fn">
+              <a href="https://restorant-adriatiku.bizal.al" data-demo-slug="restorant-adriatiku" target="_blank">🍽️ Restorant</a>
+              <a href="https://hertz-albania.bizal.al" data-demo-slug="hertz-albania" target="_blank">🚗 Car Rental</a>
+              <a href="https://klinika-shendeti.bizal.al" data-demo-slug="klinika-shendeti" target="_blank">🏥 Klinikë</a>
+              <a href="https://barber-kings-tirana.bizal.al" data-demo-slug="barber-kings-tirana" target="_blank">💈 Salon</a>
+            </div>
+          </div>
+        </div>
+        <div class="f-bot">
+          <div class="wrap">
+            <div class="f-bot-in">
+              <p>© 2026 BizAL.</p>
+              <div class="f-blinks"><a href="#" data-pg="kushte">Kushtet</a><a href="#" data-pg="privatesia">Privatësia</a></div>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <!-- POLITIKA E PRIVATËSISË -->
+  <div id="pg-privatesia" class="pg">
+    <div class="pg-body">
+      <div class="pg-hdr pg-hdr-border">
+        <div class="wrap">
+          <div class="lbl">Dokumente ligjore</div>
+          <h1>Politika e Privatësisë</h1>
+          <p>Përditësuar më: 5 Korrik 2026</p>
+        </div>
+      </div>
+      <section class="sect">
+        <div class="wrap" style="max-width:820px">
+          <div class="a-body">
+            <p>Kjo Politikë e Privatësisë shpjegon si BizAL mbledh, përdor dhe mbron të dhënat tuaja
+              personale kur përdorni platformën BizAL (bizal.al) ose faqen e një biznesi që e
+              përdor atë.</p>
+
+            <h3 style="font-family:var(--font-d);font-weight:700;font-size:1.15rem;margin:30px 0 10px">1. Kush jemi</h3>
+            <p>BizAL është kontrolluesi i të dhënave për informacionin e llogarisë suaj në platformën
+              tonë (emër, email, faturim). Për çdo biznes individual (Tenant), ai biznes vepron si
+              kontrollues i të dhënave të klientëve të tij, ndërsa BizAL vepron si përpunues teknik
+              në infrastrukturën tonë.</p>
+
+            <h3 style="font-family:var(--font-d);font-weight:700;font-size:1.15rem;margin:30px 0 10px">2. Të dhënat që mbledhim</h3>
+            <p>Mbledhim: (a) të dhëna regjistrimi — emër, email, fjalëkalim (i enkriptuar); (b) të
+              dhëna përdorimi — veprime brenda panelit, log-e teknikë; (c) të dhëna faturimi —
+              përpunuar drejtpërdrejt nga Stripe, ne nuk ruajmë numra kartash; (d) cookies teknike
+              për sesionin dhe preferencat (p.sh. tema e errët/e çelët).</p>
+
+            <h3 style="font-family:var(--font-d);font-weight:700;font-size:1.15rem;margin:30px 0 10px">3. Si i përdorim të dhënat</h3>
+            <p>I përdorim të dhënat për të ofruar dhe mirëmbajtur shërbimin, për t'ju identifikuar
+              dhe autentikuar, për të përpunuar pagesat, për të dërguar njoftime të rëndësishme
+              (p.sh. skadimi i provës, konfirmime rezervimi) dhe, me pëlqimin tuaj, për komunikime
+              marketingu.</p>
+
+            <h3 style="font-family:var(--font-d);font-weight:700;font-size:1.15rem;margin:30px 0 10px">4. Ndarja me palë të treta</h3>
+            <p>Ndajmë të dhëna vetëm me ofrues shërbimi të domosdoshëm për funksionimin e
+              Platformës: Stripe (përpunimi i pagesave), ofruesi ynë i hostingut (serverë në
+              Evropë) dhe shërbimet e email-it për njoftime transaksionale. Nuk shesim të dhënat
+              tuaja tek palë të treta për qëllime marketingu.</p>
+
+            <h3 style="font-family:var(--font-d);font-weight:700;font-size:1.15rem;margin:30px 0 10px">5. Cookies</h3>
+            <p>Përdorim cookies thelbësore për identifikimin e sesionit (JWT refresh token) dhe për
+              të kujtuar preferencën tuaj të temës (e errët/e çelët). Nuk përdorim cookies
+              përgjurmuese (tracking) të palëve të treta për reklama.</p>
+
+            <h3 style="font-family:var(--font-d);font-weight:700;font-size:1.15rem;margin:30px 0 10px">6. Ruajtja e të dhënave</h3>
+            <p>Ruajmë të dhënat e llogarisë tuaj për sa kohë llogaria është aktive. Pas kërkesës për
+              fshirje të llogarisë, të dhënat personale fshihen ose anonimizohen brenda një afati të
+              arsyeshëm, përveç rasteve kur ligji kërkon ruajtje më të gjatë (p.sh. dokumente
+              fiskale).</p>
+
+            <h3 style="font-family:var(--font-d);font-weight:700;font-size:1.15rem;margin:30px 0 10px">7. Të drejtat tuaja</h3>
+            <p>Keni të drejtë të kërkoni akses, korrigjim, fshirje ose eksportim (portabilitet) të
+              të dhënave tuaja personale, si dhe të kundërshtoni përpunimin për qëllime marketingu.
+              Për të ushtruar këto të drejta, na kontaktoni në adresën më poshtë.</p>
+
+            <h3 style="font-family:var(--font-d);font-weight:700;font-size:1.15rem;margin:30px 0 10px">8. Siguria</h3>
+            <p>Përdorim enkriptim në transmetim (HTTPS), fjalëkalime të hash-uara dhe token-a
+              autentikimi me jetëgjatësi të kufizuar për të mbrojtur llogarinë tuaj. Asnjë sistem
+              nuk është 100% i pacenueshëm, por punojmë vazhdimisht për ta forcuar sigurinë.</p>
+
+            <h3 style="font-family:var(--font-d);font-weight:700;font-size:1.15rem;margin:30px 0 10px">9. Ndryshimet në politikë</h3>
+            <p>Kjo politikë mund të përditësohet periodikisht. Data e përditësimit të fundit
+              shfaqet në krye të kësaj faqeje.</p>
+
+            <h3 style="font-family:var(--font-d);font-weight:700;font-size:1.15rem;margin:30px 0 10px">10. Na kontaktoni</h3>
+            <p>Për çdo pyetje rreth privatësisë, na shkruani në <a href="mailto:support@bizal.al" style="color:var(--red)">support@bizal.al</a>.</p>
+          </div>
+        </div>
+      </section>
+      <footer class="footer">
+        <div class="wrap fg">
+          <div><span class="f-logo">Biz<b>AL</b></span>
+            <p class="f-tag">Platforma SaaS #1 për bizneset shqiptare.</p>
+          </div>
+          <div>
+            <div class="fh">Platforma</div>
+            <div class="fn">
+              <a href="#" data-pg="home">Home</a>
+              <a href="#" data-pg="cmimet">Çmimet</a>
+            </div>
+          </div>
+          <div>
+            <div class="fh">Kompania</div>
+            <div class="fn">
+              <a href="#" data-pg="about">Rreth Nesh</a>
+              <a href="#" data-pg="contact">Kontakt</a>
+            </div>
+          </div>
+          <div>
+            <div class="fh">Demo Live</div>
+            <div class="fn">
+              <a href="https://restorant-adriatiku.bizal.al" data-demo-slug="restorant-adriatiku" target="_blank">🍽️ Restorant</a>
+              <a href="https://hertz-albania.bizal.al" data-demo-slug="hertz-albania" target="_blank">🚗 Car Rental</a>
+              <a href="https://klinika-shendeti.bizal.al" data-demo-slug="klinika-shendeti" target="_blank">🏥 Klinikë</a>
+              <a href="https://barber-kings-tirana.bizal.al" data-demo-slug="barber-kings-tirana" target="_blank">💈 Salon</a>
+            </div>
+          </div>
+        </div>
+        <div class="f-bot">
+          <div class="wrap">
+            <div class="f-bot-in">
+              <p>© 2026 BizAL.</p>
+              <div class="f-blinks"><a href="#" data-pg="kushte">Kushtet</a><a href="#" data-pg="privatesia">Privatësia</a></div>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <!-- CONTACT -->
+  <div id="pg-contact" class="pg">
+    <div class="pg-body">
+      <div class="pg-hdr pg-hdr-border">
+        <div class="wrap">
+          <div class="lbl">Kontakt</div>
+          <h1>Na kontaktoni</h1>
+          <p>Jemi këtu për t'ju ndihmuar — pyetje, sugjerime apo bashkëpunim</p>
+        </div>
+      </div>
+      <section class="sect">
+        <div class="wrap">
+          <div class="ct-grid">
+            <div class="ci-list">
+              <div class="ci"><span class="ci-ic">📧</span>
+                <div>
+                  <div class="ci-lbl">Email</div>
+                  <div class="ci-val"><a href="mailto:hello@bizal.al">hello@bizal.al</a></div>
+                </div>
+              </div>
+              <div class="ci"><span class="ci-ic">💬</span>
+                <div>
+                  <div class="ci-lbl">WhatsApp</div>
+                  <div class="ci-val"><a href="#">+355 XX XXX XXXX</a></div>
+                </div>
+              </div>
+              <div class="ci"><span class="ci-ic">📍</span>
+                <div>
+                  <div class="ci-lbl">Adresa</div>
+                  <div class="ci-val">Rruga Myslym Shyri, Tiranë 1001</div>
+                </div>
+              </div>
+              <div class="ci"><span class="ci-ic">🕐</span>
+                <div>
+                  <div class="ci-lbl">Orari</div>
+                  <div class="ci-val">E Hënë–Premte · 09:00–18:00</div>
+                </div>
+              </div>
+              <div class="ci"><span class="ci-ic">⚡</span>
+                <div>
+                  <div class="ci-lbl">Kohë përgjigje</div>
+                  <div class="ci-val">Brenda 2 orësh · Enterprise: 24/7</div>
+                </div>
+              </div>
+            </div>
+            <div class="ctf">
+              <h3>Dërgoni mesazh</h3>
+              <p>Plotësoni formularin dhe do t'ju kthehemi sa më shpejt.</p>
+              <div class="fcol">
+                <div class="g2"><input type="text" id="ct-nm" class="inp" placeholder="Emri juaj" /><input type="email"
+                    id="ct-em" class="inp" placeholder="Email" /></div>
+                <input type="text" id="ct-su" class="inp" placeholder="Subjekti" />
+                <select id="ct-tp" class="inp">
+                  <option value="">Zgjidhni temën...</option>
+                  <option value="sales">💼 Informacion mbi planet</option>
+                  <option value="support">🔧 Asistencë teknike</option>
+                  <option value="billing">💳 Faturim & Pagesa</option>
+                  <option value="partnership">🤝 Bashkëpunim</option>
+                  <option value="other">💬 Tjetër</option>
+                </select>
+                <textarea id="ct-ms" class="inp" rows="5" placeholder="Mesazhi juaj..."></textarea>
+                <button class="btn btn-red" id="ct-sub">Dërgo Mesazhin →</button>
+                <div class="fb" id="ct-fb"></div>
+              </div>
+            </div>
+          </div>
+          <div class="lbl" style="margin-top:72px;justify-content:center;display:flex">FAQ</div>
+          <h2 class="tc" style="margin-bottom:0">Pyetje të shpeshta</h2>
+          <div class="faq-wrap" id="faq-list"></div>
+        </div>
+      </section>
+      <footer class="footer">
+        <div class="wrap fg">
+          <div><span class="f-logo">Biz<b>AL</b></span>
+            <p class="f-tag">Platforma SaaS #1 për bizneset shqiptare.</p>
+          </div>
+          <div>
+            <div class="fh">Platforma</div>
+            <div class="fn">
+              <a href="#" data-pg="home">Home</a>
+              <a href="#" data-pg="cmimet">Çmimet</a>
+            </div>
+          </div>
+          <div>
+            <div class="fh">Kompania</div>
+            <div class="fn">
+              <a href="#" data-pg="about">Rreth Nesh</a>
+            </div>
+          </div>
+          <div>
+            <div class="fh">Demo Live</div>
+            <div class="fn">
+              <a href="https://restorant-adriatiku.bizal.al" data-demo-slug="restorant-adriatiku" target="_blank">🍽️ Restorant</a>
+              <a href="https://hertz-albania.bizal.al" data-demo-slug="hertz-albania" target="_blank">🚗 Car Rental</a>
+              <a href="https://klinika-shendeti.bizal.al" data-demo-slug="klinika-shendeti" target="_blank">🏥 Klinikë</a>
+              <a href="https://barber-kings-tirana.bizal.al" data-demo-slug="barber-kings-tirana" target="_blank">💈 Salon</a>
+            </div>
+          </div>
+        </div>
+        <div class="f-bot">
+          <div class="wrap">
+            <div class="f-bot-in">
+              <p>© 2026 BizAL.</p>
+              <div class="f-blinks"><a href="#" data-pg="kushte">Kushtet</a><a href="#" data-pg="privatesia">Privatësia</a></div>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <!-- LOGIN -->
+  <div id="pg-login" class="pg">
+    <div class="pg-body">
+      <section class="sect">
+        <div class="wrap">
+          <div class="su-wrap">
+            <div class="su-card">
+              <h2>Mirë se vini</h2>
+              <p>Hyni me llogarinë tuaj të biznesit</p>
+              <div class="fcol">
+                <input type="email" id="li-em" class="inp" placeholder="Email" />
+                <input type="password" id="li-pw" class="inp" placeholder="Fjalëkalimi" />
+                <div style="text-align:right;margin-top:-4px"><a href="#" id="forgot-link" style="font-size:.78rem;color:var(--red)">Keni harruar fjalëkalimin?</a></div>
+                <button class="btn btn-red btn-bl" id="li-btn">Hyr →</button>
+                <div class="fb" id="li-fb"></div>
+              </div>
+              <p style="margin-top:22px;font-size:.83rem;color:var(--muted);text-align:center;font-weight:400">Nuk keni
+                llogari? <a href="#" data-pg="signup" style="color:var(--red);font-weight:700">Regjistrohuni falas</a>
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- SIGNUP -->
+  <div id="pg-signup" class="pg">
+    <div class="pg-body">
+      <section class="sect">
+        <div class="wrap">
+          <div class="su-wrap">
+            <div class="su-card">
+              <div id="su-toggle"
+                style="display:flex;background:var(--surface2);border:1.5px solid var(--border);border-radius:11px;padding:3px;margin-bottom:32px;gap:3px">
+                <button id="tog-user" onclick="suMode('user')"
+                  style="flex:1;padding:10px 12px;border-radius:8px;border:none;font-family:var(--font-b);font-size:.83rem;font-weight:700;cursor:pointer;transition:all .2s;background:var(--surface);color:var(--text);box-shadow:var(--sh)">👤
+                  Jam Klient</button>
+                <button id="tog-biz" onclick="suMode('biz')"
+                  style="flex:1;padding:10px 12px;border-radius:8px;border:none;font-family:var(--font-b);font-size:.83rem;font-weight:700;cursor:pointer;transition:all .2s;background:transparent;color:var(--muted);box-shadow:none">🏢
+                  Kam Biznes</button>
+              </div>
+              <div id="su-user-form">
+                <h2 style="margin-bottom:6px">Krijo llogari</h2>
+                <p style="color:var(--muted);margin-bottom:28px;font-size:.91rem;font-weight:400">Rezervoni shërbime,
+                  lini vlerësime, ndiqni porositë tuaja</p>
+                <div class="fcol">
+                  <div class="g2"><input type="text" id="ur-fn" class="inp" placeholder="Emri" /><input type="text"
+                      id="ur-ln" class="inp" placeholder="Mbiemri" /></div>
+                  <input type="email" id="ur-em" class="inp" placeholder="Email" />
+                  <input type="password" id="ur-pw" class="inp" placeholder="Fjalëkalimi (min 8 karaktere)" />
+                  <input type="password" id="ur-pw2" class="inp" placeholder="Konfirmo fjalëkalimin" />
+                  <button class="btn btn-red btn-bl" id="ur-btn">Krijo Llogarinë →</button>
+                  <div class="fb" id="ur-fb"></div>
+                </div>
+                <p style="margin-top:22px;font-size:.83rem;color:var(--muted);text-align:center;font-weight:400">Keni
+                  llogari? <a href="#" data-pg="login" style="color:var(--red);font-weight:700">Hyni këtu</a></p>
+              </div>
+              <div id="su-biz-form" style="display:none">
+                <h2 style="margin-bottom:6px">Regjistroni biznesin</h2>
+                <p style="color:var(--muted);margin-bottom:28px;font-size:.91rem;font-weight:400" id="su-biz-sub">14 ditë falas — pa
+                  kartë krediti · Setup 5 minuta</p>
+                <div class="fcol">
+                  <div id="su-loggedin-note" style="display:none;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;font-size:.85rem;color:var(--text);margin-bottom:4px">
+                    ✓ Jeni identifikuar si <strong id="su-loggedin-email"></strong> — biznesi juaj i ri do të lidhet me këtë llogari.
+                  </div>
+                  <input type="text" id="su-nm" class="inp" placeholder="Emri i biznesit (p.sh. Restorant Adriatiku)" />
+                  <div class="slug-row"><input type="text" id="su-sl" class="inp" placeholder="biznesijuaj" /><span
+                      class="slug-sfx">.bizal.al</span></div>
+                  <span class="slg-ck" id="slg-ck"></span>
+                  <div class="su-tp-wrap" style="position:relative">
+                    <input type="text" id="su-tp-search" class="inp" placeholder="🔍 Zgjidhni tipologjinë e biznesit..." autocomplete="off" />
+                    <input type="hidden" id="su-tp" />
+                    <div id="su-tp-list" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:20;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;max-height:230px;overflow-y:auto;box-shadow:var(--sh)"></div>
+                  </div>
+                  <select id="su-plan" class="inp">
+                    <option value="trial">🎁 Provë falas 14 ditë (pa kartë krediti)</option>
+                    <option value="starter">🚀 Starter — €15/muaj</option>
+                    <option value="pro">⭐ Pro — €40/muaj</option>
+                    <option value="enterprise">🏢 Enterprise — €80+/muaj</option>
+                  </select>
+                  <div id="su-owner-fields" style="display:flex;flex-direction:column;gap:10px">
+                    <input type="text" id="su-on" class="inp" placeholder="Emri juaj (pronari)" />
+                    <input type="email" id="su-em" class="inp" placeholder="Email" />
+                    <input type="password" id="su-pw" class="inp" placeholder="Fjalëkalimi (min 8 karaktere)" />
+                  </div>
+                  <input type="text" id="su-ref" class="inp" placeholder="Kod referimi (opsionale)" maxlength="20" style="letter-spacing:.08em;text-transform:uppercase" oninput="this.value=this.value.toUpperCase()" />
+                  <button class="btn btn-red btn-bl" id="su-btn">Fillo 14 Ditë Falas →</button>
+                  <div class="fb" id="su-fb"></div>
+                </div>
+                <p style="margin-top:22px;font-size:.83rem;color:var(--muted);text-align:center;font-weight:400" id="su-biz-login-hint">Keni
+                  llogari biznesi? <a href="#" data-pg="login" style="color:var(--red);font-weight:700">Hyni këtu</a>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- PROFILE -->
+  <div id="pg-profile" class="pg">
+    <div class="pg-body">
+      <div class="pg-hdr pg-hdr-border">
+        <div class="wrap">
+          <div class="lbl">Llogaria ime</div>
+          <h1>Profili</h1>
+          <p>Menaxhoni të dhënat, njoftimet dhe sigurinë e llogarisë suaj</p>
+        </div>
+      </div>
+      <section class="sect">
+        <div class="wrap">
+          <div class="su-wrap">
+            <div class="su-card">
+              <div style="display:flex;align-items:center;gap:20px;margin-bottom:32px;position:relative">
+                <div id="prof-av"
+                  style="width:62px;height:62px;border-radius:50%;background:linear-gradient(135deg,var(--red-light),var(--red));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.1rem;color:#fff;flex-shrink:0;box-shadow:var(--sh-red)">
+                </div>
+                <div>
+                  <div id="prof-name" style="font-weight:700;font-size:1.02rem"></div>
+                  <div id="prof-email" style="font-size:.82rem;color:var(--muted);font-weight:400"></div>
+                </div>
+              </div>
+              <div style="border-top:1px solid var(--border);padding-top:26px;margin-bottom:26px">
+                <div class="lbl" style="margin-bottom:18px">Ndrysho fjalëkalimin</div>
+                <div class="fcol">
+                  <input type="password" id="cp-old" class="inp" placeholder="Fjalëkalimi aktual" />
+                  <input type="password" id="cp-new" class="inp" placeholder="Fjalëkalimi i ri (min 8)" />
+                  <input type="password" id="cp-new2" class="inp" placeholder="Konfirmo fjalëkalimin e ri" />
+                  <button class="btn btn-dark" id="cp-btn">Ndrysho Fjalëkalimin →</button>
+                  <div class="fb" id="cp-fb"></div>
+                </div>
+              </div>
+              <div style="border-top:1px solid var(--border);padding-top:26px;margin-bottom:26px">
+                <div class="lbl" style="margin-bottom:14px">Njoftimet</div>
+                <div class="notif-row">
+                  <div><div class="notif-title">Konfirmim Rezervimi</div><div class="notif-desc">Email kur rezervimi konfirmohet</div></div>
+                  <label class="toggle"><input type="checkbox" id="notif-booking" checked /><div class="toggle-slider"></div></label>
+                </div>
+                <div class="notif-row">
+                  <div><div class="notif-title">Konfirmim Porosie</div><div class="notif-desc">Email kur porosia pranohet</div></div>
+                  <label class="toggle"><input type="checkbox" id="notif-order" checked /><div class="toggle-slider"></div></label>
+                </div>
+                <div class="notif-row">
+                  <div><div class="notif-title">Kujtues Rezervimi</div><div class="notif-desc">Kujtues 24h para takimit</div></div>
+                  <label class="toggle"><input type="checkbox" id="notif-reminder" checked /><div class="toggle-slider"></div></label>
+                </div>
+                <div class="notif-row">
+                  <div><div class="notif-title">Oferta & Promovime</div><div class="notif-desc">Zbritje dhe oferta nga bizneset partnere</div></div>
+                  <label class="toggle"><input type="checkbox" id="notif-promo" /><div class="toggle-slider"></div></label>
+                </div>
+                <div class="notif-row">
+                  <div><div class="notif-title">Lajme BizAL</div><div class="notif-desc">Funksionalitete të reja të platformës</div></div>
+                  <label class="toggle"><input type="checkbox" id="notif-news" /><div class="toggle-slider"></div></label>
+                </div>
+                <div style="margin-top:16px">
+                  <button class="btn btn-out" id="notif-save">Ruaj Preferencat</button>
+                  <div class="fb" id="notif-fb"></div>
+                </div>
+              </div>
+              <div style="border-top:1px solid var(--border);padding-top:26px;margin-bottom:26px">
+                <button class="btn btn-out" id="logout-btn" style="color:var(--red);border-color:rgba(192,37,27,.3)">Dil
+                  nga llogaria →</button>
+              </div>
+              <div style="border-top:1px solid var(--border);padding-top:26px">
+                <div class="danger-zone">
+                  <div class="danger-title">Zonë e Rrezikshme</div>
+                  <div class="danger-desc">Fshirja e llogarisë është e përhershme. Të gjitha rezervimet, porositë dhe vlerësimet tuaja do humbasin përgjithmonë.</div>
+                  <button class="btn-danger" id="btn-delete-account">Fshi Llogarinë Permanentisht</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+
+  <script>
+(function () { const t = localStorage.getItem('bizal-theme') || 'light'; document.documentElement.setAttribute('data-theme', t); document.getElementById('tbtn').textContent = t === 'dark' ? '☀️' : '🌙'; })();
+</script>
+<script>
+(function () {
+  // In local dev, DEMO_BASE_URL is set to http://localhost:8001 and the
+  // tenant middleware resolves via ?tenant=<slug> query param instead of
+  // subdomains, so rewrite the hardcoded production demo links to point
+  // at the local SPA instead of the unreachable *.bizal.al subdomains.
+  const base = "{{ demo_base_url|default:''|escapejs }}";
+  if (!base) return;
+  document.querySelectorAll('a[data-demo-slug]').forEach(a => {
+    a.href = base + '/?tenant=' + a.getAttribute('data-demo-slug');
+  });
+})();
+</script>
+<script src="{% static 'js/ui.js' %}"></script>
+<script src="{% static 'js/auth.js' %}"></script>
+<script>
+    document.getElementById('tbtn').addEventListener('click', () => { Theme.toggle(); document.getElementById('tbtn').textContent = Theme.current() === 'dark' ? '☀️' : '🌙'; });
+
+    // toast() and parseJWT() provided by ui.js / auth.js
+
+    Auth.pickupTokensFromUrl();
+
+    // Referral links arrive as ?ref=CODE — prefill (and remember) the
+    // signup form's referral field so the code survives navigating
+    // between pages before the person actually submits the form.
+    (function pickupReferralFromUrl() {
+      const ref = new URLSearchParams(location.search).get('ref');
+      if (ref) localStorage.setItem('bizal_referral_code', ref.trim().toUpperCase());
+      const stored = localStorage.getItem('bizal_referral_code');
+      const field = document.getElementById('su-ref');
+      if (stored && field) field.value = stored;
+    })();
+
+    async function checkAuth() {
+      let token = Auth.getAccess();
+      if (!token) {
+        try { token = await Auth.refreshAccess(); } catch { return; }
+      }
+      if (!token) return;
+      const payload = parseJWT(token); if (!payload) return;
+      if (payload.exp && payload.exp * 1000 < Date.now()) { localStorage.removeItem('bizal_access'); localStorage.removeItem('bizal_refresh'); localStorage.removeItem('access'); localStorage.removeItem('refresh'); return; }
+      _authedEmail = payload.email || '';
+      updateBizFormAuthState();
+      const email = payload.email || ''; const first = (payload.first_name || '').trim(); const last = (payload.last_name || '').trim(); const name = first || email.split('@')[0] || 'U';
+      const initials = (first && last) ? (first[0] + last[0]).toUpperCase() : name.substring(0, 2).toUpperCase();
+      const navR = document.querySelector('.nav-r'); const loginBtn = navR.querySelector('[data-pg="login"]'); const signupBtn = navR.querySelector('[data-pg="signup"]');
+      if (loginBtn) loginBtn.style.display = 'none'; if (signupBtn) signupBtn.style.display = 'none';
+      if (!document.getElementById('nav-avatar')) { const av = document.createElement('button'); av.id = 'nav-avatar'; av.title = 'Profili im'; av.style.cssText = 'width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--red-light),var(--red));border:none;color:#fff;font-weight:700;font-size:.76rem;cursor:pointer;flex-shrink:0;box-shadow:var(--sh-red)'; av.textContent = initials; av.addEventListener('click', () => go('profile')); navR.insertBefore(av, navR.querySelector('.hbg')); }
+      const el = document.getElementById('prof-av'); if (el) el.textContent = initials;
+      const nm = document.getElementById('prof-name'); if (nm) nm.textContent = [payload.first_name, payload.last_name].filter(Boolean).join(' ') || payload.email || 'Përdoruesi';
+      const em = document.getElementById('prof-email'); if (em) em.textContent = payload.email || '';
+    }
+
+
+    document.getElementById('forgot-link')?.addEventListener('click', function(e) {
+      e.preventDefault();
+      document.getElementById('reset-overlay').style.display = 'flex';
+      document.getElementById('reset-step1').style.display = '';
+      document.getElementById('reset-step2').style.display = 'none';
+      document.getElementById('reset-err').style.display = 'none';
+      document.getElementById('reset-email').value = '';
+    });
+    function closeReset() { document.getElementById('reset-overlay').style.display = 'none'; }
+    document.getElementById('reset-overlay')?.addEventListener('click', function(e) { if (e.target===this) closeReset(); });
+
+    // Shared "create/continue a tenant?" popup used after both registration
+    // paths succeed (see ur-btn and su-btn handlers below). Resolves true on
+    // "Yes", false on "No" (including clicking the backdrop) — the caller
+    // decides where to send the person for each answer.
+    function askTenantConfirm({ title, message, yesLabel, noLabel }) {
+      return new Promise(resolve => {
+        const overlay = document.getElementById('tenant-confirm-overlay');
+        document.getElementById('tc-title').textContent = title;
+        document.getElementById('tc-msg').textContent = message;
+        const yesBtn = document.getElementById('tc-yes');
+        const noBtn = document.getElementById('tc-no');
+        yesBtn.textContent = yesLabel;
+        noBtn.textContent = noLabel;
+        overlay.style.display = 'flex';
+        function cleanup(result) {
+          overlay.style.display = 'none';
+          yesBtn.removeEventListener('click', onYes);
+          noBtn.removeEventListener('click', onNo);
+          overlay.removeEventListener('click', onBackdrop);
+          resolve(result);
+        }
+        function onYes() { cleanup(true); }
+        function onNo() { cleanup(false); }
+        function onBackdrop(e) { if (e.target === overlay) cleanup(false); }
+        yesBtn.addEventListener('click', onYes);
+        noBtn.addEventListener('click', onNo);
+        overlay.addEventListener('click', onBackdrop);
+      });
+    }
+    async function doResetRequest() {
+      const email = document.getElementById('reset-email').value.trim();
+      const errEl = document.getElementById('reset-err');
+      errEl.style.display = 'none';
+      if (!email) { errEl.textContent='Shkruaj email-in.'; errEl.style.display=''; return; }
+      try {
+        await fetch('/api/auth/password-reset/', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email}) });
+        document.getElementById('reset-step1').style.display='none';
+        document.getElementById('reset-step2').style.display='';
+      } catch { errEl.textContent='Gabim rrjeti. Provo sërish.'; errEl.style.display=''; }
+    }
+
+    // ── Password reset CONFIRM (landing here from the emailed link) ──────
+    let _resetUid = null, _resetToken = null;
+    function closeResetConfirm() {
+      document.getElementById('reset-confirm-overlay').style.display = 'none';
+      history.replaceState(null, '', '/');
+    }
+    async function doResetConfirm() {
+      const pw1 = document.getElementById('reset-confirm-pw1').value;
+      const pw2 = document.getElementById('reset-confirm-pw2').value;
+      const errEl = document.getElementById('reset-confirm-err');
+      const btn = document.getElementById('reset-confirm-btn');
+      errEl.style.display = 'none';
+      if (!pw1 || pw1.length < 8) { errEl.textContent = 'Fjalëkalimi duhet të ketë minimumi 8 karaktere.'; errEl.style.display=''; return; }
+      if (pw1 !== pw2) { errEl.textContent = 'Fjalëkalimet nuk përputhen.'; errEl.style.display=''; return; }
+      btn.disabled = true; btn.textContent = 'Duke ruajtur...';
+      try {
+        const r = await fetch('/api/auth/password-reset/confirm/', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ uid: _resetUid, token: _resetToken, new_password: pw1 }),
+        });
+        const d = await r.json().catch(() => ({}));
+        if (r.ok) {
+          document.getElementById('reset-confirm-form').style.display = 'none';
+          document.getElementById('reset-confirm-success').style.display = '';
+        } else {
+          errEl.textContent = Array.isArray(d.detail) ? d.detail.join(' ') : (d.detail || 'Linku është i pavlefshëm ose ka skaduar.');
+          errEl.style.display = '';
+        }
+      } catch { errEl.textContent = 'Gabim rrjeti. Provo sërish.'; errEl.style.display=''; }
+      btn.disabled = false; btn.textContent = 'Ruaj Fjalëkalimin';
+    }
+
+    // ── Email verification (landing here from the emailed link) ──────────
+    function closeVerifyEmail() {
+      document.getElementById('verify-email-overlay').style.display = 'none';
+      history.replaceState(null, '', '/');
+    }
+    async function doVerifyEmail(uid, token) {
+      try {
+        const r = await fetch(`/api/auth/verify-email/${encodeURIComponent(uid)}/${encodeURIComponent(token)}/`);
+        const d = await r.json().catch(() => ({}));
+        document.getElementById('verify-email-loading').style.display = 'none';
+        if (r.ok) {
+          document.getElementById('verify-email-ok').style.display = '';
+        } else {
+          document.getElementById('verify-email-err-msg').textContent = d.detail || 'Linku ka skaduar ose është i pavlefshëm.';
+          document.getElementById('verify-email-err').style.display = '';
+        }
+      } catch {
+        document.getElementById('verify-email-loading').style.display = 'none';
+        document.getElementById('verify-email-err-msg').textContent = 'Gabim rrjeti. Provo sërish më vonë.';
+        document.getElementById('verify-email-err').style.display = '';
+      }
+    }
+
+    // Boot-time intercept: emailed links land here as plain pathnames —
+    // /reset-password/<uid>/<token>/ and /verify-email/<uid>/<token>/ —
+    // with no SPA route of their own. Detect them before anything else
+    // renders and show the matching modal instead of a bare homepage.
+    (function handleAuthLinkIntercept() {
+      const parts = window.location.pathname.split('/').filter(Boolean);
+      if (parts.length === 3 && parts[0] === 'reset-password') {
+        _resetUid = decodeURIComponent(parts[1]);
+        _resetToken = decodeURIComponent(parts[2]);
+        document.getElementById('reset-confirm-overlay').style.display = 'flex';
+      } else if (parts.length === 3 && parts[0] === 'verify-email') {
+        const uid = decodeURIComponent(parts[1]);
+        const token = decodeURIComponent(parts[2]);
+        document.getElementById('verify-email-overlay').style.display = 'flex';
+        doVerifyEmail(uid, token);
+      }
+    })();
+    async function doLogout() {
+      await Auth.logout('/');
+    }
+
+    window.addEventListener('scroll', () => { document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 8); }, { passive: true });
+
+    let bizTypesCache = null;
+    async function fetchBusinessTypes() {
+      if (bizTypesCache) return bizTypesCache;
+      try {
+        const r = await fetch('/api/tenants/business-types/');
+        if (r.ok) { const d = await r.json(); bizTypesCache = d.results || []; }
+      } catch { }
+      if (!bizTypesCache) bizTypesCache = [];
+      return bizTypesCache;
+    }
+
+    async function loadBusinessTypes() {
+      const grid = document.getElementById('biz-grid');
+      if (!grid || grid.dataset.loaded === '1') return;
+      const types = await fetchBusinessTypes();
+      if (!types.length) { grid.innerHTML = '<div class="empty"><span>🏢</span><p>Nuk u ngarkuan dot tipologjitë. Provoni përsëri.</p></div>'; return; }
+      grid.dataset.loaded = '1';
+      grid.innerHTML = types.map(t => `
+            <div class="biz-card" data-pg="signup" data-biztype="${t.value}"><span class="be">${t.icon}</span>
+              <div class="bn">${t.label}</div>
+              <div class="bh">${t.category_label}${t.tenant_count ? ' · ' + t.tenant_count + ' aktive' : ''}</div>
+            </div>`).join('');
+      const h1 = document.getElementById('biz-type-count');
+      if (h1) h1.textContent = types.length + '+ lloje biznesi';
+    }
+
+    async function populateSignupBusinessTypes() {
+      const list = document.getElementById('su-tp-list');
+      if (!list || list.dataset.loaded === '1') return;
+      const types = await fetchBusinessTypes();
+      if (!types.length) return;
+      list.dataset.loaded = '1';
+      list.innerHTML = types.map(t => `<div class="su-tp-opt" data-val="${t.value}" data-label="${escHtml(t.label)}" style="padding:9px 13px;cursor:pointer;font-size:.87rem;display:flex;align-items:center;gap:8px" onmousedown="event.preventDefault()">${t.icon} ${escHtml(t.label)}</div>`).join('');
+      list.querySelectorAll('.su-tp-opt').forEach(opt => {
+        opt.addEventListener('mouseenter', () => opt.style.background = 'var(--surface2)');
+        opt.addEventListener('mouseleave', () => opt.style.background = '');
+        opt.addEventListener('click', () => setSuTypeValue(opt.dataset.val, opt.dataset.label));
+      });
+    }
+
+    function setSuTypeValue(val, label) {
+      const hidden = document.getElementById('su-tp');
+      const search = document.getElementById('su-tp-search');
+      const list = document.getElementById('su-tp-list');
+      if (hidden) hidden.value = val || '';
+      if (search) search.value = label || '';
+      if (list) list.style.display = 'none';
+    }
+
+    function filterSuTypeList(q) {
+      const list = document.getElementById('su-tp-list');
+      if (!list) return;
+      const term = q.trim().toLowerCase();
+      let anyVisible = false;
+      list.querySelectorAll('.su-tp-opt').forEach(opt => {
+        const match = opt.dataset.label.toLowerCase().includes(term);
+        opt.style.display = match ? 'flex' : 'none';
+        if (match) anyVisible = true;
+      });
+      list.style.display = anyVisible ? 'block' : 'none';
+      const hidden = document.getElementById('su-tp');
+      if (hidden && hidden.value) {
+        const stillMatches = list.querySelector(`.su-tp-opt[data-val="${hidden.value}"]`)?.dataset.label === q;
+        if (!stillMatches) hidden.value = '';
+      }
+    }
+
+    document.getElementById('su-tp-search')?.addEventListener('input', e => filterSuTypeList(e.target.value));
+    document.getElementById('su-tp-search')?.addEventListener('focus', async e => {
+      await populateSignupBusinessTypes();
+      filterSuTypeList(e.target.value);
+    });
+    document.addEventListener('click', e => {
+      if (!e.target.closest('.su-tp-wrap')) { const l = document.getElementById('su-tp-list'); if (l) l.style.display = 'none'; }
+    });
+
+    const PAGE_LOADERS = { vlereismet: loadReviews, blog: loadBlog, bizneset: loadBusinessTypes, signup: populateSignupBusinessTypes, profile: loadNotifPrefs };
+    let currentPage = 'home';
+
+    function go(pgId) {
+      if (pgId === currentPage) return;
+      const cur = document.getElementById('pg-' + currentPage); if (cur) cur.classList.remove('on');
+      const nxt = document.getElementById('pg-' + pgId); if (!nxt) return;
+      nxt.classList.add('on');
+      document.querySelectorAll('.nl,.dl').forEach(l => { l.classList.toggle('on', l.dataset.pg === pgId); });
+      currentPage = pgId;
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      if (PAGE_LOADERS[pgId]) PAGE_LOADERS[pgId]();
+      setTimeout(() => { document.querySelectorAll('#pg-' + pgId + ' .fi').forEach(el => el.classList.add('vis')); }, 40);
+    }
+
+    document.addEventListener('click', e => {
+      const a = e.target.closest('[data-pg]'); if (!a) return;
+      e.preventDefault(); const pg = a.dataset.pg;
+      // BUG FIX: this used to fire for *any* logged-in user clicking a
+      // "signup"/"start trial" link, sending them straight to /onboarding/
+      // and completely skipping the business-signup form (su-biz-form).
+      // That form is what actually calls /tenants/create/ to create the
+      // tenant + start the trial, and it's also where the "Jeni identifikuar
+      // si ..." logged-in-user note lives. A logged-in customer account with
+      // no business yet (Auth.isLoggedIn() === true, but no tenant_slug) was
+      // landing on /onboarding/ with nothing to onboard — no name, no slug,
+      // no business type, no visible confirmation of which account the new
+      // business would attach to — because the tenant was never created.
+      // Only skip straight to /onboarding/ when we know a tenant already
+      // exists (tenant_slug is set on login, on /tenants/signup/, and on
+      // /tenants/create/ — see auth.js / su-btn handler below).
+      if (pg === 'signup' && Auth.isLoggedIn() && localStorage.getItem('tenant_slug')) { window.location.href = '/onboarding/'; return; }
+      go(pg);
+      if (pg === 'signup' && (a.dataset.biztype || a.dataset.plan)) {
+        populateSignupBusinessTypes().then(() => {
+          suMode('biz');
+          if (a.dataset.biztype) {
+            const opt = document.getElementById('su-tp-list')?.querySelector(`.su-tp-opt[data-val="${a.dataset.biztype}"]`);
+            if (opt) setSuTypeValue(opt.dataset.val, opt.dataset.label);
+          }
+          if (a.dataset.plan) {
+            const planSel = document.getElementById('su-plan');
+            if (planSel) { planSel.value = a.dataset.plan; planSel.dispatchEvent(new Event('change')); }
+          }
+        });
+      }
+      document.getElementById('drawer').classList.remove('open'); document.body.style.overflow = '';
+    });
+
+    document.getElementById('hbg').addEventListener('click', () => { const d = document.getElementById('drawer'); const open = d.classList.toggle('open'); document.body.style.overflow = open ? 'hidden' : ''; });
+    document.getElementById('dbg').addEventListener('click', () => { document.getElementById('drawer').classList.remove('open'); document.body.style.overflow = ''; });
+
+    function animCounters() {
+      document.querySelectorAll('[data-count]').forEach(el => {
+        const target = parseFloat(el.dataset.count); const dec = el.hasAttribute('data-dec'); const sfx = el.dataset.sfx || '';
+        const s = performance.now(), dur = 1600;
+        (function step(now) { const t = Math.min((now - s) / dur, 1); const e = 1 - Math.pow(1 - t, 3); el.textContent = (dec ? (target * e).toFixed(1) : Math.floor(target * e).toLocaleString('sq')) + sfx; if (t < 1) requestAnimationFrame(step); })(performance.now());
+      });
+    }
+    new IntersectionObserver(ents => { ents.forEach(e => { if (e.isIntersecting) animCounters(); }); }, { threshold: .3 }).observe(document.querySelector('.stats'));
+
+    let _authedEmail = '';
+    function updateBizFormAuthState() {
+      const loggedIn = Auth.isLoggedIn();
+      const note = document.getElementById('su-loggedin-note');
+      const ownerFields = document.getElementById('su-owner-fields');
+      const hint = document.getElementById('su-biz-login-hint');
+      const sub = document.getElementById('su-biz-sub');
+      if (!note || !ownerFields) return;
+      if (loggedIn) {
+        ownerFields.style.display = 'none';
+        note.style.display = '';
+        if (hint) hint.style.display = 'none';
+        if (sub) sub.textContent = '14 ditë falas — do të lidhet me llogarinë tuaj ekzistuese';
+        document.getElementById('su-loggedin-email').textContent = _authedEmail;
+      } else {
+        ownerFields.style.display = '';
+        note.style.display = 'none';
+        if (hint) hint.style.display = '';
+        if (sub) sub.textContent = '14 ditë falas — pa kartë krediti · Setup 5 minuta';
+      }
+    }
+
+    function suMode(mode) {
+      const isUser = mode === 'user';
+      document.getElementById('su-user-form').style.display = isUser ? '' : 'none';
+      document.getElementById('su-biz-form').style.display = isUser ? 'none' : '';
+      if (!isUser) updateBizFormAuthState();
+      const tUser = document.getElementById('tog-user'); const tBiz = document.getElementById('tog-biz');
+      if (isUser) { tUser.style.background = 'var(--surface)'; tUser.style.color = 'var(--text)'; tUser.style.boxShadow = 'var(--sh)'; tBiz.style.background = 'transparent'; tBiz.style.color = 'var(--muted)'; tBiz.style.boxShadow = 'none'; }
+      else { tBiz.style.background = 'var(--surface)'; tBiz.style.color = 'var(--text)'; tBiz.style.boxShadow = 'var(--sh)'; tUser.style.background = 'transparent'; tUser.style.color = 'var(--muted)'; tUser.style.boxShadow = 'none'; }
+    }
+
+    let slugT;
+    document.getElementById('su-sl')?.addEventListener('input', function () {
+      clearTimeout(slugT); let v = this.value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+      if (v !== this.value) this.value = v;
+      const ck = document.getElementById('slg-ck');
+      if (!v || v.length < 3) { ck.textContent = v.length ? 'Min 3 karaktere' : ''; ck.className = 'slg-ck no'; return; }
+      ck.textContent = '...'; ck.className = 'slg-ck';
+      slugT = setTimeout(async () => { try { const r = await fetch(`/api/tenants/check-slug/?slug=${encodeURIComponent(v)}`); const d = await r.json(); ck.textContent = d.available ? '✓ E lirë' : '✗ E zënë'; ck.className = 'slg-ck ' + (d.available ? 'ok' : 'no'); } catch { ck.textContent = ''; } }, 450);
+    });
+
+    document.getElementById('ur-btn')?.addEventListener('click', async () => {
+      const fn = document.getElementById('ur-fn').value.trim(); const ln = document.getElementById('ur-ln').value.trim(); const em = document.getElementById('ur-em').value.trim(); const pw = document.getElementById('ur-pw').value; const pw2 = document.getElementById('ur-pw2').value; const fb = document.getElementById('ur-fb'); const btn = document.getElementById('ur-btn');
+      if (!fn || !em || !pw) { fb.textContent = '⚠ Plotësoni emrin, emailin dhe fjalëkalimin.'; fb.className = 'fb err'; return; }
+      if (pw.length < 8) { fb.textContent = '⚠ Fjalëkalimi duhet të ketë minimumi 8 karaktere.'; fb.className = 'fb err'; return; }
+      if (pw !== pw2) { fb.textContent = '⚠ Fjalëkalimet nuk përputhen.'; fb.className = 'fb err'; return; }
+      btn.disabled = true; btn.textContent = 'Duke u krijuar...';
+      try {
+        const r = await Auth.post('/auth/register/', { full_name: ln ? `${fn} ${ln}`.trim() : fn, email: em, password: pw }); const d = await r.json();
+        if (r.ok) {
+          if (d.access) Auth.setTokens(d.access, d.refresh || null);
+          toast('🎉 Llogaria u krijua me sukses!');
+          fb.textContent = '✅ Mirë se vini! Jeni regjistruar me sukses.'; fb.className = 'fb ok';
+          const nextParam = new URLSearchParams(window.location.search).get('next');
+          setTimeout(async () => {
+            // Newly-registered customer accounts have no tenant yet — ask
+            // instead of assuming, so we neither force everyone through the
+            // onboarding wizard nor silently skip it for people who did want
+            // to set up a business right away.
+            const wantsBusiness = await askTenantConfirm({
+              title: 'Doni të krijoni edhe një biznes?',
+              message: 'Mund ta konfiguroni tani në pak hapa, ose ta bëni më vonë nga llogaria juaj.',
+              yesLabel: 'Po, vazhdo →',
+              noLabel: 'Jo, më vonë'
+            });
+            if (wantsBusiness) { window.location.href = '/onboarding/'; return; }
+            if (nextParam && nextParam.startsWith('/')) { window.location.href = nextParam; }
+            else { const hostParts = window.location.hostname.split('.'); const tenantSlugFromHost = hostParts.length > 2 ? hostParts[0] : ''; const slug = tenantSlugFromHost || localStorage.getItem('tenant_slug') || ''; window.location.href = slug ? `https://${slug}.${hostParts.slice(-2).join('.')}/` : '/'; }
+          }, 1200);
+        }
+        else { fb.textContent = Object.values(d).flat().join(' ') || 'Gabim gjatë regjistrimit.'; fb.className = 'fb err'; }
+      }
+      catch { fb.textContent = 'Gabim rrjeti. Provoni përsëri.'; fb.className = 'fb err'; }
+      btn.disabled = false; btn.textContent = 'Krijo Llogarinë →';
+    });
+
+    document.getElementById('su-btn')?.addEventListener('click', async () => {
+      const nm = document.getElementById('su-nm')?.value.trim(); const sl = document.getElementById('su-sl')?.value.trim(); const tp = document.getElementById('su-tp')?.value; const pl = document.getElementById('su-plan')?.value || 'trial'; const ref = document.getElementById('su-ref')?.value.trim(); const fb = document.getElementById('su-fb'); const btn = document.getElementById('su-btn');
+      const loggedIn = Auth.isLoggedIn();
+      if (!nm || !sl || !tp) { fb.textContent = '⚠ Plotësoni të gjitha fushat.'; fb.className = 'fb err'; return; }
+      let on, em, pw;
+      if (!loggedIn) {
+        on = document.getElementById('su-on')?.value.trim(); em = document.getElementById('su-em')?.value.trim(); pw = document.getElementById('su-pw')?.value;
+        if (!on || !em || !pw) { fb.textContent = '⚠ Plotësoni të gjitha fushat.'; fb.className = 'fb err'; return; }
+        if (pw.length < 8) { fb.textContent = '⚠ Fjalëkalimi min 8 karaktere.'; fb.className = 'fb err'; return; }
+      }
+      const origBtnText = btn.textContent;
+      btn.disabled = true; btn.textContent = 'Duke u krijuar...';
+      try {
+        // Already logged in: attach the new business to the existing account
+        // (same email/password the person already used) instead of asking
+        // them to re-enter credentials and creating a second, separate account.
+        const r = loggedIn
+          ? await Auth.post('/tenants/create/', { business_name: nm, slug: sl, business_type: tp, plan: pl, ...(ref ? { referral_code: ref } : {}) })
+          : await Auth.post('/tenants/signup/', { business_name: nm, slug: sl, business_type: tp, plan: pl, owner_name: on, owner_email: em, owner_password: pw, ...(ref ? { referral_code: ref } : {}) });
+        const d = await r.json();
+        if (r.ok) {
+          if (d.access) Auth.setTokens(d.access, d.refresh || null);
+          if (d.slug) localStorage.setItem('tenant_slug', d.slug);
+          localStorage.removeItem('bizal_referral_code');
+          // The tenant is already created at this point (this form just did
+          // it) — ask whether to continue into the setup wizard now or later,
+          // instead of forcing it. This form already collected the name,
+          // slug, and business type (onboarding step 1's exact fields), so a
+          // "yes" skips straight to step 2 rather than asking again.
+          const wantsSetup = await askTenantConfirm({
+            title: 'Biznesi u krijua! Vazhdojmë me konfigurimin?',
+            message: 'Shtoni tani kontaktet, faqen dhe pamjen e biznesit, ose e bëni më vonë nga paneli.',
+            yesLabel: 'Po, vazhdo →',
+            noLabel: 'Jo, më vonë'
+          });
+          window.location.href = wantsSetup ? '/onboarding/?step=2' : '/';
+        }
+        else { fb.textContent = Object.values(d).flat().join(' ') || 'Gabim. Provoni përsëri.'; fb.className = 'fb err'; }
+      }
+      catch { fb.textContent = 'Gabim rrjeti.'; fb.className = 'fb err'; }
+      btn.disabled = false; btn.textContent = origBtnText;
+    });
+
+    // Keep the CTA label honest about what happens next: only the trial is
+    // free-and-immediate, the paid plans still go through the same signup
+    // flow (billing/checkout is handled afterwards from the admin panel).
+    document.getElementById('su-plan')?.addEventListener('change', function () {
+      const btn = document.getElementById('su-btn');
+      if (btn) btn.textContent = this.value === 'trial' ? 'Fillo 14 Ditë Falas →' : 'Regjistro Biznesin →';
+    });
+
+    document.getElementById('li-btn').addEventListener('click', async () => {
+      const em = document.getElementById('li-em').value.trim();
+      const pw = document.getElementById('li-pw').value;
+      const fb = document.getElementById('li-fb');
+      const btn = document.getElementById('li-btn');
+      if (!em || !pw) { fb.textContent = '⚠ Plotësoni emailin dhe fjalëkalimin.'; fb.className = 'fb err'; return; }
+      btn.disabled = true; btn.textContent = 'Duke hyrë...';
+      try {
+          const d = await Auth.login(em, pw);
+          if (d) {
+              const tenantSlug = d.user?.tenant_slug;
+              if (tenantSlug && d.user?.onboarding_complete === false) {
+                  // Business owner hasn't finished the setup wizard yet —
+                  // send them back to /onboarding/ (main domain) instead of
+                  // their subdomain, which isn't ready to be visited yet.
+                  localStorage.setItem('tenant_slug', tenantSlug);
+                  fb.textContent = '✅ Mirë se vini! Duke vazhduar konfigurimin e biznesit...';
+                  fb.className = 'fb ok';
+                  setTimeout(() => window.location.href = '/onboarding/', 800);
+              } else if (tenantSlug) {
+                  localStorage.setItem('tenant_slug', tenantSlug);
+                  fb.textContent = '✅ Mirë se vini! Duke ju ridrejtuar...';
+                  fb.className = 'fb ok';
+                  setTimeout(() => {
+                      // In production redirect to the tenant's own subdomain.
+                      // In local dev fall back to ?tenant= query-param strategy.
+                      const host = window.location.hostname;
+                      const isLocal = host === 'localhost' || host === '127.0.0.1';
+                      const dest = isLocal
+                          ? `http://localhost:8001/?tenant=${tenantSlug}`
+                          : `https://${tenantSlug}.bizal.al`;
+                      window.location.replace(dest);
+                  }, 800);
+              } else {
+                  fb.textContent = '✅ Mirë se vini!';
+                  fb.className = 'fb ok';
+                  // MED-1 FIX (v36): honour ?next= so protected-page redirect
+                  // chains work, e.g. /django-admin/ → /login/?next=/django-admin/
+                  // → (login) → back to /django-admin/. Only follow same-origin
+                  // paths (starts with /) to prevent open-redirect.
+                  const nextParam = new URLSearchParams(window.location.search).get('next');
+                  const dest = (nextParam && nextParam.startsWith('/')) ? nextParam : '/';
+                  setTimeout(() => window.location.replace(dest), 800);
+              }
+          } else {
+              fb.textContent = 'Email ose fjalëkalim i gabuar.';
+              fb.className = 'fb err';
+              btn.disabled = false;
+              btn.textContent = 'Hyr →';
+          }
+      } catch (e) {
+          if (e?.redirectSlug) {
+              // Backend recognized this login as belonging to a tenant whose
+              // setup is already complete — it must be logged into from that
+              // business's own portal, not the main site. Send them there
+              // instead of leaving them stuck on a "try again" message.
+              fb.textContent = '↪ Ky email i përket një biznesi tashmë të konfiguruar. Duke ju çuar te portali juaj...';
+              fb.className = 'fb ok';
+              localStorage.setItem('tenant_slug', e.redirectSlug);
+              const host = window.location.hostname;
+              const isLocal = host === 'localhost' || host === '127.0.0.1';
+              const dest = isLocal
+                  ? `http://localhost:8001/?tenant=${e.redirectSlug}`
+                  : `https://${e.redirectSlug}.bizal.al`;
+              setTimeout(() => window.location.href = dest, 1200);
+          } else {
+              fb.textContent = e?.message || 'Gabim rrjeti. Provoni përsëri.';
+              fb.className = 'fb err';
+              btn.disabled = false;
+              btn.textContent = 'Hyr →';
+          }
+      }
+  });
+
+    const FALLBACK = [
+      {
+        slug: 'si-te-filloni', title: 'Si të Filloni Biznesin Tuaj Online', excerpt: 'Gjithçka që duhet të dini për të lansuar prezencën tuaj dixhitale hap pas hapi.',
+        tags: [{ name: 'Udhëzues' }], published_at: '2026-05-15', icon: '🚀', read_minutes: 6,
+        body: `Fillimi i një biznesi online mund të duket i frikshëm, sidomos nëse vini nga një biznes tradicional fizik. Lajmi i mirë është se sot, hapja e një prezence dixhitale profesionale nuk kërkon më ekip inxhinierësh apo buxhet të madh — kërkon vetëm platformën e duhur dhe një plan të qartë.
+
+Hapi i parë është zgjedhja e llojit të biznesit tuaj. Restorantet, klinikat, sallonet e berberit, agjencitë e udhëtimit, shkollat e gjuhëve — secili prej tyre ka nevoja të ndryshme: menu dhe rezervime për restorantet, kalendarë takimesh për klinikat dhe sallonet, katalogë pronash për agjencitë imobiliare. Platforma juaj duhet t'i njohë këto dallime që në fillim, jo t'ju detyrojë t'i ndërtoni vetë nga zero.
+
+Hapi i dytë është subdomaini dhe identiteti juaj. Klientët duhet të gjejnë biznesin tuaj lehtësisht — një adresë e qartë si "biznesijuaj.bizal.al", logo, ngjyrat e markës dhe një përshkrim i shkurtër që shpjegon pse jeni të veçantë. Kjo hap-pas-hapi zgjedhje merr rreth 5 minuta në procesin e regjistrimit.
+
+Hapi i tretë është përmbajtja: shtoni menunë tuaj, shërbimet, çmimet dhe fotot. Klientët shqiptarë vendosin nëse do t'ju kontaktojnë brenda sekondave të para — foto cilësore dhe informacion i plotë bëjnë diferencën midis një rezervimi dhe një vizitori që largohet.
+
+Hapi i katërt është aktivizimi i rezervimeve online dhe formës së kontaktit, në mënyrë që klientët të mund t'ju gjejnë dhe të veprojnë menjëherë, pa pritur telefonatë apo mesazh Facebook që mund të vonojë orë të tëra.
+
+Së fundmi, ndani lidhjen tuaj në Instagram, Facebook dhe grupe lokale. Bizneset që fillojnë me këtë proces të thjeshtë shpesh marrin rezervimet e para brenda javës së parë. Nuk ka nevojë për kartë krediti apo ekspertizë teknike — thjesht filloni.`
+      },
+      {
+        slug: 'rezervimet-online', title: 'Rezervimet Online Rrisin të Ardhurat Deri në 40%', excerpt: 'Studim i bazuar në të dhënat e bizneseve shqiptare që kanë adoptuar rezervimet online.',
+        tags: [{ name: 'Statistika' }], published_at: '2026-04-28', icon: '📊', read_minutes: 5,
+        body: `Analiza e të dhënave nga dhjetëra biznese shqiptare në sektorë të ndryshëm — restorante, klinika, sallone berberi dhe qendra gjuhësh — tregon një model të qartë: bizneset që kalojnë nga rezervimet me telefon te rezervimet online shohin rritje mesatare prej 30-40% të numrit total të rezervimeve brenda 6 muajve të parë.
+
+Arsyeja kryesore është e thjeshtë: shumica e klientëve, veçanërisht ata nën 40 vjeç, preferojnë të rezervojnë jashtë orarit të punës — mbrëmjeve, të dielave, ose gjatë pushimit të drekës — kur biznesi është i mbyllur ose telefoni nuk merret. Një sistem rezervimesh online punon 24 orë, 7 ditë në javë, pa humbur asnjë klient potencial.
+
+Studimi tregon gjithashtu se restorantet dhe sallonet e berberit përfitojnë më shumë nga kujtesat automatike (SMS ose email) para takimit — këto ulin numrin e klientëve që "harrojnë" rezervimin deri në 25%, duke kursyer kohë dhe të ardhura të humbura.
+
+Klinikat dhe qendrat gjuhësh, nga ana tjetër, shohin përfitimin më të madh te menaxhimi i kalendarit: stafi nuk humbet më kohë duke koordinuar manualisht orare në letër apo Excel, dhe pacientët/studentët mund të shohin vetë disponueshmërinë reale në kohë reale.
+
+Një element tjetër i rëndësishëm: vlerësimet e klientëve të shfaqura direkt në faqen e rezervimit rrisin besueshmërinë dhe normën e konvertimit. Bizneset me 10+ vlerësime publike raportojnë norma rezervimi dukshëm më të larta se ato pa asnjë vlerësim të dukshëm.
+
+Përfundimi është i qartë: në një treg ku klientët po bëhen gjithnjë e më dixhitalë, rezervimi online nuk është më luks — është pritshmëri minimale.`
+      },
+      {
+        slug: 'seo-2025', title: 'SEO për Biznese Shqiptare: Udhëzuesi i Plotë 2026', excerpt: 'Si të dukeni i pari në Google kur klientët kërkojnë shërbime në qytetin tuaj.',
+        tags: [{ name: 'Marketing' }], published_at: '2026-03-22', icon: '🔍', read_minutes: 7,
+        body: `SEO lokal (optimizimi për kërkime lokale) është arma sekrete e bizneseve të vogla shqiptare kundër zinxhirëve më të mëdhenj me buxhete marketingu shumë herë më të larta. Ndryshe nga SEO global, SEO lokal fokusohet në një pyetje të thjeshtë: kur dikush kërkon "restorant peshku Vlorë" ose "berber Bllok Tiranë", a shfaqeni ju në rezultatet e para?
+
+Hapi themelor është konsistenca e emrit, adresës dhe numrit të telefonit (NAP) në çdo platformë ku shfaqeni — faqja juaj, Google Business Profile, Facebook, Instagram. Google i beson më shumë bizneseve me informacion identik kudo.
+
+Përmbajtja e faqes suaj duhet të përmendë qartë qytetin dhe lagjen tuaj — jo vetëm në titull, por edhe në përshkrimet e shërbimeve. Një klinikë që shkruan "Vizitë Kardiologjike në Tiranë" ka më shumë gjasa të gjendet sesa një që shkruan thjesht "Vizitë Kardiologjike".
+
+Shpejtësia e faqes është faktor rreth 15% i rëndësisë në renditjen e Google. Faqet e ndërtuara mbi platforma të lehta dhe të optimizuara automatikisht (si BizAL) kanë avantazh natyror krahasuar me faqet e ndërtuara me kod të rëndë ose shabllone të vjetra WordPress.
+
+Vlerësimet e klientëve luajnë rol të dyfishtë: rrisin besueshmërinë te vizitorët, por edhe sinjalizojnë te Google se biznesi është aktiv dhe i vlerësuar nga komuniteti lokal. Bizneset që kërkojnë në mënyrë sistematike vlerësime pas çdo shërbimi të përfunduar shohin përmirësim të dukshëm në renditje brenda 2-3 muajve.
+
+Së fundmi, një blog aktiv me artikuj mbi shërbimet, këshilla dhe lajme lokale ndihmon të kapni kërkime më specifike ("si zgjidhet makina e duhur me qira", "çfarë duhet para blerjes së apartamentit") që sjellin trafik cilësor, jo thjesht numra vizitorësh.
+
+SEO nuk është një projekt një-herësh, por proces i vazhdueshëm. Bizneset që e trajtojnë si të tillë — duke përditësuar përmbajtjen çdo muaj — janë ato që dominojnë rezultatet e kërkimit lokal me kalimin e kohës.`
+      },
+      {
+        slug: 'pagesat-online', title: 'Pagesat Online në Shqipëri: Çfarë Duhet të Dini', excerpt: 'Stripe, kartat bankare dhe metodat lokale — si të pranoni pagesa online pa komplikime.',
+        tags: [{ name: 'Financat' }], published_at: '2026-02-18', icon: '💳', read_minutes: 5,
+        body: `Pranimi i pagesave online mbetet një nga hapat më keqkuptuar nga bizneset e vogla shqiptare — shumë ende mendojnë se kërkon marrëveshje bankare komplekse dhe javë procesi. Realiteti sot është shumë më i thjeshtë.
+
+BizAL integron Stripe, sistemin global të pagesave të përdorur nga miliona biznese në mbarë botën, duke përfshirë emra të njohur si Shopify dhe Amazon. Kjo do të thotë se biznesi juaj përfiton nga i njëjti nivel sigurie dhe besueshmërie pa pasur nevojë të negocioni vetë me banka apo procesorë pagesash.
+
+Klientët mund të paguajnë me kartë debiti ose krediti direkt nga faqja juaj — pa u ridrejtuar në faqe të jashtme që duken të dyshimta apo jo-profesionale. Kjo eksperiencë e qetë rrit ndjeshëm normën e përfundimit të porosive, sidomos te klientët më të rinj që janë mësuar me pagesa dixhitale të shpejta.
+
+Për restorantet dhe dyqanet, pagesa online do të thotë më pak para cash në ambient dhe më pak gabime në llogaritje. Për klinikat dhe qendrat gjuhësh, pagesa e paradhënies në momentin e rezervimit ul ndjeshëm numrin e klientëve që nuk paraqiten ("no-show"), pasi klienti tashmë ka një angazhim financiar.
+
+Komisioni i transaksionit është standard dhe transparent, pa tarifa të fshehura mujore. Bizneset paguajnë vetëm një përqindje të vogël për transaksionet e realizuara — jo për ato që nuk ndodhin kurrë.
+
+Nëse jeni gati të kaloni nga "pagesë vetëm në dorë" te pagesa online, procesi i aktivizimit brenda BizAL merr më pak se 10 minuta dhe nuk kërkon dokumentacion shtesë përtej verifikimit standard të biznesit.`
+      },
+      {
+        slug: 'marketplace-vizibiliteti', title: 'Si Marketplace-i i BizAL Ju Sjell Klientë të Rinj Pa Reklama', excerpt: 'Shpjegim i thjeshtë se si funksionon zbulimi (discovery) dhe pse listimi juaj ka rëndësi.',
+        tags: [{ name: 'Marketing' }], published_at: '2026-06-10', icon: '🧭', read_minutes: 4,
+        body: `Përveç faqes suaj individuale, çdo biznes në planin Starter e sipër shfaqet automatikisht në Marketplace-in publik të BizAL — një drejtori ku klientët mund të kërkojnë biznese sipas qytetit, tipit dhe emrit, pa pasur nevojë të dinë paraprakisht se ekzistoni.
+
+Kjo do të thotë trafik shtesë organik, plotësisht falas, thjesht duke qenë pjesë e platformës. Sa më i plotë profili juaj — foto, orari, vlerësimet — aq më shumë gjasa keni të shfaqeni në pozicione më të larta kur klientët filtrojnë sipas kategorisë suaj.
+
+Marketplace-i është veçanërisht i vlefshëm për bizneset e reja që nuk kanë ende histori në Google apo rrjete sociale. Një biznes i sapo-regjistruar mund të marrë vizitorët e parë brenda ditëve të para, thjesht sepse dikush ka kërkuar "klinikë Tiranë" ose "makina me qira Durrës" në marketplace.
+
+Rekomandimi ynë: plotësoni përshkrimin e marketplace-it me fjalë kyçe që klientët realisht përdorin — jo emra marketingu abstraktë, por terma të drejtpërdrejtë si "peshk i freskët buzë detit" ose "prerje flokësh Bllok".`
+      },
+      {
+        slug: 'plani-i-duhur', title: 'Starter, Pro apo Enterprise? Si të Zgjidhni Planin e Duhur', excerpt: 'Krahasim praktik i tre planeve të BizAL sipas madhësisë dhe fazës së biznesit tuaj.',
+        tags: [{ name: 'Udhëzues' }], published_at: '2026-01-30', icon: '🧩', read_minutes: 5,
+        body: `Zgjedhja e planit të duhur në fillim kursen kohë dhe para. Rregulli i përgjithshëm: filloni me atë që ju duhet sot, jo me atë që mendoni se do t'ju duhet pas një viti — ndryshimi i planit bëhet në çdo kohë, pa ndërprerje shërbimi.
+
+Plani Starter (€15/muaj) është ideal për biznese të vogla që sapo po hyjnë online: nevojiten subdomain, listim bazë dhe deri në 50 artikuj apo shërbime. Nuk përfshin ende brendim të personalizuar apo analitikë, por mbulon nevojat thelbësore për prezencë profesionale.
+
+Plani Pro (€40/muaj) është zgjedhja më e popullarizuar, sepse shton atë që bizneset e rritjes kanë nevojë realisht: brendim i plotë (ngjyra, font, logo), deri 100 listingje, analitikë e avancuar, deri 5 llogari stafi, blog dhe pagesa online. Shumica e restoranteve, klinikave dhe agjencive që kanë kaluar fazën fillestare zgjedhin këtë plan.
+
+Plani Enterprise (nga €80/muaj) është ndërtuar për biznese me shumë degë, ekip të madh ose nevoja teknike specifike: staf i pakufizuar, CRM i integruar, eksporte CSV/PDF, akses API dhe domain të personalizuar (p.sh. www.biznesijuaj.al në vend të .bizal.al).
+
+Nëse nuk jeni të sigurt, filloni me provën falas 14-ditore të planit Pro — pa kartë krediti — dhe vlerësoni realisht se çfarë përdorni. Shumica e bizneseve e dinë brenda javës së parë se cili plan u përshtatet.`
+      },
+    ];
+    const ITAG = { 'Udhëzues': '🚀', 'Statistika': '📊', 'Marketing': '🔍', 'Financat': '💳' };
+
+    async function fetchPosts() { try { const r = await fetch('/api/blog/'); if (!r.ok) throw 0; const d = await r.json(); const l = d.results || d || []; return l.length ? l : FALLBACK; } catch { return FALLBACK; } }
+
+    function buildCard(p) {
+      const tag = p.tags?.[0]?.name || 'Artikull'; const icon = p.icon || ITAG[tag] || '📰'; const date = (p.published_at || '').substring(0, 10); return `<div class="bc2" data-post='${JSON.stringify({ ...p, icon }).replace(/'/g, "&#39;")}'>
+    <div class="bthumb">${escHtml(icon)}</div>
+    <div class="bbody"><div class="btag">${escHtml(tag)}</div><div class="btitle">${escHtml(p.title)}</div><div class="bex">${escHtml(p.excerpt || '')}</div><div class="bmeta"><span>${date}</span><span>${p.read_minutes || 3} min lexim</span></div></div>
+  </div>`;
+    }
+
+    function attachCards(el) { el.querySelectorAll('.bc2').forEach(c => { c.addEventListener('click', () => { try { openArticle(JSON.parse(c.dataset.post)); } catch { } }); }); }
+
+    function renderBody(body) {
+      return (body || '').split(/\n\s*\n/).map(seg => `<p>${escHtml(seg.trim())}</p>`).join('');
+    }
+
+    function openArticle(p) {
+      const m = document.getElementById('art-modal'); const tag = p.tags?.[0]?.name || 'Artikull';
+      document.getElementById('art-cnt').innerHTML = `<div style="font-size:3rem;margin-bottom:12px">${escHtml(p.icon || '📰')}</div><div class="btag" style="display:inline-block;margin-bottom:12px">${escHtml(tag)}</div><h2 style="font-family:var(--font-d);font-weight:700;font-size:1.7rem;margin-bottom:8px;line-height:1.22">${escHtml(p.title)}</h2><div style="font-size:.78rem;color:var(--muted);margin-bottom:22px;font-weight:500">${(p.published_at || '').substring(0, 10)} · ${p.read_minutes || 3} min lexim</div><div class="a-body">${renderBody(p.body || p.excerpt || '')}</div><div style="margin-top:26px;padding-top:20px;border-top:1px solid var(--border)"><a href="#" class="btn btn-dark" data-pg="signup">Fillo me BizAL →</a></div>`;
+      m.classList.add('open'); document.body.style.overflow = 'hidden';
+    }
+    document.getElementById('m-cls').addEventListener('click', () => { document.getElementById('art-modal').classList.remove('open'); document.body.style.overflow = ''; });
+    document.getElementById('m-bg').addEventListener('click', () => { document.getElementById('art-modal').classList.remove('open'); document.body.style.overflow = ''; });
+
+    let blogDone = false;
+    async function loadBlog() { if (blogDone) return; blogDone = true; const g = document.getElementById('blog-grid'); const posts = await fetchPosts(); if (!posts.length) { g.innerHTML = '<div class="empty"><span>📯</span><p>Nuk ka artikuj ende.</p></div>'; return; } g.innerHTML = posts.map(buildCard).join(''); attachCards(g); }
+
+    const MOCK_REVS = [
+      { reviewer_name: 'Arben Hoxha', business_name: 'Restorant Adriatiku', rating: 5, comment: 'BizAL ndryshoi mënyrën si menaxhojmë rezervimet. Klientët rezervojnë 24/7 pa thirrur!', created_at: '2025-05-20', color: '#C03028' },
+      { reviewer_name: 'Mirela Koci', business_name: 'Salon Bello', rating: 5, comment: 'Intuitive dhe shumë e lehtë. Stafi e mësuhu brenda një ore. Klientët tanë janë shumë të kënaqur.', created_at: '2025-05-12', color: '#C17B2A' },
+      { reviewer_name: 'Gentian Dema', business_name: 'Auto Plus Albania', rating: 5, comment: 'Revolucionar për car rental. Menaxhimi i flotës, rezervimet, pagesat — gjithçka automatike.', created_at: '2025-05-03', color: '#1A7A4A' },
+      { reviewer_name: 'Entela Shehu', business_name: 'Klinika Shëndeti', rating: 4, comment: 'Sistemi i takimeve online ka reduktuar no-show-t me 60%. Kujtimet automatike janë fantastike!', created_at: '2025-04-28', color: '#6c3483' },
+      { reviewer_name: 'Lulzim Berisha', business_name: 'Gym Titan', rating: 5, comment: 'Menaxhimi i anëtarësimeve nuk ka qenë kurrë kaq i lehtë. Dashboard i qartë dhe i detajuar.', created_at: '2025-04-15', color: '#1a5276' },
+      { reviewer_name: 'Anxhela Miri', business_name: 'Farmacia Mirj', rating: 5, comment: 'Support i mrekullueshëm — çdo pyetje u përgjigjet brenda pak orësh. Klient prej 1 viti.', created_at: '2025-04-08', color: '#C03028' },
+    ];
+
+    function strs(n, sz = '1rem') { return Array.from({ length: 5 }, (_, i) => `<span class="str" style="font-size:${sz};opacity:${i < n ? 1 : .18}">⭐</span>`).join(''); }
+
+    function buildRevSummary(revs) { if (!revs.length) return; const avg = (revs.reduce((s, r) => s + r.rating, 0) / revs.length).toFixed(1); document.getElementById('avg-sc').textContent = avg; document.getElementById('avg-stars-el').innerHTML = strs(Math.round(avg), '1.2rem'); document.getElementById('sc-tot').textContent = `bazuar në ${revs.length} vlerësime`; document.getElementById('bar-rows').innerHTML = [5, 4, 3, 2, 1].map(n => { const c = revs.filter(r => r.rating === n).length; return `<div class="br"><span style="font-size:.72rem">${n}⭐</span><div class="bt"><div class="bf" style="width:${revs.length ? (c / revs.length * 100).toFixed(1) : 0}%"></div></div><span class="bc">${c}</span></div>`; }).join(''); }
+
+    // escHtml() is provided by ui.js (window.escHtml = esc)
+    function renderRevs(revs) { const g = document.getElementById('revs-grid'); if (!revs.length) { g.innerHTML = '<div class="empty"><span>⭐</span><p>Nuk ka vlerësime ende.</p></div>'; return; } const COLS = ['#C03028', '#C17B2A', '#1A7A4A', '#6c3483', '#1a5276']; g.innerHTML = revs.map((r, i) => { const in2 = escHtml((r.reviewer_name || 'K').substring(0, 2).toUpperCase()); const col = r.color || COLS[i % COLS.length]; const dt = escHtml((r.created_at || '').substring(0, 10)); return `<div class="rv"><div class="rv-hd"><div style="display:flex;align-items:center;gap:10px"><div class="rv-av" style="background:${col}">${in2}</div><div><div class="rv-nm">${escHtml(r.reviewer_name || 'Klient')}</div><div class="rv-bz">${escHtml(r.business_name || '')}</div></div></div><div class="rv-st">${strs(r.rating)}</div></div><div class="rv-body">"${escHtml(r.comment || '')}"</div><div class="rv-dt">${dt}</div></div>`; }).join(''); }
+
+    let revDone = false;
+    async function loadReviews() { if (revDone) return; revDone = true; let revs = MOCK_REVS; try { const r = await fetch('/api/platform-reviews/'); if (r.ok) { const d = await r.json(); const l = d.results || d || []; if (l.length) revs = l; } } catch { } buildRevSummary(revs); renderRevs(revs); }
+
+    let sel = 0;
+    const SL = ['', 'E keqe', 'E dobët', 'E mirë', 'Shumë e mirë', 'E shkëlqyer!'];
+    document.getElementById('sp')?.querySelectorAll('.spb').forEach(b => {
+      b.addEventListener('click', () => { sel = +b.dataset.v; document.querySelectorAll('.spb').forEach((x, i) => x.classList.toggle('on', i < sel)); document.getElementById('splbl').textContent = SL[sel] || ''; });
+      b.addEventListener('mouseenter', () => { const v = +b.dataset.v; document.querySelectorAll('.spb').forEach((x, i) => x.style.filter = i < v ? 'none' : 'grayscale(1) opacity(.3)'); });
+      b.addEventListener('mouseleave', () => { document.querySelectorAll('.spb').forEach((x, i) => x.style.filter = i < sel ? 'none' : 'grayscale(1) opacity(.3)'); });
+    });
+
+    document.getElementById('rv-sub')?.addEventListener('click', async () => {
+      const nm = document.getElementById('rv-nm')?.value.trim(); const bz = document.getElementById('rv-bz')?.value.trim(); const bd = document.getElementById('rv-bd')?.value.trim(); const fb = document.getElementById('rv-fb'); const btn = document.getElementById('rv-sub');
+      if (!nm || !bd || !sel) { fb.textContent = '⚠ Plotësoni emrin, vlerësimin dhe komentin.'; fb.className = 'fb err'; return; }
+      btn.disabled = true; btn.textContent = 'Duke dërguar...';
+      try {
+        const r = await fetch('/api/platform-reviews/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reviewer_name: nm, business_name: bz, rating: sel, comment: bd }) });
+        if (r.ok || r.status === 201) { fb.textContent = '🎉 Faleminderit! Vlerësimi do shfaqet pas moderimit.'; fb.className = 'fb ok'; document.getElementById('rv-nm').value = ''; document.getElementById('rv-bz').value = ''; document.getElementById('rv-bd').value = ''; sel = 0; document.querySelectorAll('.spb').forEach(b => { b.classList.remove('on'); b.style.filter = ''; }); document.getElementById('splbl').textContent = 'Zgjidhni vlerësimin tuaj'; toast('⭐ Vlerësimi u dërgua!'); }
+        else { const d = await r.json().catch(() => ({})); fb.textContent = Object.values(d).flat().join(' ') || 'Gabim.'; fb.className = 'fb err'; }
+      }
+      catch { fb.textContent = 'Nuk u arrit lidhja. Provoni përsëri.'; fb.className = 'fb err'; }
+      btn.disabled = false; btn.textContent = 'Dërgo Vlerësimin →';
+    });
+
+    document.getElementById('ct-sub')?.addEventListener('click', async () => {
+      const nm = document.getElementById('ct-nm')?.value.trim(); const em = document.getElementById('ct-em')?.value.trim(); const su = document.getElementById('ct-su')?.value.trim(); const tp = document.getElementById('ct-tp')?.value; const ms = document.getElementById('ct-ms')?.value.trim(); const fb = document.getElementById('ct-fb'); const btn = document.getElementById('ct-sub');
+      if (!nm || !em || !ms) { fb.textContent = '⚠ Plotësoni emrin, emailin dhe mesazhin.'; fb.className = 'fb err'; return; }
+      btn.disabled = true; btn.textContent = 'Duke dërguar...';
+      try {
+        const subjectFull = tp ? (su ? `[${tp}] ${su}` : `[${tp}]`) : su;
+        const r = await fetch('/api/contact/platform/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: nm, email: em, subject: subjectFull, message: ms }) });
+        if (r.ok) { fb.textContent = '✅ Mesazhi u dërgua! Do ju kthehemi brenda 2 orësh.'; fb.className = 'fb ok';['ct-nm', 'ct-em', 'ct-su', 'ct-ms'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; }); document.getElementById('ct-tp').value = ''; toast('✅ Mesazhi u dërgua!'); }
+        else { fb.textContent = 'Gabim. Provoni: hello@bizal.al'; fb.className = 'fb err'; }
+      }
+      catch { fb.textContent = 'Nuk u arrit lidhja. Provoni përsëri.'; fb.className = 'fb err'; }
+      btn.disabled = false; btn.textContent = 'Dërgo Mesazhin →';
+    });
+
+    const FAQS = [
+      { q: 'Sa kohë zgjat setup-i?', a: 'Mund të jeni online brenda 5 minutash — regjistrohuni dhe subdomain-i juaj aktivizohet menjëherë.' },
+      { q: 'A kam nevojë për njohuri teknike?', a: 'Jo fare. BizAL është ndërtuar për t\'u përdorur nga çdokush, pa kod.' },
+      { q: 'A mund të ndryshoj planin?', a: 'Po, në çdo kohë. Rritja bëhet menjëherë, reduktimi hyn në fuqi faturën e ardhshme.' },
+      { q: 'A funksionon jashtë Shqipërisë?', a: 'Po. BizAL funksionon në të gjithë Ballkanin — Kosovë, Maqedoni, Mal i Zi dhe më gjerë.' },
+      { q: 'Si funksionon periudha falas 14-ditore?', a: 'Filloni falas 14 ditë, pa kartë krediti — me brendim custom, rezervime, analitikë dhe deri 50 listingje. Pas periudhës zgjidhni Starter, Pro ose Enterprise, sipas nevojave.' },
+      { q: 'A mund të importoj të dhënat ekzistuese?', a: 'Po. Enterprise mbështet import CSV dhe API integrim me sisteme të tjera.' },
+    ];
+    const fl = document.getElementById('faq-list');
+    if (fl) fl.innerHTML = FAQS.map(f => `<div class="fq"><button class="fq-q" onclick="this.closest('.fq').classList.toggle('open')"><span>${f.q}</span><span class="fq-ic">▼</span></button><div class="fq-a">${f.a}</div></div>`).join('');
+
+    document.getElementById('logout-btn')?.addEventListener('click', doLogout);
+    document.getElementById('cp-btn')?.addEventListener('click', async () => {
+      const old = document.getElementById('cp-old').value; const nw = document.getElementById('cp-new').value; const nw2 = document.getElementById('cp-new2').value; const fb = document.getElementById('cp-fb'); const btn = document.getElementById('cp-btn');
+      if (!old || !nw) { fb.textContent = '⚠ Plotësoni të dyja fushat.'; fb.className = 'fb err'; return; }
+      if (nw.length < 8) { fb.textContent = '⚠ Min 8 karaktere.'; fb.className = 'fb err'; return; }
+      if (nw !== nw2) { fb.textContent = '⚠ Fjalëkalimet nuk përputhen.'; fb.className = 'fb err'; return; }
+      btn.disabled = true; btn.textContent = 'Duke ndryshuar...';
+      try {
+        const r = await Auth.post('/auth/change-password/', { old_password: old, new_password: nw }); const d = await r.json();
+        if (r.ok) { fb.textContent = '✅ Fjalëkalimi u ndryshua!'; fb.className = 'fb ok'; document.getElementById('cp-old').value = ''; document.getElementById('cp-new').value = ''; document.getElementById('cp-new2').value = ''; toast('✅ Fjalëkalimi u ndryshua!'); }
+        else { fb.textContent = d.detail || 'Gabim.'; fb.className = 'fb err'; }
+      }
+      catch { fb.textContent = 'Gabim rrjeti.'; fb.className = 'fb err'; }
+      btn.disabled = false; btn.textContent = 'Ndrysho Fjalëkalimin →';
+    });
+
+    /* NOTIFICATION PREFERENCES — merged from the old account.html */
+    const NOTIF_KEYS = ['booking', 'order', 'reminder', 'promo', 'news'];
+    let notifLoaded = false;
+    async function loadNotifPrefs() {
+      if (notifLoaded) return;
+      notifLoaded = true;
+      try {
+        const r = await Auth.get('/auth/me/notifications/');
+        if (!r.ok) return;
+        const prefs = await r.json();
+        NOTIF_KEYS.forEach(k => {
+          const el = document.getElementById('notif-' + k);
+          if (el && typeof prefs[k] === 'boolean') el.checked = prefs[k];
+        });
+      } catch { /* keep the defaults already checked in the markup */ }
+    }
+    document.getElementById('notif-save')?.addEventListener('click', async () => {
+      const prefs = {}; NOTIF_KEYS.forEach(k => { prefs[k] = document.getElementById('notif-' + k).checked; });
+      const fb = document.getElementById('notif-fb');
+      try {
+        const r = await Auth.patch('/auth/me/notifications/', prefs);
+        if (!r.ok) throw new Error('save_failed');
+        fb.textContent = '✅ Preferencat u ruajtën!'; fb.className = 'fb ok'; toast('✅ Preferencat u ruajtën!');
+      } catch { fb.textContent = '⚠ Gabim gjatë ruajtjes. Provoni përsëri.'; fb.className = 'fb err'; }
+      setTimeout(() => { fb.className = 'fb'; fb.textContent = ''; }, 3000);
+    });
+
+    /* ACCOUNT DELETION — merged from the old account.html */
+    document.getElementById('btn-delete-account')?.addEventListener('click', async () => {
+      if (!window.confirm('Jeni i sigurt? Ky veprim është i pakthyeshëm. Llogaria dhe të gjitha të dhënat tuaja do humbasin.')) return;
+      if (!window.confirm('Konfirmim final: fshi llogarinë timen dhe të gjitha të dhënat?')) return;
+      try {
+        await Auth.del('/auth/me/delete/');
+        Auth.clearTokens();
+        toast('Llogaria u fshi.', 'warning');
+        setTimeout(() => window.location.href = '/', 1500);
+      } catch { toast('Gabim gjatë fshirjes. Kontaktoni support@bizal.al', 'error'); }
+    });
+
+    suMode('user');
+    (async () => { await checkAuth(); })();
+    setTimeout(() => { document.querySelectorAll('#pg-home .fi').forEach(el => el.classList.add('vis')); }, 60);
+    (function () {
+      const path = window.location.pathname.replace(/\//g, '');
+      const valid = ['login', 'signup', 'bizneset', 'vecorite', 'cmimet', 'vlereismet', 'blog', 'about', 'contact', 'kushte', 'privatesia'];
+      if (path === 'signup' && Auth.isLoggedIn()) { window.location.href = '/onboarding/'; return; }
+      // /account/ used to serve a dedicated account.html; it now redirects
+      // (server-side) to '/', so this keeps old bookmarks/links landing on
+      // the in-page profile instead of the marketing homepage.
+      if (path === 'account') { go('profile'); return; }
+      if (valid.includes(path)) go(path);
+    })();
+  </script>
+
+  <!-- Password Reset Modal -->
+  <div id="reset-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center">
+    <div style="background:var(--surface,#fff);border-radius:12px;padding:28px 24px;width:100%;max-width:380px;margin:0 16px">
+      <h3 style="margin:0 0 4px;font-size:1.1rem">Rivendos Fjalëkalimin</h3>
+      <p style="font-size:.82rem;color:var(--text-muted,#888);margin:0 0 16px">Shkruaj email-in dhe do të dërgojmë një link rivendosjeje.</p>
+      <div id="reset-step1">
+        <input type="email" id="reset-email" placeholder="email@juaj.al" style="width:100%;padding:10px 12px;border:1px solid var(--border,#e0e0e0);border-radius:8px;margin-bottom:10px;font-size:.9rem">
+        <div id="reset-err" style="color:#e53e3e;font-size:.78rem;margin-bottom:8px;display:none"></div>
+        <div style="display:flex;gap:10px">
+          <button onclick="doResetRequest()" class="cta-btn" style="flex:1;padding:10px">Dërgo Linkun</button>
+          <button onclick="closeReset()" style="padding:10px 16px;border:1px solid var(--border,#e0e0e0);border-radius:8px;background:none;cursor:pointer">Anulo</button>
+        </div>
+      </div>
+      <div id="reset-step2" style="display:none;text-align:center;padding:12px 0">
+        <div style="font-size:2rem;margin-bottom:8px">📧</div>
+        <p style="font-size:.9rem;margin:0 0 16px">Kontrollo email-in tënd. Linku skadon pas 1 ore.</p>
+        <button onclick="closeReset()" class="cta-btn" style="width:100%">Mbyll</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Password Reset CONFIRM Modal (reached via /reset-password/<uid>/<token>/ link from email) -->
+  <div id="reset-confirm-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center">
+    <div style="background:var(--surface,#fff);border-radius:12px;padding:28px 24px;width:100%;max-width:380px;margin:0 16px">
+      <h3 style="margin:0 0 4px;font-size:1.1rem">Vendos Fjalëkalim të Ri</h3>
+      <p style="font-size:.82rem;color:var(--text-muted,#888);margin:0 0 16px">Shkruaj fjalëkalimin e ri për llogarinë tënde.</p>
+      <div id="reset-confirm-form">
+        <input type="password" id="reset-confirm-pw1" placeholder="Fjalëkalimi i ri" style="width:100%;padding:10px 12px;border:1px solid var(--border,#e0e0e0);border-radius:8px;margin-bottom:10px;font-size:.9rem">
+        <input type="password" id="reset-confirm-pw2" placeholder="Konfirmo fjalëkalimin" style="width:100%;padding:10px 12px;border:1px solid var(--border,#e0e0e0);border-radius:8px;margin-bottom:10px;font-size:.9rem">
+        <div id="reset-confirm-err" style="color:#e53e3e;font-size:.78rem;margin-bottom:8px;display:none"></div>
+        <div style="display:flex;gap:10px">
+          <button id="reset-confirm-btn" onclick="doResetConfirm()" class="cta-btn" style="flex:1;padding:10px">Ruaj Fjalëkalimin</button>
+          <button onclick="closeResetConfirm()" style="padding:10px 16px;border:1px solid var(--border,#e0e0e0);border-radius:8px;background:none;cursor:pointer">Anulo</button>
+        </div>
+      </div>
+      <div id="reset-confirm-success" style="display:none;text-align:center;padding:12px 0">
+        <div style="font-size:2rem;margin-bottom:8px">✅</div>
+        <p style="font-size:.9rem;margin:0 0 16px">Fjalëkalimi u ndryshua me sukses! Tani mund të hysh.</p>
+        <button onclick="closeResetConfirm(); go('login');" class="cta-btn" style="width:100%">Hyr</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Email Verification Result Modal (reached via /verify-email/<uid>/<token>/ link from email) -->
+  <div id="verify-email-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center">
+    <div style="background:var(--surface,#fff);border-radius:12px;padding:28px 24px;width:100%;max-width:380px;margin:0 16px;text-align:center">
+      <div id="verify-email-loading">
+        <div style="font-size:2rem;margin-bottom:8px">📧</div>
+        <p style="font-size:.9rem;margin:0">Duke verifikuar email-in tënd...</p>
+      </div>
+      <div id="verify-email-ok" style="display:none">
+        <div style="font-size:2rem;margin-bottom:8px">✅</div>
+        <p style="font-size:.9rem;margin:0 0 16px">Email u verifikua me sukses!</p>
+        <button onclick="closeVerifyEmail()" class="cta-btn" style="width:100%">Vazhdo</button>
+      </div>
+      <div id="verify-email-err" style="display:none">
+        <div style="font-size:2rem;margin-bottom:8px">⚠️</div>
+        <p id="verify-email-err-msg" style="font-size:.9rem;margin:0 0 16px">Linku ka skaduar ose është i pavlefshëm.</p>
+        <button onclick="closeVerifyEmail()" class="cta-btn" style="width:100%">Mbyll</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Post-registration "create/continue a tenant?" confirm modal — shared by
+       both the customer (ur-btn) and business (su-btn) signup success paths.
+       Neither path should silently decide FOR the person whether they land
+       in the onboarding wizard or on the main site; this asks instead. See
+       askTenantConfirm() below. -->
+  <div id="tenant-confirm-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center">
+    <div style="background:var(--surface,#fff);border-radius:12px;padding:28px 24px;width:100%;max-width:380px;margin:0 16px;text-align:center">
+      <div style="font-size:2rem;margin-bottom:8px">🚀</div>
+      <h3 id="tc-title" style="margin:0 0 4px;font-size:1.1rem"></h3>
+      <p id="tc-msg" style="font-size:.85rem;color:var(--text-muted,#888);margin:0 0 20px"></p>
+      <div style="display:flex;gap:10px">
+        <button id="tc-no" style="flex:1;padding:10px 16px;border:1px solid var(--border,#e0e0e0);border-radius:8px;background:none;cursor:pointer;font-size:.85rem"></button>
+        <button id="tc-yes" class="cta-btn" style="flex:1;padding:10px"></button>
+      </div>
+    </div>
+  </div>
+
+<!-- ── BizBot AI Chatbot ──────────────────────────────────────────────────── -->
+<script src="{% static 'js/chatbot.js' %}"></script>
+<script>
+  // Main marketing page — chatbot available to all visitors (no tenant context).
+  document.addEventListener('DOMContentLoaded', function () {
+    BizBot.init();
+  });
+</script>
+
+</body>
+</html>

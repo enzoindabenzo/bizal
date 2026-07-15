@@ -1,0 +1,3423 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="" id="meta-desc" />
+  <title id="page-title">BizAL</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&family=Playfair+Display:wght@400;600;700&family=Merriweather:wght@400;700&family=Space+Grotesk:wght@400;500;600;700&family=Nunito:wght@400;600;700&display=swap" />
+  <link rel="stylesheet" href="{% static 'css/index.css' %}" />
+  <link rel="stylesheet" href="{% static 'css/brand.css' %}" />
+</head>
+<body>
+
+<!-- SCROLL PROGRESS -->
+<div id="scroll-progress" aria-hidden="true"><div id="scroll-progress-bar"></div></div>
+
+<!-- ADMIN BAR -->
+<div id="admin-bar">
+  <span id="ab-name">BizAL Admin</span>
+  <div class="ab-links">
+    <a href="/admin/" id="ab-dashboard">⚙️ Paneli Admin</a>
+    <a href="/admin/#settings" id="ab-settings">🎨 Cilësimet</a>
+    <a href="/" id="ab-main">↗ bizal.al</a>
+  </div>
+</div>
+
+<!-- TOPBAR -->
+<nav id="topbar" aria-label="Primary navigation">
+  <div class="topbar-left">
+    <a href="/" class="topbar-logo-link" id="topbar-logo-link" title="Kthehu te BizAL"><span id="topbar-bizal-text">Biz<b>AL</b></span><img id="topbar-logo-img" src="" alt="Logo" style="display:none;height:28px;width:auto;border-radius:4px;object-fit:contain;vertical-align:middle"/></a>
+    <div class="topbar-sep"></div>
+    <span id="topbar-name">…</span>
+    <span id="topbar-type-badge" class="hidden"></span>
+  </div>
+  <div class="topbar-nav" id="topbar-nav" role="navigation">
+    <a href="#" class="tnl active" data-section="overview">Overview</a>
+    <a href="#" class="tnl hidden" data-section="services" id="tnl-services">Shërbime</a>
+    <a href="#" class="tnl hidden" data-section="menu" id="tnl-menu">Menu</a>
+    <a href="#" class="tnl hidden" data-section="orders" id="tnl-orders">🛒 Porosit</a>
+    <a href="#" class="tnl hidden" data-section="rentals" id="tnl-rentals">Flotë</a>
+    <a href="#" class="tnl" data-section="reviews">Vlerësime</a>
+    <a href="#" class="tnl hidden" data-section="blog" id="tnl-blog">Blog</a>
+    <span id="tnl-extra-pages" style="display:contents"></span>
+    <a href="#" class="tnl" data-section="contact">Kontakt</a>
+    <a href="#" class="tnl hidden" data-section="profile" id="tnl-profile">👤 Profili</a>
+  </div>
+  <div class="topbar-right">
+    <button class="icon-btn hidden" id="topbar-cart-btn" title="Shporta" aria-label="Shporta" style="position:relative">
+      🛒<span id="topbar-cart-count" style="position:absolute;top:-4px;right:-4px;background:var(--brand,#111);color:#fff;border-radius:10px;font-size:10px;line-height:1;padding:2px 5px;min-width:14px;text-align:center">0</span>
+    </button>
+    <button class="icon-btn" id="theme-toggle" title="Ndrysho temën" aria-label="Toggle theme">🌙</button>
+    <div id="nav-auth-area" class="nav-auth-area"></div>
+    <button class="hbg" id="hbg" aria-label="Open menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+
+<!-- MOBILE DRAWER -->
+<div id="mob-drawer" aria-hidden="true">
+  <div id="mob-overlay"></div>
+  <div id="mob-panel">
+    <a href="#" class="mob-link active" data-section="overview">🏠 Overview</a>
+    <a href="#" class="mob-link hidden" data-section="services" id="ml-services">✨ Shërbime</a>
+    <a href="#" class="mob-link hidden" data-section="menu" id="ml-menu">🍽️ Menu</a>
+    <a href="#" class="mob-link hidden" data-section="orders" id="ml-orders">🛒 Porosit</a>
+    <a href="#" class="mob-link hidden" data-section="rentals" id="ml-rentals">🚗 Flotë</a>
+    <a href="#" class="mob-link" data-section="reviews">⭐ Vlerësime</a>
+    <a href="#" class="mob-link hidden" data-section="blog" id="ml-blog">📰 Blog</a>
+    <span id="ml-extra-pages" style="display:contents"></span>
+    <a href="#" class="mob-link" data-section="contact">📞 Kontakt</a>
+    <a href="#" class="mob-link hidden" data-section="profile" id="ml-profile">👤 Profili Im</a>
+    <div class="mob-sep"></div>
+    <div id="mob-auth-area" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button class="btn-brand" id="mob-btn-book" style="flex:1">Rezervo</button>
+      <button class="icon-btn" id="mob-theme-toggle">🌙</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOGO BAR -->
+<div id="logo-bar" style="display:none">
+  <img id="logo-bar-img" src="" alt="Logo" />
+  <span id="logo-bar-name"></span>
+</div>
+
+<!-- MASTHEAD -->
+<header id="masthead" role="banner">
+  <img id="cover-photo" src="" alt="" aria-hidden="true" />
+  <div class="wrap" style="padding:0">
+    <div class="masthead-inner">
+      <div class="masthead-left">
+        <div class="masthead-eyebrow">
+          <span class="mh-type-tag" id="mh-type-tag">Biznes</span>
+          <span class="mh-city" id="mh-city">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+            <span id="mh-city-text">—</span>
+          </span>
+          <span class="mh-year" id="mh-year"></span>
+        </div>
+        <h1 id="mh-name">Duke ngarkuar…</h1>
+        <p id="mh-tagline"></p>
+        <div class="mh-actions" id="mh-actions">
+          <button class="btn-mh-primary" id="mh-cta-btn">Rezervo Tani</button>
+          <button class="btn-mh-ghost hidden" id="mh-order-btn">🛒 Porosit Tani</button>
+          <button class="btn-mh-ghost hidden" id="mh-shop-btn">🛍️ Shiko Produktet</button>
+          <button class="btn-mh-ghost hidden" id="mh-contact-btn">Na Kontaktoni</button>
+          <a class="btn-mh-ghost hidden" id="mh-wa-btn" href="#" target="_blank">💬 WhatsApp</a>
+        </div>
+      </div>
+      <div class="masthead-right" id="masthead-stats">
+        <div class="mh-stat">
+          <span class="mh-stat-num" id="stat-services">—</span>
+          <span class="mh-stat-lbl" id="stat-services-lbl">Shërbime</span>
+        </div>
+        <div class="mh-stat">
+          <span class="mh-stat-num" id="stat-reviews-count">—</span>
+          <span class="mh-stat-lbl">Vlerësime</span>
+        </div>
+        <div class="mh-stat">
+          <span class="mh-stat-num" id="stat-rating">—</span>
+          <span class="mh-stat-lbl">Vlerësim mesatar</span>
+        </div>
+        <div class="mh-stat" id="stat-years-wrap" style="display:none">
+          <span class="mh-stat-num" id="stat-years">—</span>
+          <span class="mh-stat-lbl">Vite eksperiencë</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- SECTION TABS -->
+<div id="section-tabs" role="tablist" aria-label="Sections">
+  <div class="tabs-inner">
+    <button class="tab-btn active" role="tab" data-section="overview">🏠 Overview</button>
+    <button class="tab-btn hidden" role="tab" data-section="services" id="tab-services">✨ Shërbime <span class="tab-count" id="tab-services-count">0</span></button>
+    <button class="tab-btn hidden" role="tab" data-section="menu" id="tab-menu">🍽️ Menu</button>
+    <button class="tab-btn hidden" role="tab" data-section="orders" id="tab-orders">🛒 Porosit</button>
+    <button class="tab-btn hidden" role="tab" data-section="rentals" id="tab-rentals">🚗 Flotë</button>
+    <button class="tab-btn" role="tab" data-section="reviews" id="tab-reviews">⭐ Vlerësime <span class="tab-count" id="tab-reviews-count">0</span></button>
+    <button class="tab-btn hidden" role="tab" data-section="blog" id="tab-blog">📰 Blog</button>
+    <button class="tab-btn" role="tab" data-section="contact">📞 Kontakt</button>
+    <button class="tab-btn hidden" role="tab" data-section="profile" id="tab-profile">👤 Profili</button>
+  </div>
+</div>
+
+<!-- CONTENT AREA -->
+<main id="content-area" role="main">
+  <div class="wrap">
+
+    <!-- OVERVIEW -->
+    <section class="section-panel active" id="panel-overview" role="tabpanel">
+      <div class="bento" id="bento-grid">
+        <div class="bc bc-12" style="text-align:center;padding:60px 24px">
+          <div class="spin-el"></div>
+          <p style="color:var(--muted);font-size:.85rem;margin-top:14px">Duke ngarkuar…</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SERVICES / PRODUCTS -->
+    <section class="section-panel" id="panel-services" role="tabpanel">
+      <div id="pslot-services-grid">
+        <div class="services-header">
+          <div>
+            <div class="lbl" id="services-lbl">Shërbime</div>
+            <h2 id="services-heading">Shërbimet Tona</h2>
+          </div>
+          <div class="search-row">
+            <input class="search-inp" type="text" id="svc-search" placeholder="Kërko…" aria-label="Kërko shërbime"/>
+            <select class="filter-sel" id="svc-filter" aria-label="Filtro">
+              <option value="">Të gjitha</option>
+              <option value="available">Të disponueshme</option>
+              <option value="unavailable">Jo të disponueshme</option>
+            </select>
+            <div class="view-toggle">
+              <button class="view-btn active" id="view-list" title="Lista" aria-label="List view">☰</button>
+              <button class="view-btn" id="view-grid-btn" title="Grid" aria-label="Grid view">⊞</button>
+            </div>
+          </div>
+        </div>
+        <div id="svc-container">
+          <div class="svc-list" id="svc-list">
+            <div style="text-align:center;padding:60px 0;color:var(--muted)"><div class="spin-el"></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MENU (view only) -->
+    <section class="section-panel" id="panel-menu" role="tabpanel">
+      <div class="lbl">Menu</div>
+      <h2 style="margin-bottom:20px" id="menu-heading">Menu Jonë</h2>
+      <div id="pslot-menu-grid">
+        <div class="menu-cat-nav" id="menu-cat-nav"></div>
+        <div class="menu-grid" id="menu-grid">
+          <div style="text-align:center;padding:60px 0;color:var(--muted);grid-column:1/-1"><div class="spin-el"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ORDERS (order food) -->
+    <section class="section-panel" id="panel-orders" role="tabpanel">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px">
+        <div>
+          <div class="lbl">Porosit Online</div>
+          <h2>Porosit nga Menu</h2>
+        </div>
+      </div>
+      <div id="pslot-orders-view">
+        <div class="menu-cat-nav" id="order-cat-nav"></div>
+        <div class="menu-grid" id="order-grid">
+          <div style="text-align:center;padding:60px 0;color:var(--muted);grid-column:1/-1"><div class="spin-el"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RENTALS -->
+    <section class="section-panel" id="panel-rentals" role="tabpanel">
+      <div class="lbl" id="rentals-lbl">Flota</div>
+      <h2 style="margin-bottom:24px" id="rentals-heading">Flotë e Disponueshme</h2>
+      <div id="pslot-rentals-grid">
+        <div class="rental-grid" id="rental-grid">
+          <div style="text-align:center;padding:60px 0;color:var(--muted);grid-column:1/-1"><div class="spin-el"></div></div>
+        </div>
+      </div>
+      <div class="about-inline" id="about-inline-rentals" style="margin-top:24px"></div>
+    </section>
+
+    <!-- REVIEWS -->
+    <section class="section-panel" id="panel-reviews" role="tabpanel">
+      <div class="rev-carousel hidden" id="rev-carousel">
+        <div class="rev-carousel-inner">
+          <div class="lbl" style="color:rgba(255,255,255,.5)">Vlerësimet e zgjedhura</div>
+          <div class="rev-car-quote" id="car-quote">"…"</div>
+          <div class="rev-car-author">
+            <div>
+              <div class="rev-car-name" id="car-name">—</div>
+              <div class="rev-car-biz" id="car-biz"></div>
+            </div>
+            <div class="rev-car-stars" id="car-stars">⭐⭐⭐⭐⭐</div>
+          </div>
+          <div class="rev-car-dots" id="car-dots"></div>
+        </div>
+      </div>
+      <div id="pslot-reviews-list" class="reviews-layout">
+        <div>
+          <div class="rev-summary-card" id="rev-summary-card">
+            <div class="lbl">Vlerësimet</div>
+            <span class="big-rating" id="rv-avg">—</span>
+            <div class="stars-row" id="rv-avg-stars"></div>
+            <div class="rating-meta" id="rv-total">Duke ngarkuar…</div>
+            <div class="mini-bars" id="rv-mini-bars"></div>
+          </div>
+          <div class="rev-form" id="rev-form-wrap" style="display:none">
+            <h3>Lini një vlerësim</h3>
+            <p>Keni vizituar? Ndajeni përvojën tuaj.</p>
+            <div class="star-picker" id="star-picker"></div>
+            <span class="spick-lbl" id="spick-lbl">Zgjidhni vlerësimin</span>
+            <div class="form-row">
+              <input type="text" class="finp" id="rv-name" placeholder="Emri juaj"/>
+              <input type="text" class="finp" id="rv-business" placeholder="Biznesi juaj (opsional)"/>
+            </div>
+            <textarea class="finp" id="rv-comment" placeholder="Tregoni për përvojën tuaj…" rows="3"></textarea>
+            <button class="btn-brand" id="rv-submit" style="width:100%;justify-content:center">Dërgo Vlerësimin →</button>
+            <div class="form-feedback" id="rv-feedback"></div>
+          </div>
+        </div>
+        <div>
+          <div class="reviews-flow" id="reviews-flow">
+            <div style="text-align:center;padding:60px 0;color:var(--muted)"><div class="spin-el"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="about-inline" id="about-inline-reviews" style="margin-top:24px"></div>
+    </section>
+
+    <!-- BLOG -->
+    <section class="section-panel" id="panel-blog" role="tabpanel">
+      <div class="lbl">Blog</div>
+      <h2 style="margin-bottom:24px">Artikujt e Fundit</h2>
+      <div id="pslot-blog-list">
+        <div id="blog-tags-row" style="display:none;flex-wrap:wrap;gap:8px;margin-bottom:20px"></div>
+        <div class="blog-masonry" id="blog-masonry">
+          <div style="text-align:center;padding:60px 0;color:var(--muted);grid-column:1/-1"><div class="spin-el"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONTACT -->
+    <section class="section-panel" id="panel-contact" role="tabpanel">
+      <div class="lbl">Kontakt</div>
+      <h2 style="margin-bottom:24px">Na Kontaktoni</h2>
+      <div id="pslot-contact-form" class="contact-section-grid">
+        <div>
+          <div class="contact-info-panel" id="contact-info-panel">
+            <div style="text-align:center;padding:40px 0;color:var(--muted)"><div class="spin-el"></div></div>
+          </div>
+          <div class="contact-map hidden" id="contact-map">
+            <iframe id="map-iframe" src="" title="Harta e biznesit" loading="lazy" allowfullscreen></iframe>
+          </div>
+        </div>
+        <div class="contact-form-card">
+          <h3>Dërgoni mesazh</h3>
+          <p>Do t'ju kthehemi sa më shpejt.</p>
+          <div class="fcol">
+            <div class="form-row">
+              <input type="text" class="finp" id="ct-name" placeholder="Emri juaj"/>
+              <input type="email" class="finp" id="ct-email" placeholder="Email"/>
+            </div>
+            <input type="text" class="finp" id="ct-subject" placeholder="Subjekti"/>
+            <textarea class="finp" id="ct-message" placeholder="Mesazhi juaj…" rows="5"></textarea>
+            <button class="btn-brand" id="ct-submit" style="width:100%;justify-content:center">Dërgo Mesazhin →</button>
+            <div class="form-feedback" id="ct-feedback"></div>
+          </div>
+        </div>
+      </div>
+      <div class="about-inline" id="about-inline-contact" style="margin-top:24px"></div>
+    </section>
+
+    <!-- PROFILE -->
+    <section class="section-panel" id="panel-profile" role="tabpanel">
+      <div style="max-width:520px;margin:0 auto">
+        <div class="lbl">Llogaria Ime</div>
+        <h2 style="font-family:var(--font-serif);font-size:1.6rem;font-weight:600;color:var(--text);margin-bottom:20px">Profili Juaj</h2>
+
+        <!-- Identity card -->
+        <div class="bc" style="margin-bottom:14px">
+          <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
+            <div id="prof-avatar" style="width:46px;height:46px;border-radius:50%;background:var(--brand);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:.9rem;color:#fff;flex-shrink:0">?</div>
+            <div style="flex:1;min-width:0">
+              <div id="prof-name" style="font-weight:600;font-size:.95rem;color:var(--text)"></div>
+              <div id="prof-email" style="font-size:.8rem;color:var(--text-muted)"></div>
+            </div>
+          </div>
+
+          <!-- Edit name / phone -->
+          <div class="lbl" style="margin-bottom:8px">Ndrysho të dhënat</div>
+          <div class="fcol" style="margin-bottom:18px">
+            <input type="text"  class="finp" id="prof-fullname" placeholder="Emri i plotë"/>
+            <input type="tel"   class="finp" id="prof-phone"    placeholder="Numri i telefonit"/>
+            <button class="btn-brand" id="prof-save-btn" style="width:100%;justify-content:center">Ruaj →</button>
+            <div class="form-feedback" id="prof-save-fb"></div>
+          </div>
+
+          <!-- Change password -->
+          <div class="lbl" style="margin-bottom:8px">Ndrysho Fjalëkalimin</div>
+          <div class="fcol">
+            <input type="password" class="finp" id="prof-old-pw"  placeholder="Fjalëkalimi aktual"/>
+            <input type="password" class="finp" id="prof-new-pw"  placeholder="Fjalëkalimi i ri (min 8)"/>
+            <input type="password" class="finp" id="prof-new-pw2" placeholder="Konfirmo fjalëkalimin e ri"/>
+            <button class="btn-brand" id="prof-change-btn" style="width:100%;justify-content:center">Ndrysho Fjalëkalimin →</button>
+            <div class="form-feedback" id="prof-fb"></div>
+          </div>
+        </div>
+
+        <!-- My bookings / orders at this tenant -->
+        <div class="bc" style="margin-bottom:14px">
+          <div class="lbl" style="margin-bottom:10px" id="prof-bookings-title">Rezervimet e Mia</div>
+          <div id="prof-bookings-list" style="font-size:.85rem;color:var(--text-muted)">Duke ngarkuar…</div>
+        </div>
+
+        <!-- Notification preferences -->
+        <div class="bc" style="margin-bottom:14px">
+          <div class="lbl" style="margin-bottom:10px">Njoftimet</div>
+          <div style="display:flex;flex-direction:column;gap:13px">
+            <label style="display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer">
+              <span style="font-size:.83rem;color:var(--text)">Konfirmime &amp; përditësime rezervimesh</span>
+              <input type="checkbox" id="prof-notif-booking" checked style="width:17px;height:17px;flex-shrink:0;accent-color:var(--brand)"/>
+            </label>
+            <label style="display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer">
+              <span style="font-size:.83rem;color:var(--text)">Statusi i porosive</span>
+              <input type="checkbox" id="prof-notif-order" checked style="width:17px;height:17px;flex-shrink:0;accent-color:var(--brand)"/>
+            </label>
+            <label style="display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer">
+              <span style="font-size:.83rem;color:var(--text)">Kujtesa për rezervime të ardhshme</span>
+              <input type="checkbox" id="prof-notif-reminder" checked style="width:17px;height:17px;flex-shrink:0;accent-color:var(--brand)"/>
+            </label>
+            <label style="display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer">
+              <span style="font-size:.83rem;color:var(--text)">Oferta &amp; promovime</span>
+              <input type="checkbox" id="prof-notif-promo" style="width:17px;height:17px;flex-shrink:0;accent-color:var(--brand)"/>
+            </label>
+            <button class="btn-brand" id="prof-notif-save-btn" style="width:100%;justify-content:center;margin-top:4px">Ruaj Preferencat</button>
+            <div class="form-feedback" id="prof-notif-fb"></div>
+          </div>
+        </div>
+
+        <button class="btn-out-sm" id="prof-logout-btn" style="color:var(--danger);border-color:rgba(139,26,26,.25);width:100%;justify-content:center;margin-bottom:14px">Dil nga llogaria →</button>
+
+        <!-- Delete account -->
+        <div class="bc" style="border-color:rgba(139,26,26,.25)">
+          <div class="lbl" style="margin-bottom:8px">Zonë e Rrezikshme</div>
+          <p style="font-size:.8rem;color:var(--text-muted);margin-bottom:12px">Fshirja e llogarisë është e përhershme dhe nuk mund të kthehet.</p>
+          <button class="btn-out-sm" id="prof-delete-account-btn" style="color:var(--danger);border-color:rgba(139,26,26,.3);width:100%;justify-content:center">Fshi Llogarinë Permanentisht</button>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<!-- AUTH MODAL -->
+<div class="modal-overlay-base" id="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">
+  <div class="modal-bg" id="auth-modal-bg"></div>
+  <div class="modal-box">
+    <button class="modal-cls" id="auth-modal-close" aria-label="Mbyll">✕</button>
+    <h2 id="auth-modal-title" style="font-family:var(--font-d);font-size:1.6rem;font-weight:400;margin-bottom:6px">Mirë se vini</h2>
+    <p style="color:var(--muted);font-size:.82rem;margin-bottom:20px" id="auth-modal-sub">Hyni ose krijoni një llogari të re.</p>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="auth-tab-login">Hyr</button>
+      <button class="auth-tab" id="auth-tab-register">Regjistrohu</button>
+    </div>
+    <div class="auth-error" id="auth-error"></div>
+    <div id="auth-form-content" class="fcol"></div>
+  </div>
+</div>
+
+<!-- BOOKING MODAL -->
+<div class="modal-overlay-base" id="booking-modal" role="dialog" aria-modal="true" aria-labelledby="bk-title">
+  <div class="modal-bg" id="bk-modal-bg"></div>
+  <div class="modal-box">
+    <button class="modal-cls" id="bk-close" aria-label="Mbyll">✕</button>
+    <h2 id="bk-title" style="font-size:1.5rem;margin-bottom:6px">Rezervo</h2>
+    <p id="bk-subtitle" style="color:var(--muted);font-size:.85rem;margin-bottom:20px"></p>
+    <div id="bk-content"></div>
+  </div>
+</div>
+
+<!-- CART MODAL -->
+<div class="modal-overlay-base" id="cart-modal" role="dialog" aria-modal="true" aria-labelledby="cart-title">
+  <div class="modal-bg" id="cart-modal-bg"></div>
+  <div class="modal-box" style="max-width:520px">
+    <button class="modal-cls" id="cart-close" aria-label="Mbyll">✕</button>
+    <h2 id="cart-title" style="font-family:var(--font-d);font-size:1.5rem;font-weight:400;margin-bottom:4px">🛒 Shporta Juaj</h2>
+    <p id="cart-tenant-name" style="color:var(--muted);font-size:.82rem;margin-bottom:16px"></p>
+    <div id="cart-items-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;max-height:240px;overflow-y:auto"></div>
+    <div class="cart-total-row">
+      <span class="cart-total-label">Total:</span>
+      <span class="cart-total-value" id="cart-total">0 L</span>
+    </div>
+    <div class="fcol">
+      <div class="form-row">
+        <input type="text" class="finp" id="ord-name"  placeholder="Emri juaj *"/>
+        <input type="tel"  class="finp" id="ord-phone" placeholder="Telefon *"/>
+      </div>
+      <input type="hidden" id="ord-type" value="delivery"/>
+      <input type="text" class="finp" id="ord-table" style="display:none"/>
+      <input type="text" class="finp" id="ord-address" placeholder="Adresa e dërgimit *"/>
+      <textarea class="finp" id="ord-notes" placeholder="Shënime (alergjene, preferencë…)" rows="2"></textarea>
+      <button class="btn-brand" id="ord-submit" style="width:100%;justify-content:center;margin-top:4px">Dërgo Porosinë →</button>
+      <div class="form-feedback" id="ord-feedback"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ARTICLE MODAL -->
+<div class="art-modal" id="art-modal" role="dialog" aria-modal="true">
+  <div class="art-overlay" id="art-overlay"></div>
+  <div class="art-box">
+    <button class="art-cls" id="art-cls" aria-label="Mbyll">✕</button>
+    <div id="art-content"></div>
+  </div>
+</div>
+
+<!-- WHATSAPP FLOAT -->
+<a id="wa-btn" href="#" target="_blank" rel="noopener" aria-label="Na kontaktoni në WhatsApp">
+  <svg viewBox="0 0 24 24" fill="currentColor" width="26" height="26">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+    <path d="M12 0C5.373 0 0 5.373 0 12c0 2.104.549 4.08 1.504 5.797L0 24l6.339-1.485A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.6a9.6 9.6 0 01-4.882-1.327l-.35-.208-3.624.849.878-3.526-.228-.362A9.565 9.565 0 012.4 12 9.6 9.6 0 0112 2.4 9.6 9.6 0 0121.6 12 9.6 9.6 0 0112 21.6z"/>
+  </svg>
+</a>
+
+<!-- FOOTER -->
+<footer id="site-footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <a class="f-logo" href="/">Biz<b>AL</b></a>
+        <p class="f-tagline" id="footer-tagline-text">Platforma SaaS #1 për bizneset shqiptare.</p>
+      </div>
+      <div id="footer-social-col">
+        <div class="fh">Na Ndiqni</div>
+        <div class="fn" id="footer-social-links"></div>
+      </div>
+      <div id="footer-info-col">
+        <div class="fh">Kontakt</div>
+        <div class="fn" id="footer-contact-links"></div>
+      </div>
+      <div id="footer-hours-col">
+        <div class="fh">Orari</div>
+        <div class="fn" id="footer-hours-links"></div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="footer-bottom-inner">
+        <p id="footer-copy">© 2025 BizAL. Të gjitha të drejtat e rezervuara.</p>
+        <div style="display:flex;gap:12px">
+          <a href="#" id="footer-terms-link">Kushtet e Përdorimit</a>
+          <a href="#" id="footer-privacy-link">Privatësia</a>
+          <a href="/">bizal.al</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<div id="toast-root" aria-live="polite" aria-atomic="true"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
+<script src="{% static 'js/ui.js' %}"></script>
+<script src="{% static 'js/auth.js' %}"></script>
+<script>
+/* ═══════════════════════════════════════════════════
+   BizAL — Tenant Profile SPA  v3
+═══════════════════════════════════════════════════ */
+
+/* ── SCROLL PROGRESS ── */
+window.addEventListener('scroll', () => {
+  const el  = document.documentElement;
+  const pct = (el.scrollTop || document.body.scrollTop) /
+              ((el.scrollHeight || document.body.scrollHeight) - el.clientHeight) * 100;
+  document.getElementById('scroll-progress-bar').style.width = Math.min(pct, 100) + '%';
+}, { passive: true });
+
+/* ── TOPBAR SCROLL ── */
+window.addEventListener('scroll', () => {
+  document.getElementById('topbar').classList.toggle('scrolled', window.scrollY > 4);
+}, { passive: true });
+
+/* ── THEME ── */
+(function () {
+  const t = localStorage.getItem('bizal-theme') || 'light';
+  document.documentElement.setAttribute('data-theme', t);
+  document.getElementById('theme-toggle').textContent     = t === 'dark' ? '☀️' : '🌙';
+  document.getElementById('mob-theme-toggle').textContent = t === 'dark' ? '☀️' : '🌙';
+})();
+function toggleTheme() {
+  const c = document.documentElement.getAttribute('data-theme') || 'light';
+  const n = c === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', n);
+  localStorage.setItem('bizal-theme', n);
+  document.getElementById('theme-toggle').textContent     = n === 'dark' ? '☀️' : '🌙';
+  document.getElementById('mob-theme-toggle').textContent = n === 'dark' ? '☀️' : '🌙';
+}
+document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+document.getElementById('mob-theme-toggle').addEventListener('click', toggleTheme);
+
+/* ── TOAST ── */
+function toast(msg, type = 'tok') {
+  const root = document.getElementById('toast-root');
+  const el   = document.createElement('div');
+  el.className   = `toast-item ${type}`;
+  el.textContent = msg;
+  root.appendChild(el);
+  requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('show')));
+  setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 260); }, 3400);
+}
+
+/* ── HAMBURGER / MOBILE DRAWER ── */
+const drawer = document.getElementById('mob-drawer');
+document.getElementById('hbg').addEventListener('click', () => {
+  const open = drawer.classList.toggle('open');
+  drawer.setAttribute('aria-hidden', String(!open));
+  document.body.style.overflow = open ? 'hidden' : '';
+});
+document.getElementById('mob-overlay').addEventListener('click', closeDrawer);
+function closeDrawer() {
+  drawer.classList.remove('open');
+  drawer.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+}
+
+/* ── SECTION ROUTER ── */
+let currentSection = 'overview';
+const sectionLoaders = {};
+const sectionLoaded  = {};
+
+function goSection(id) {
+  if (id === currentSection) { closeDrawer(); return; }
+  const outPanel = document.getElementById('panel-' + currentSection);
+  const inPanel  = document.getElementById('panel-' + id);
+  if (!inPanel) { closeDrawer(); return; }
+  if (outPanel) outPanel.classList.remove('active', 'anim');
+  inPanel.classList.add('active');
+  requestAnimationFrame(() => requestAnimationFrame(() => inPanel.classList.add('anim')));
+  document.querySelectorAll('.tab-btn').forEach(b  => b.classList.toggle('active',  b.dataset.section === id));
+  document.querySelectorAll('.tnl').forEach(l      => l.classList.toggle('active',  l.dataset.section === id));
+  document.querySelectorAll('.mob-link').forEach(l => l.classList.toggle('active',  l.dataset.section === id));
+  currentSection = id;
+  window.scrollTo({ top: document.getElementById('section-tabs').offsetTop - 2, behavior: 'smooth' });
+  closeDrawer();
+  if (!sectionLoaded[id] && sectionLoaders[id]) { sectionLoaders[id](); sectionLoaded[id] = true; }
+  try {
+    fetch(`/api/analytics/track/?tenant=${slug}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event: 'section_view', section: id, path: window.location.pathname }),
+    }).catch(() => {});
+  } catch (_) {}
+}
+requestAnimationFrame(() => { document.getElementById('panel-overview')?.classList.add('anim'); });
+document.querySelectorAll('.tab-btn[data-section], .tnl[data-section], .mob-link[data-section]').forEach(el => {
+  el.addEventListener('click', e => { e.preventDefault(); goSection(el.dataset.section); });
+});
+document.querySelectorAll('[data-section="profile"]').forEach(el => {
+  el.addEventListener('click', e => {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    closeDrawer();
+    goSection('profile');
+  });
+});
+
+/* ── SCROLL REVEAL ── */
+const revObs = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('vis'); revObs.unobserve(e.target); } });
+}, { threshold: 0.08 });
+function observeReveals(container) {
+  (container || document).querySelectorAll('.reveal').forEach(el => revObs.observe(el));
+}
+
+/* ── 3D TILT ── */
+function addTilt(card) {
+  card.addEventListener('mousemove', e => {
+    const r = card.getBoundingClientRect();
+    const x = ((e.clientX - r.left) / r.width  - 0.5) * 10;
+    const y = ((e.clientY - r.top)  / r.height - 0.5) * -10;
+    card.style.transform = `translateY(-2px) rotateX(${y}deg) rotateY(${x}deg) scale(1.01)`;
+  });
+  card.addEventListener('mouseleave', () => { card.style.transform = ''; });
+}
+
+/* ── ANIMATED COUNTER ── */
+function animateCounter(el, end, suffix = '', duration = 1400) {
+  if (!end || isNaN(parseFloat(end))) return;
+  const num     = parseFloat(end);
+  const isFloat = end.toString().includes('.');
+  const start   = performance.now();
+  function step(now) {
+    const p    = Math.min((now - start) / duration, 1);
+    const ease = 1 - Math.pow(1 - p, 3);
+    el.textContent = (isFloat ? (num * ease).toFixed(1) : Math.round(num * ease)) + suffix;
+    if (p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+const statObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (!e.isIntersecting) return;
+    e.target.querySelectorAll('[data-count]').forEach(el => {
+      animateCounter(el, el.dataset.count, el.dataset.suffix || '');
+    });
+    statObs.unobserve(e.target);
+  });
+}, { threshold: 0.3 });
+
+/* ── HELPERS ── */
+function getSlug() {
+  const p = new URLSearchParams(window.location.search).get('tenant');
+  if (p) { localStorage.setItem('tenant_slug', p); return p; }
+  const h = window.location.hostname;
+  if (h && h !== 'localhost' && h !== '127.0.0.1' && h.includes('.')) {
+    const parts = h.split('.');
+    if (parts.length >= 3) {
+      const subdomain = parts.slice(0, parts.length - 2).join('.');
+      if (subdomain && subdomain !== 'www') { localStorage.setItem('tenant_slug', subdomain); return subdomain; }
+    }
+  }
+  return localStorage.getItem('tenant_slug') || '';
+}
+// Builds an absolute URL to the main BizAL site (bizal.al), used for
+// platform-level pages like Terms & Privacy that live on main.html rather
+// than on each tenant's own subdomain. Mirrors getSlug()'s host parsing:
+// local dev has no real subdomains (tenant is a `?tenant=` query param on
+// port 8001), so the main site is reached via port 8000 instead; in
+// production the tenant subdomain is stripped down to the root domain.
+function mainSiteUrl(path) {
+  const h = window.location.hostname;
+  if (h === 'localhost' || h === '127.0.0.1') {
+    return `${window.location.protocol}//${h}:8000${path}`;
+  }
+  const parts = h.split('.');
+  const root = parts.length >= 3 ? parts.slice(-2).join('.') : h;
+  return `${window.location.protocol}//${root}${path}`;
+}
+function hexToRgb(hex) {
+  const r = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return r ? `${parseInt(r[1],16)},${parseInt(r[2],16)},${parseInt(r[3],16)}` : '192,48,40';
+}
+function isColorDark(hex) {
+  const rgb = hexToRgb(hex).split(',').map(Number);
+  return (0.299*rgb[0]+0.587*rgb[1]+0.114*rgb[2])/255 < 0.25;
+}
+function applyBrand(primary, accent, fontHeading, fontBody, borderRadius, backgroundColor, textColor) {
+  const p   = primary || '#111111';
+  const a   = accent  || p;
+  const root = document.documentElement;
+  root.style.setProperty('--brand', p);
+  root.style.setProperty('--brand-accent', a);
+  root.style.setProperty('--brand-s', `rgba(${hexToRgb(p)},.08)`);
+  root.style.setProperty('--tenant-primary', p);
+  root.style.setProperty('--tenant-primary-rgb', hexToRgb(p));
+  // Font names are chosen from a fixed backend choices list (never free
+  // text), but quoting defensively here costs nothing and protects against
+  // a future field-type change turning this into a CSS injection vector.
+  if (fontHeading) root.style.setProperty('--tenant-font-heading', `'${fontHeading}'`);
+  if (fontBody)    root.style.setProperty('--tenant-font-body', `'${fontBody}'`);
+  if (borderRadius) {
+    root.style.setProperty('--tenant-radius', borderRadius);
+    const px = parseInt(borderRadius, 10);
+    if (!isNaN(px)) root.style.setProperty('--tenant-radius-sm', `${Math.max(2, Math.round(px * 0.5))}px`);
+  }
+  // background_color/text_color are validated hex on the backend (format +
+  // a minimum WCAG contrast ratio between the pair — see
+  // bizal/validators.py:validate_color_contrast), so no extra sanitizing
+  // is needed here beyond the existing hex format itself.
+  if (backgroundColor) root.style.setProperty('--tenant-bg', backgroundColor);
+  if (textColor)        root.style.setProperty('--tenant-text', textColor);
+  const mh = document.getElementById('masthead');
+  if (mh) mh.style.background = p;
+}
+function fmtPrice(val) {
+  if (!val && val !== 0) return '';
+  const n = parseFloat(val);
+  if (isNaN(n)) return String(val);
+  return `${n.toLocaleString('sq')} <sub>L</sub>`;
+}
+function fmtPricePlain(val) {
+  if (!val && val !== 0) return '0 L';
+  const n = parseFloat(val);
+  if (isNaN(n)) return String(val);
+  return `${n.toLocaleString('sq')} L`;
+}
+// FIX: product availability used to be a plain yes/no badge ("✓ Disponueshëm"
+// / "Stok mbaroi"), which hides how much stock is actually left. Shop tenants
+// already send the real `stock` count on every product — show it directly,
+// with a "low stock" tier so a customer knows to hurry rather than assume
+// plenty is left.
+function stockLabel(product) {
+  const n = Number(product?.stock);
+  if (!Number.isFinite(n)) return { text: '✓ Disponueshëm', cls: 'yes' };
+  if (n <= 0) return { text: 'Stok mbaroi', cls: 'no' };
+  if (product?.is_low_stock) return { text: `Vetëm ${n} copë!`, cls: 'low' };
+  return { text: `${n} copë në stok`, cls: 'yes' };
+}
+
+/* ════════════════════════════════════════
+   BUSINESS TYPE MATRIX
+════════════════════════════════════════ */
+const TYPE_MAP = {
+  market:'Market', pharmacy:'Farmaci', electronics:'Elektronikë',
+  clothing:'Veshje', organic:'Treg Organik', bookstore:'Librari & Kancelari',
+  jewelry:'Bizhuteri', toy_store:'Lodra & Artikuj Bebe', sports_shop:'Artikuj Sportive',
+  furniture:'Mobilje & Dekor', petrol_station:'Stacion Karburanti',
+  restaurant:'Restorant', hotel:'Hotel', bar:'Bar',
+  delivery_kitchen:'Kuzhinë Delivery', bakery:'Pastiçeri', catering:'Katering',
+  car_rental:'Makina me Qira', property_rental:'Prona me Qira',
+  equipment_rental:'Pajisje me Qira', boat_rental:'Barka me Qira',
+  barbershop:'Berber / Salon', spa:'Spa & Wellness',
+  gym:'Palestër', clinic:'Klinikë', tattoo:'Studio Tatuazhesh',
+  veterinary:'Klinikë Veterinare', optician:'Optikë',
+  auto_repair:'Servis Auto', cleaning:'Pastrim',
+  lawyer:'Avokat / Noter', accounting:'Kontabilitet',
+  event_agency:'Agjenci Eventesh', photography:'Studio Fotografike',
+  printing:'Shtypshkronjë & Dizajn', travel_agency:'Agjenci Udhëtimi',
+  funeral_home:'Shtëpi Funerali', security:'Kompani Sigurie',
+  language_school:'Shkollë Gjuhësh', tutoring:'Tutoring',
+  driving_school:'Autoshkollë', coding_bootcamp:'Coding Bootcamp',
+  nursery:'Kopsht Fëmijësh',
+  real_estate:'Agjenci Imobiliare', construction:'Ndërtim',
+  architecture:'Arkitekturë & Dizajn', import_export:'Import / Eksport',
+  agro:'Furnizues Bujqësor', transport:'Transport & Logjistikë',
+  it_company:'Kompani IT', marketing_agency:'Agjenci Marketingu',
+};
+const TYPE_ICON = {
+  market:'🛒', pharmacy:'💊', electronics:'📱', clothing:'👗', organic:'🌿',
+  bookstore:'📚', jewelry:'💍', toy_store:'🧸', sports_shop:'⚽', furniture:'🛋️',
+  petrol_station:'⛽',
+  restaurant:'🍽️', hotel:'🏨', bar:'🍸', delivery_kitchen:'🛵', bakery:'🥐', catering:'🍱',
+  car_rental:'🚗', property_rental:'🏠', equipment_rental:'🔧', boat_rental:'⛵',
+  barbershop:'✂️', spa:'💆', gym:'🏋️', clinic:'🏥', tattoo:'🎨',
+  veterinary:'🐾', optician:'👓',
+  auto_repair:'🔧', cleaning:'🧹', lawyer:'⚖️', accounting:'📊', event_agency:'🎭',
+  photography:'📷', printing:'🖨️', travel_agency:'✈️', funeral_home:'🕊️', security:'🛡️',
+  language_school:'🌍', tutoring:'📚', driving_school:'🚙', coding_bootcamp:'💻',
+  nursery:'🧸',
+  real_estate:'🏘️', construction:'🏗️', architecture:'📐', import_export:'📦',
+  agro:'🌾', transport:'🚚', it_company:'💻', marketing_agency:'📣',
+};
+const SVC_ICON = {
+  restaurant:'🍽️', spa:'💆', barbershop:'✂️', clinic:'💉', gym:'🏋️',
+  salon:'💅', car_rental:'🚗', default:'✨',
+};
+
+// These groups mirror tenant_admin.html's isFood/isProduct/isAppointment/isB2B
+// business-type groupings exactly, so the public storefront routes to the
+// same API endpoints and renders the same UI (menu/inventory/booking) that
+// the tenant's own admin panel exposes for that business type. B2B has its
+// own group (not folded into SHOP_TYPES) because it has no product catalog —
+// the admin panel backs it with Service records, same as appointment types —
+// so it routes to the services endpoint, not /api/inventory/.
+const FOOD_TYPES   = ['restaurant', 'bar', 'bakery', 'delivery_kitchen', 'catering'];
+const RENTAL_TYPES = ['car_rental', 'property_rental', 'equipment_rental', 'boat_rental'];
+const HOTEL_TYPES  = ['hotel'];
+const SHOP_TYPES   = [
+  'market', 'pharmacy', 'bakery', 'delivery_kitchen', 'clothing', 'electronics',
+  'organic', 'furniture', 'jewelry', 'toy_store', 'sports_shop', 'petrol_station',
+  'bookstore',
+];
+const APPT_TYPES   = [
+  'clinic', 'barbershop', 'spa', 'gym', 'tattoo', 'auto_repair', 'lawyer',
+  'language_school', 'tutoring', 'driving_school', 'veterinary', 'optician',
+  'photography', 'travel_agency', 'event_agency', 'nursery', 'coding_bootcamp',
+  'cleaning', 'funeral_home', 'security',
+];
+const B2B_TYPES     = [
+  'real_estate', 'construction', 'architecture', 'import_export', 'agro',
+  'transport', 'it_company', 'marketing_agency', 'accounting', 'printing',
+];
+
+function typeLabel(t) { return TYPE_MAP[t] || t || 'Biznes'; }
+function showEl(id) { const e = document.getElementById(id); if (e) e.classList.remove('hidden'); }
+function hideEl(id) { const e = document.getElementById(id); if (e) e.classList.add('hidden'); }
+function isFood(bt)   { return FOOD_TYPES.includes(bt); }
+function isRental(bt) { return RENTAL_TYPES.includes(bt) || HOTEL_TYPES.includes(bt); }
+function isShop(bt)   { return SHOP_TYPES.includes(bt); }
+function isAppt(bt)   { return APPT_TYPES.includes(bt); }
+function isB2B(bt)    { return B2B_TYPES.includes(bt); }
+function esc(s)     { return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escHtml(s) { return esc(s); }
+
+// Table-reservation bookings only make sense for the one tenant that
+// actually offers them — every other tenant (food or otherwise) gets a
+// "Kontaktoni" CTA instead of a booking modal that has nothing to book.
+const ADRIATIK_SLUG = 'restorant-adriatiku';
+function canReserve() { return TENANT?.slug === ADRIATIK_SLUG; }
+
+const slug       = getSlug();
+let TENANT       = null;
+let ALL_SERVICES = [];
+let currentView  = 'list';
+let CURRENT_USER = null;
+
+/* ═══════════════════════════════════════
+   AUTH
+═══════════════════════════════════════ */
+function updateAuthUI() {
+  const area    = document.getElementById('nav-auth-area');
+  const mobArea = document.getElementById('mob-auth-area');
+  if (Auth.isLoggedIn()) {
+    area.innerHTML = `
+      <button class="user-greeting" id="user-greeting"
+        style="background:none;border:none;cursor:pointer;font-size:.78rem;color:var(--muted);font-family:var(--font-b)">…</button>
+      <button class="btn-brand" id="btn-book-now-auth">${canReserve() ? 'Rezervo' : 'Kontakt'}</button>
+      <button class="btn-out-sm" id="btn-logout">Dil</button>`;
+    if (mobArea) mobArea.innerHTML = `<button class="btn-out-sm" style="flex:1" id="mob-btn-logout">Dil</button>`;
+    document.getElementById('user-greeting')?.addEventListener('click', () => {
+      closeDrawer();
+      goSection('profile');
+    });
+    document.getElementById('btn-book-now-auth')?.addEventListener('click', () => {
+      if (canReserve()) openBookingModal();
+      else goSection('contact');
+    });
+    const doLogout = async () => {
+      try { await Auth.post('/auth/logout/', { refresh: Auth.getRefresh() }); } catch {}
+      Auth.clear(); toast('U çkyçet me sukses.'); updateAuthUI();
+    };
+    document.getElementById('btn-logout')?.addEventListener('click', doLogout);
+    document.getElementById('mob-btn-logout')?.addEventListener('click', doLogout);
+    loadMe();
+    showEl('tab-profile'); showEl('tnl-profile'); showEl('ml-profile');
+  } else {
+    area.innerHTML = `
+      <button class="btn-out-sm" id="btn-login">Hyr</button>`;
+    if (mobArea) mobArea.innerHTML = `<button class="btn-out-sm" style="flex:1" id="mob-btn-login">Hyr</button>`;
+    document.getElementById('btn-login')?.addEventListener('click',     () => openAuthModal('login'));
+    document.getElementById('mob-btn-login')?.addEventListener('click', () => { closeDrawer(); openAuthModal('login'); });
+    hideEl('tab-profile'); hideEl('tnl-profile'); hideEl('ml-profile');
+  }
+}
+
+async function loadMe() {
+  try {
+    const r = await Auth.get('/auth/me/');
+    if (r.ok) {
+      const user = await r.json();
+      CURRENT_USER = user;
+      const name = user.full_name || user.first_name || user.email?.split('@')[0] || 'U';
+      const initials = name.substring(0, 2).toUpperCase();
+      const greet = document.getElementById('user-greeting');
+      if (greet) greet.textContent = `👋 ${name}`;
+      const av = document.getElementById('prof-avatar');
+      if (av) av.textContent = initials;
+      const nm = document.getElementById('prof-name');
+      if (nm) nm.textContent = user.full_name || user.email || '';
+      const em = document.getElementById('prof-email');
+      if (em) em.textContent = user.email || '';
+      // Pre-fill editable fields
+      const fn = document.getElementById('prof-fullname');
+      if (fn && !fn.value) fn.value = user.full_name || '';
+      const ph = document.getElementById('prof-phone');
+      if (ph && !ph.value) ph.value = user.phone || '';
+      if (['owner','manager','superadmin'].includes(user.role)) {
+        const bar = document.getElementById('admin-bar');
+        if (bar) bar.style.display = 'flex';
+      }
+    }
+  } catch {}
+}
+
+document.getElementById('prof-save-btn')?.addEventListener('click', async () => {
+  const fullName = document.getElementById('prof-fullname')?.value.trim();
+  const phone    = document.getElementById('prof-phone')?.value.trim();
+  const fb  = document.getElementById('prof-save-fb');
+  const btn = document.getElementById('prof-save-btn');
+  if (!fullName) { fb.textContent = '⚠ Emri nuk mund të jetë bosh.'; fb.className = 'form-feedback err'; return; }
+  btn.disabled = true; btn.textContent = 'Duke ruajtur…';
+  try {
+    const r = await Auth.patch('/auth/me/', { full_name: fullName, phone });
+    if (r.ok) {
+      fb.textContent = '✅ Të dhënat u ruajtën!'; fb.className = 'form-feedback ok';
+      loadMe();
+    } else {
+      const d = await r.json().catch(() => ({}));
+      fb.textContent = Object.values(d).flat().join(' ') || 'Gabim. Provoni përsëri.';
+      fb.className = 'form-feedback err';
+    }
+  } catch { fb.textContent = 'Gabim rrjeti.'; fb.className = 'form-feedback err'; }
+  btn.disabled = false; btn.textContent = 'Ruaj →';
+});
+
+document.getElementById('prof-change-btn')?.addEventListener('click', async () => {
+  const oldPw  = document.getElementById('prof-old-pw').value;
+  const newPw  = document.getElementById('prof-new-pw').value;
+  const newPw2 = document.getElementById('prof-new-pw2').value;
+  const fb     = document.getElementById('prof-fb');
+  const btn    = document.getElementById('prof-change-btn');
+  if (!oldPw || !newPw || !newPw2) { fb.textContent = '⚠ Plotësoni të gjitha fushat.'; fb.className = 'form-feedback err'; return; }
+  if (newPw !== newPw2) { fb.textContent = '⚠ Fjalëkalimet e reja nuk përputhen.'; fb.className = 'form-feedback err'; return; }
+  if (newPw.length < 8) { fb.textContent = '⚠ Fjalëkalimi duhet të ketë të paktën 8 karaktere.'; fb.className = 'form-feedback err'; return; }
+  btn.disabled = true; btn.textContent = 'Duke ndryshuar…';
+  try {
+    const r = await Auth.post('/auth/change-password/', { old_password: oldPw, new_password: newPw });
+    if (r.ok) {
+      fb.textContent = '✅ Fjalëkalimi u ndryshua me sukses!';
+      fb.className   = 'form-feedback ok';
+      ['prof-old-pw','prof-new-pw','prof-new-pw2'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    } else {
+      const d = await r.json().catch(() => ({}));
+      fb.textContent = d.old_password?.[0] || d.detail || Object.values(d).flat().join(' ') || 'Gabim. Provoni përsëri.';
+      fb.className   = 'form-feedback err';
+    }
+  } catch {
+    fb.textContent = 'Gabim rrjeti. Provoni përsëri.';
+    fb.className   = 'form-feedback err';
+  }
+  btn.disabled = false; btn.textContent = 'Ndrysho Fjalëkalimin →';
+});
+
+document.getElementById('prof-logout-btn')?.addEventListener('click', async () => {
+  try { await Auth.post('/auth/logout/', { refresh: Auth.getRefresh() }); } catch {}
+  Auth.clear(); toast('U çkyçet me sukses.'); updateAuthUI(); goSection('overview');
+});
+
+/* ── Auth Modal ── */
+const authModal = document.getElementById('auth-modal');
+function openAuthModal(tab = 'login') {
+  authModal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  renderAuthTab(tab);
+}
+function closeAuthModal() {
+  authModal.classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.getElementById('auth-modal-close').addEventListener('click', closeAuthModal);
+document.getElementById('auth-modal-bg').addEventListener('click', closeAuthModal);
+document.getElementById('auth-tab-login').addEventListener('click',    () => renderAuthTab('login'));
+document.getElementById('auth-tab-register').addEventListener('click', () => renderAuthTab('register'));
+
+function renderAuthTab(tab) {
+  document.getElementById('auth-tab-login').classList.toggle('active',    tab === 'login');
+  document.getElementById('auth-tab-register').classList.toggle('active', tab === 'register');
+  const errEl = document.getElementById('auth-error');
+  errEl.textContent = ''; errEl.classList.remove('show');
+  const content = document.getElementById('auth-form-content');
+  if (tab === 'login') {
+    document.getElementById('auth-modal-title').textContent = 'Mirë se vini';
+    document.getElementById('auth-modal-sub').textContent   = 'Hyni në llogarinë tuaj.';
+    content.innerHTML = `
+      <input class="finp" id="ai-email" type="email"    placeholder="Email" autocomplete="email" />
+      <input class="finp" id="ai-pass"  type="password" placeholder="Fjalëkalim" autocomplete="current-password" />
+      <button class="btn-brand" id="ai-submit" style="width:100%;justify-content:center;margin-top:4px">Hyr</button>
+      <p style="text-align:center;font-size:.78rem;color:var(--muted);margin-top:8px">
+        Nuk keni llogari? <a href="#" id="switch-to-reg" style="color:var(--brand)">Regjistrohu</a>
+      </p>`;
+    document.getElementById('ai-submit').addEventListener('click', doLogin);
+    document.getElementById('ai-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+    document.getElementById('switch-to-reg').addEventListener('click', e => { e.preventDefault(); renderAuthTab('register'); });
+  } else {
+    document.getElementById('auth-modal-title').textContent = 'Krijo llogari';
+    document.getElementById('auth-modal-sub').textContent   = 'Regjistrim falas, pa kartë krediti.';
+    content.innerHTML = `
+      <input class="finp" id="ai-name"  type="text"     placeholder="Emri i plotë" autocomplete="name" />
+      <input class="finp" id="ai-email" type="email"    placeholder="Email" autocomplete="email" />
+      <input class="finp" id="ai-pass"  type="password" placeholder="Fjalëkalim (min 8 karaktere)" autocomplete="new-password" />
+      <button class="btn-brand" id="ai-submit" style="width:100%;justify-content:center;margin-top:4px">Regjistrohu</button>
+      <p style="text-align:center;font-size:.78rem;color:var(--muted);margin-top:8px">
+        Keni llogari? <a href="#" id="switch-to-login" style="color:var(--brand)">Hyni këtu</a>
+      </p>`;
+    document.getElementById('ai-submit').addEventListener('click', doRegister);
+    document.getElementById('switch-to-login').addEventListener('click', e => { e.preventDefault(); renderAuthTab('login'); });
+  }
+}
+function showAuthError(msg) {
+  const e = document.getElementById('auth-error');
+  e.textContent = msg; e.classList.add('show');
+}
+async function doLogin() {
+  const email    = document.getElementById('ai-email')?.value.trim();
+  const password = document.getElementById('ai-pass')?.value;
+  const btn      = document.getElementById('ai-submit');
+  if (!email || !password) { showAuthError('Plotësoni emailin dhe fjalëkalimin.'); return; }
+  btn.disabled = true; btn.textContent = 'Duke u kyçur…';
+  try {
+    const r = await Auth.post('/auth/login/', { email, password });
+    const d = await r.json();
+    if (!r.ok) { showAuthError(d.detail || d.non_field_errors?.[0] || 'Email ose fjalëkalim i gabuar.'); return; }
+    Auth.save(d.access, d.refresh);
+    closeAuthModal(); updateAuthUI(); toast('Mirë se vini! ✓');
+  } catch { showAuthError('Gabim rrjeti. Provoni përsëri.'); }
+  finally { btn.disabled = false; btn.textContent = 'Hyr'; }
+}
+async function doRegister() {
+  const full_name = document.getElementById('ai-name')?.value.trim();
+  const email     = document.getElementById('ai-email')?.value.trim();
+  const password  = document.getElementById('ai-pass')?.value;
+  const btn       = document.getElementById('ai-submit');
+  if (!full_name || !email || !password) { showAuthError('Plotësoni të gjitha fushat.'); return; }
+  if (password.length < 8) { showAuthError('Fjalëkalimi duhet të ketë të paktën 8 karaktere.'); return; }
+  btn.disabled = true; btn.textContent = 'Duke u regjistruar…';
+  try {
+    const r1 = await Auth.post('/auth/register/', { full_name, email, password });
+    if (!r1.ok) {
+      const d = await r1.json();
+      // If the email is already taken, guide the user to log in rather than just showing a raw error
+      const flat = Object.values(d).flat().join(' ');
+      if (flat.toLowerCase().includes('email') && (flat.toLowerCase().includes('exists') || flat.toLowerCase().includes('already') || flat.toLowerCase().includes('unique'))) {
+        showAuthError('Ky email është i regjistruar tashmë. \u00a0<a href="#" id="err-switch-login" style="color:var(--brand);text-decoration:underline">Hyni këtu →</a>');
+        document.getElementById('err-switch-login')?.addEventListener('click', e => { e.preventDefault(); renderAuthTab('login'); });
+      } else {
+        showAuthError(flat || 'Gabim gjatë regjistrimit.');
+      }
+      return;
+    }
+    const r2 = await Auth.post('/auth/login/', { email, password });
+    const d2 = await r2.json();
+    if (!r2.ok) {
+      closeAuthModal();
+      toast('Llogaria u krijua! Hyni tani. ✓');
+      openAuthModal('login');
+      // Surface the real reason auto-login failed, instead of silently
+      // hoping a manual retry works — most causes (tenant context lost,
+      // rate limit) will fail again identically on manual login too.
+      const reason = d2.detail || d2.non_field_errors?.[0];
+      if (reason) showAuthError(reason);
+      return;
+    }
+    Auth.save(d2.access, d2.refresh);
+    closeAuthModal(); updateAuthUI(); toast('Llogaria u krijua! Mirë se vini ✓');
+  } catch { showAuthError('Gabim rrjeti. Provoni përsëri.'); }
+  finally { btn.disabled = false; btn.textContent = 'Regjistrohu'; }
+}
+
+/* ═══════════════════════════════════════
+   BOOKING MODAL
+═══════════════════════════════════════ */
+const bookingModal = document.getElementById('booking-modal');
+function openBookingModal(svcName, svcPrice, resourceId, resourceType) {
+  const t = TENANT || {};
+  const bt = t.business_type || '';
+  if (isShop(bt) && !svcName) { goSection('contact'); return; }
+  let titleText = 'Rezervo';
+  if (isRental(bt))     titleText = svcName ? `Rezervo: ${svcName}` : (bt === 'hotel' ? 'Rezervo Dhomë' : 'Rezervo Automjetin');
+  else if (isFood(bt))  titleText = 'Rezervo Tavolinë';
+  else if (isShop(bt))  titleText = svcName ? `Interesohu për: ${svcName}` : 'Na Kontaktoni';
+  else                  titleText = svcName ? `Rezervo: ${svcName}` : 'Bëni Rezervim';
+  document.getElementById('bk-title').textContent    = titleText;
+  document.getElementById('bk-subtitle').textContent = t.name || '';
+  // NOTE: this modal is the *table reservation* flow for restaurants/bars
+  // (quick food ordering has its own dedicated flow via goSection('orders')),
+  // so it always needs a date — there's no business type that should skip it.
+  const todayStr = new Date().toISOString().split('T')[0];
+  const dateField = `<input type="date" class="finp" id="bk-date" min="${todayStr}"/>`;
+  // Rentals (cars, boats, rooms, equipment, property) need both a start and
+  // an end date so the booked period is captured, not just a single day.
+  const endDateField = isRental(bt)
+    ? `<input type="date" class="finp" id="bk-end-date" min="${todayStr}" placeholder="Data e mbarimit"/>`
+    : '';
+  const timeField = (isAppt(bt) || isFood(bt))
+    ? `<select class="finp" id="bk-time"><option value="">Ora e preferuar (24h)</option>${buildHourOptions(t.business_hours, todayStr)}</select>`
+    : '';
+  // Table reservations need to capture party size as real data (guest_count on
+  // the Booking model), not buried in a free-text notes field where it can't be
+  // used for table planning/capacity checks.
+  const partySizeField = isFood(bt)
+    ? `<input type="number" class="finp" id="bk-guests" min="1" max="50" step="1" value="2" placeholder="Numri i personave *"/>`
+    : '';
+  // Rentals (cars, boats, equipment, property, hotel rooms) are priced per day
+  // (price_per_day × number of days), with a loyalty-style discount that grows
+  // with the length of the rental, capped at 10% — never a flat per-day price
+  // regardless of duration.
+  const rentalTotalField = isRental(bt)
+    ? `<div class="rental-total-box" id="bk-rental-total" style="display:none;font-size:.85rem;color:var(--text-muted);background:var(--bg-soft,#f7f7f8);border-radius:8px;padding:10px 12px;line-height:1.6"></div>`
+    : '';
+  const notesLabel = isRental(bt)
+    ? 'Shënime shtesë…'
+    : isFood(bt) ? 'Preferencë, alergji apo shënime të tjera…'
+    : 'Shënime shtesë…';
+  document.getElementById('bk-content').innerHTML = `
+    <div class="fcol">
+      <div class="form-row">
+        <input type="text" class="finp" id="bk-name"  placeholder="Emri juaj *"/>
+        <input type="tel"  class="finp" id="bk-phone" placeholder="Telefon *"/>
+      </div>
+      <input type="email" class="finp" id="bk-email" placeholder="Email (opsional)"/>
+      ${dateField}
+      ${endDateField}
+      ${timeField}
+      ${partySizeField}
+      ${rentalTotalField}
+      <textarea class="finp" id="bk-notes" placeholder="${notesLabel}" rows="2"></textarea>
+      <button class="btn-brand" id="bk-submit" style="width:100%;justify-content:center;margin-top:4px">Konfirmo →</button>
+      <div class="form-feedback" id="bk-feedback"></div>
+    </div>`;
+  if (isRental(bt)) {
+    const recalc = () => updateRentalTotal(svcPrice || 0);
+    document.getElementById('bk-date')?.addEventListener('change', recalc);
+    document.getElementById('bk-end-date')?.addEventListener('change', recalc);
+    recalc();
+
+    // Booked-range hints: previously the only feedback about an
+    // unavailable stay/rental period came AFTER submitting, from the
+    // BookingSerializer overlap check (409). Fetch the resource's booked
+    // ranges (rentals.booked_ranges / hotels.room_type_booked_ranges) up
+    // front so the guest sees "already booked" dates before they submit.
+    let bookedRanges = [];
+    const rangesOverlap = (aStart, aEnd, bStart, bEnd) => aStart < bEnd && aEnd > bStart;
+    const checkBookedOverlap = () => {
+      const fb = document.getElementById('bk-feedback');
+      const submitBtn = document.getElementById('bk-submit');
+      const d1 = document.getElementById('bk-date')?.value;
+      const d2 = document.getElementById('bk-end-date')?.value || d1;
+      if (!fb || !submitBtn || !d1 || !bookedRanges.length) return;
+      const hit = bookedRanges.some(r => rangesOverlap(d1, d2, r.start_date, r.end_date));
+      if (hit) {
+        fb.textContent = '⚠ Këto data janë tashmë të rezervuara. Ju lutem zgjidhni data të tjera.';
+        fb.className = 'form-feedback err';
+        submitBtn.disabled = true;
+      } else if (fb.textContent.includes('tashmë të rezervuara')) {
+        fb.textContent = '';
+        fb.className = 'form-feedback';
+        submitBtn.disabled = false;
+      }
+    };
+    if (resourceId && (resourceType === 'rental_item' || resourceType === 'room_type')) {
+      const rangesEndpoint = resourceType === 'room_type'
+        ? `/api/hotels/room-types/${resourceId}/booked-ranges/?tenant=${slug}`
+        : `/api/rentals/${resourceId}/booked-ranges/?tenant=${slug}`;
+      fetch(rangesEndpoint).then(r => r.ok ? r.json() : null).then(d => {
+        if (!d) return;
+        bookedRanges = d.ranges || [];
+        checkBookedOverlap();
+      }).catch(() => {});
+    }
+    document.getElementById('bk-date')?.addEventListener('change', checkBookedOverlap);
+    document.getElementById('bk-end-date')?.addEventListener('change', checkBookedOverlap);
+  }
+  if (isAppt(bt) || isFood(bt)) {
+    document.getElementById('bk-date')?.addEventListener('change', (e) => {
+      const timeSelect = document.getElementById('bk-time');
+      if (!timeSelect) return;
+      const prevVal = timeSelect.value;
+      const opts = buildHourOptions(t.business_hours, e.target.value);
+      const closedNotice = opts
+        ? '<option value="">Ora e preferuar (24h)</option>'
+        : '<option value="">Mbyllur në këtë ditë</option>';
+      timeSelect.innerHTML = closedNotice + opts;
+      // Keep the previously chosen time if it's still a valid slot for the new day.
+      if (opts.includes(`value="${prevVal}"`)) timeSelect.value = prevVal;
+    });
+  }
+  // Pre-fill from the logged-in user's existing profile data — only fields
+  // they've actually provided, never overwriting what they type with blanks.
+  if (Auth.isLoggedIn() && CURRENT_USER) {
+    const nameEl  = document.getElementById('bk-name');
+    const phoneEl = document.getElementById('bk-phone');
+    const emailEl = document.getElementById('bk-email');
+    if (nameEl  && CURRENT_USER.full_name) nameEl.value  = CURRENT_USER.full_name;
+    if (phoneEl && CURRENT_USER.phone)     phoneEl.value = CURRENT_USER.phone;
+    if (emailEl && CURRENT_USER.email)     emailEl.value = CURRENT_USER.email;
+  }
+  bookingModal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  document.getElementById('bk-submit').addEventListener('click', async () => {
+    const name  = document.getElementById('bk-name').value.trim();
+    const phone = document.getElementById('bk-phone').value.trim();
+    const email = document.getElementById('bk-email').value.trim();
+    const date  = document.getElementById('bk-date')?.value || '';
+    const endDate = document.getElementById('bk-end-date')?.value || '';
+    const time  = document.getElementById('bk-time')?.value || '';
+    const guestsRaw = document.getElementById('bk-guests')?.value || '';
+    const guests = guestsRaw ? parseInt(guestsRaw, 10) : undefined;
+    const notes = document.getElementById('bk-notes').value.trim();
+    const fb    = document.getElementById('bk-feedback');
+    const btn   = document.getElementById('bk-submit');
+    if (!name || !phone) { fb.textContent = '⚠ Emri dhe telefoni janë të detyrueshëm.'; fb.className = 'form-feedback err'; return; }
+    if (isFood(bt) && (!guests || guests < 1)) {
+      fb.textContent = '⚠ Ju lutem specifikoni numrin e personave.';
+      fb.className = 'form-feedback err';
+      return;
+    }
+    if (isRental(bt) && endDate && date && endDate < date) {
+      fb.textContent = '⚠ Data e mbarimit nuk mund të jetë para datës së fillimit.';
+      fb.className = 'form-feedback err';
+      return;
+    }
+    btn.disabled = true; btn.textContent = 'Duke dërguar…';
+    try {
+      // FIX: In dev, API_BASE = localhost:8000 (main domain) which has no tenant
+      // middleware context → 400 "Bookings must be made from a tenant subdomain."
+      // Route through 8001 in dev (same fix already applied to /api/orders/).
+      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const bookingUrl = isLocal
+        ? `http://localhost:8001/api/bookings/?tenant=${encodeURIComponent(slug)}`
+        : `/api/bookings/?tenant=${encodeURIComponent(slug)}`;
+      const _bkHeaders = { 'Content-Type': 'application/json' };
+      const _bkToken = Auth.getAccess();
+      if (_bkToken) _bkHeaders['Authorization'] = `Bearer ${_bkToken}`;
+      const r = await fetch(bookingUrl, {
+        method: 'POST', headers: _bkHeaders,
+        body: JSON.stringify({ guest_name: name, guest_phone: phone, guest_email: email,
+          start_date: date, end_date: endDate || date || undefined, start_time: time || undefined,
+          resource_label: svcName || '',
+          // SECURITY FIX: total_price is no longer sent from the client — it
+          // was previously trusted as-is by the server (bookings/serializers.py),
+          // letting anyone submit an arbitrary amount that fed directly into
+          // loyalty-point awards. The server now computes the real price from
+          // resource_id/resource_type (Service.price, RentalItem.price_per_day,
+          // or RoomType.base_price), the same figures shown in this modal's own
+          // price/total preview — so nothing the customer sees here changes,
+          // it just can no longer be tampered with in transit.
+          ...(resourceId ? { resource_id: resourceId, resource_type: resourceType } : {}),
+          notes,
+          ...(guests ? { guest_count: guests } : {}) }),
+      });
+      if (r.ok || r.status === 201) {
+        fb.textContent = '✅ Rezervimi u dërgua! Do ju kontaktojmë së shpejti.';
+        fb.className   = 'form-feedback ok';
+        toast('✅ Rezervimi u konfirmua!');
+        // If logged in and they typed a phone we didn't already have on file,
+        // save it to their account automatically — they can edit/remove it
+        // anytime from their profile.
+        if (Auth.isLoggedIn() && CURRENT_USER && phone && CURRENT_USER.phone !== phone) {
+          try { await Auth.patch('/auth/me/', { phone }); CURRENT_USER.phone = phone; } catch {}
+        }
+        setTimeout(closeBookingModal, 2500);
+      } else {
+        let errMsg = 'Gabim. Kontaktoni: ' + (t.phone || t.email || '');
+        try { const d = await r.json(); const msgs = Object.values(d).flat().join(' '); if (msgs) errMsg = msgs; } catch {}
+        fb.textContent = errMsg;
+        fb.className   = 'form-feedback err';
+        btn.disabled = false; btn.textContent = 'Konfirmo →';
+      }
+    } catch {
+      fb.textContent = 'Nuk u arrit lidhja. Kontaktoni drejtpërdrejt: ' + (t.phone || t.email || '');
+      fb.className   = 'form-feedback err';
+      btn.disabled = false; btn.textContent = 'Konfirmo →';
+    }
+  });
+}
+
+/* Build 24h-format hourly <option>s (e.g. "09:00", "09:30"…) restricted to
+   the tenant's actual posted business hours *for the given date's weekday*.
+   Monday-Saturday and Sunday commonly have different posted hours (or Sunday
+   is absent entirely, meaning closed) — merging every range in businessHours
+   into one min/max window would incorrectly offer e.g. 19:00 on a Sunday
+   when the tenant only opens until 16:00 that day. Falls back to a sane
+   default window (09:00–20:00) if hours aren't set, can't be parsed, or no
+   date has been chosen yet; returns no options (closed) if the resolved day
+   has no posted hours at all. */
+const ALBANIAN_WEEKDAYS = ['E Hënë', 'E Martë', 'E Mërkurë', 'E Enjte', 'E Premte', 'E Shtunë', 'E Diel'];
+function expandDayKey(key) {
+  const parts = String(key).split(' - ').map(p => p.trim().toLowerCase());
+  const idx = name => ALBANIAN_WEEKDAYS.findIndex(d => d.toLowerCase() === name);
+  if (parts.length === 1) { const i = idx(parts[0]); return i === -1 ? [] : [i]; }
+  const start = idx(parts[0]), end = idx(parts[parts.length - 1]);
+  if (start === -1 || end === -1) return [];
+  if (start <= end) return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+  return [...Array.from({ length: 7 - start }, (_, i) => start + i), ...Array.from({ length: end + 1 }, (_, i) => i)];
+}
+function hoursForWeekday(businessHours, weekdayMon0) {
+  if (!businessHours || typeof businessHours !== 'object') return null;
+  for (const [key, val] of Object.entries(businessHours)) {
+    if (!expandDayKey(key).includes(weekdayMon0)) continue;
+    const m = String(val).match(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/);
+    if (!m) continue;
+    const openMin = parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+    const ch = parseInt(m[3], 10), cm = parseInt(m[4], 10);
+    const closeMin = (ch === 0 ? 24 : ch) * 60 + cm; // "00:00" close = midnight/end of day
+    return { openMin, closeMin };
+  }
+  return null;
+}
+function buildHourOptions(businessHours, dateStr) {
+  let openMin = 9 * 60, closeMin = 20 * 60;
+  if (businessHours && typeof businessHours === 'object' && Object.keys(businessHours).length) {
+    // JS Date#getDay(): Sunday=0..Saturday=6 → convert to Monday=0..Sunday=6.
+    const d = dateStr ? new Date(dateStr + 'T00:00:00') : new Date();
+    const weekdayMon0 = (d.getDay() + 6) % 7;
+    const resolved = hoursForWeekday(businessHours, weekdayMon0);
+    if (!resolved) return ''; // closed that day — no time slots to offer
+    openMin = resolved.openMin; closeMin = resolved.closeMin;
+  }
+  const opts = [];
+  for (let m = openMin; m <= closeMin - 30; m += 30) {
+    const h = Math.floor(m / 60) % 24;
+    const mi = m % 60;
+    const label = `${String(h).padStart(2, '0')}:${String(mi).padStart(2, '0')}`;
+    opts.push(`<option value="${label}">${label}</option>`);
+  }
+  return opts.join('');
+}
+/* Number of days between a rental's start and end date (inclusive of the
+   start day, i.e. same-day = 1 day, next-day = 2 days). Always at least 1. */
+function calcRentalDays(startStr, endStr) {
+  if (!startStr) return 1;
+  const start = new Date(startStr + 'T00:00:00');
+  const end   = endStr ? new Date(endStr + 'T00:00:00') : start;
+  const diffDays = Math.round((end - start) / 86400000) + 1;
+  return Math.max(1, diffDays);
+}
+
+/* Longer rentals earn a bigger discount, capped at 10%:
+     1-2 days  → 0%
+     3-6 days  → 5%
+     7+ days   → 10% */
+function calcRentalDiscountPct(days) {
+  if (days >= 7) return 10;
+  if (days >= 3) return 5;
+  return 0;
+}
+
+/* Recomputes price_per_day × days with the length-of-rental discount applied,
+   stores the final total on the modal (read by the submit handler) and
+   renders a readable breakdown for the customer. */
+let currentRentalTotal = 0;
+function updateRentalTotal(pricePerDay) {
+  const box = document.getElementById('bk-rental-total');
+  if (!box) return;
+  const startStr = document.getElementById('bk-date')?.value || '';
+  const endStr   = document.getElementById('bk-end-date')?.value || '';
+  if (!startStr || !pricePerDay) {
+    box.style.display = 'none';
+    currentRentalTotal = pricePerDay || 0;
+    return;
+  }
+  const days = calcRentalDays(startStr, endStr);
+  const discountPct = calcRentalDiscountPct(days);
+  const subtotal = pricePerDay * days;
+  const total = subtotal * (1 - discountPct / 100);
+  currentRentalTotal = total;
+  box.style.display = 'block';
+  box.innerHTML = `
+    <div style="display:flex;justify-content:space-between"><span>${fmtPrice(pricePerDay)} × ${days} ditë</span><span>${fmtPrice(subtotal)}</span></div>
+    ${discountPct ? `<div style="display:flex;justify-content:space-between;color:var(--brand,#0a7)"><span>Zbritje (${discountPct}%)</span><span>−${fmtPrice(subtotal - total)}</span></div>` : ''}
+    <div style="display:flex;justify-content:space-between;font-weight:600;border-top:1px solid var(--border,#e5e5e5);margin-top:4px;padding-top:4px"><span>Total</span><span>${fmtPrice(total)}</span></div>`;
+}
+
+function closeBookingModal() {
+  bookingModal.classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.getElementById('bk-close').addEventListener('click', closeBookingModal);
+document.getElementById('bk-modal-bg').addEventListener('click', closeBookingModal);
+
+/* ═══════════════════════════════════════
+   CART & ORDERS
+═══════════════════════════════════════ */
+let cart = [];
+const cartModal = document.getElementById('cart-modal');
+
+function addToCart(id, name, price, maxQty) {
+  const cap = Number.isFinite(maxQty) ? maxQty : Infinity;
+  const existing = cart.find(c => c.id === id);
+  if (existing) {
+    if (existing.quantity >= cap) { toast(`Vetëm ${cap} copë në stok për "${name}".`, 'warning'); return; }
+    existing.quantity++;
+  } else {
+    if (cap < 1) { toast('Ky produkt është pa stok.', 'warning'); return; }
+    cart.push({ id, name, price: parseFloat(price) || 0, quantity: 1, maxQty: cap });
+  }
+  updateCartBadge();
+  toast(`🛒 ${name} u shtua në shportë!`);
+}
+function updateCartBadge() {
+  const total    = cart.reduce((s, c) => s + c.quantity, 0);
+  const tbBtn    = document.getElementById('topbar-cart-btn');
+  const tbCount  = document.getElementById('topbar-cart-count');
+  if (tbBtn) {
+    if (total > 0) tbBtn.classList.remove('hidden'); else tbBtn.classList.add('hidden');
+    if (tbCount) tbCount.textContent = total;
+  }
+}
+function openCartModal() {
+  if (!cart.length) { toast('Shporta është bosh! Shtoni artikuj nga menu.', 'warning'); return; }
+  document.getElementById('cart-tenant-name').textContent = TENANT?.name || '';
+  renderCartItems();
+  cartModal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  if (Auth.isLoggedIn() && CURRENT_USER) {
+    const nameEl  = document.getElementById('ord-name');
+    const phoneEl = document.getElementById('ord-phone');
+    if (nameEl  && !nameEl.value  && CURRENT_USER.full_name) nameEl.value  = CURRENT_USER.full_name;
+    if (phoneEl && !phoneEl.value && CURRENT_USER.phone)     phoneEl.value = CURRENT_USER.phone;
+  }
+}
+function closeCartModal() {
+  cartModal.classList.remove('open');
+  document.body.style.overflow = '';
+}
+function renderCartItems() {
+  const list    = document.getElementById('cart-items-list');
+  const totalEl = document.getElementById('cart-total');
+  if (!list) return;
+  list.innerHTML = cart.map(item => `
+    <div class="cart-item-row">
+      <span class="cart-item-name">${esc(item.name)}</span>
+      <button class="cart-qty-btn" data-dec="${item.id}">−</button>
+      <span class="cart-qty-num">${item.quantity}</span>
+      <button class="cart-qty-btn" data-inc="${item.id}">+</button>
+      <span class="cart-item-price">${fmtPricePlain(item.price * item.quantity)}</span>
+    </div>`).join('');
+  const total = cart.reduce((s, c) => s + c.price * c.quantity, 0);
+  if (totalEl) totalEl.textContent = fmtPricePlain(total);
+  list.querySelectorAll('[data-inc]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const item = cart.find(c => c.id === btn.dataset.inc);
+      if (!item) return;
+      const cap = Number.isFinite(item.maxQty) ? item.maxQty : Infinity;
+      if (item.quantity >= cap) { toast(`Vetëm ${cap} copë në stok për "${item.name}".`, 'warning'); return; }
+      item.quantity++; renderCartItems(); updateCartBadge();
+    });
+  });
+  list.querySelectorAll('[data-dec]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = cart.findIndex(c => c.id === btn.dataset.dec);
+      if (idx !== -1) {
+        cart[idx].quantity--;
+        if (cart[idx].quantity <= 0) cart.splice(idx, 1);
+        renderCartItems(); updateCartBadge();
+        if (!cart.length) closeCartModal();
+      }
+    });
+  });
+}
+document.getElementById('cart-close').addEventListener('click', closeCartModal);
+document.getElementById('cart-modal-bg').addEventListener('click', closeCartModal);
+document.getElementById('topbar-cart-btn').addEventListener('click', openCartModal);
+
+let _orderSubmitting = false;  // FIX: guard against multi-click / double-submit
+document.getElementById('ord-submit').addEventListener('click', async () => {
+  if (_orderSubmitting) return;  // FIX: block duplicate in-flight requests
+  const name  = document.getElementById('ord-name').value.trim();
+  const phone = document.getElementById('ord-phone').value.trim();
+  const type  = document.getElementById('ord-type').value;
+  const table = document.getElementById('ord-table').value.trim();
+  const addr  = document.getElementById('ord-address').value.trim();
+  const notes = document.getElementById('ord-notes').value.trim();
+  const fb    = document.getElementById('ord-feedback');
+  const btn   = document.getElementById('ord-submit');
+  if (type === 'delivery' && !addr) { fb.textContent = '⚠ Shkruani adresën e dërgimit.'; fb.className = 'form-feedback err'; return; }
+  if (!name || !phone) { fb.textContent = '⚠ Emri dhe telefoni janë të detyrueshëm.'; fb.className = 'form-feedback err'; return; }
+  if (!cart.length)    { fb.textContent = '⚠ Shporta është bosh.'; fb.className = 'form-feedback err'; return; }
+  _orderSubmitting = true;
+  btn.disabled = true; btn.textContent = 'Duke dërguar…';
+  try {
+    // FIX: Auth.post() prefixes API_BASE = localhost:8000 (main domain in dev).
+    // POST /api/orders/ requires a tenant on the request; the ?tenant= query
+    // param works via the middleware session fallback, but routing it through
+    // port 8001 is consistent with the reviews fix and avoids relying on the
+    // session fallback for mutating requests.
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const orderUrl = isLocal
+      ? `http://localhost:8001/api/orders/?tenant=${encodeURIComponent(slug)}`
+      : `/api/orders/?tenant=${encodeURIComponent(slug)}`;
+    const token = Auth.getAccess();
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const r = await fetch(orderUrl, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        guest_name: name, guest_phone: phone, order_type: type,
+        table_number: table, delivery_address: addr, notes,
+        items: cart.map(c => isShop(TENANT?.business_type)
+          ? { product: c.id, quantity: c.quantity }
+          : { menu_item: c.id, quantity: c.quantity }),
+      }),
+    });
+    if (r.ok || r.status === 201) {
+      fb.textContent = '✅ Porosia u dërgua! Do ju kontaktojmë për konfirmim.';
+      fb.className   = 'form-feedback ok';
+      toast('✅ Porosia u dërgua!');
+      if (Auth.isLoggedIn() && CURRENT_USER && phone && CURRENT_USER.phone !== phone) {
+        try { await Auth.patch('/auth/me/', { phone }); CURRENT_USER.phone = phone; } catch {}
+      }
+      cart = []; updateCartBadge();
+      ['ord-name','ord-phone','ord-table','ord-address','ord-notes'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+      setTimeout(closeCartModal, 2800);
+    } else {
+      const d = await r.json().catch(() => ({}));
+      function flattenErrors(v) {
+        if (Array.isArray(v)) return v.flatMap(flattenErrors);
+        if (v && typeof v === 'object') return Object.values(v).flatMap(flattenErrors);
+        return [String(v)];
+      }
+      fb.textContent = flattenErrors(d).filter(Boolean).join(' ') || 'Gabim. Provoni përsëri ose kontaktoni direkt.';
+      fb.className   = 'form-feedback err';
+    }
+  } catch {
+    fb.textContent = 'Nuk u arrit lidhja. Kontaktoni drejtpërdrejt.';
+    fb.className   = 'form-feedback err';
+  }
+  btn.disabled = false; btn.textContent = 'Dërgo Porosinë →';
+  _orderSubmitting = false;
+});
+
+/* ═══════════════════════════════════════
+   MAIN INIT
+═══════════════════════════════════════ */
+async function init() {
+  updateAuthUI();
+  if (!slug) {
+    document.getElementById('mh-name').textContent = 'Zgjidh një biznes me ?tenant=slug';
+    return;
+  }
+  try {
+    const r = await fetch(`/api/tenants/info/?slug=${slug}&tenant=${slug}`);
+    if (!r.ok) throw new Error(r.status);
+    TENANT = await r.json();
+  } catch (e) {
+    console.warn('API unavailable:', e.message);
+    document.getElementById('mh-name').textContent = 'Nuk u gjet biznesi.';
+    return;
+  }
+
+  applyBrand(TENANT.primary_color, TENANT.accent_color, TENANT.font_heading, TENANT.font_body, TENANT.border_radius, TENANT.background_color, TENANT.text_color);
+  renderMasthead(TENANT);
+  renderBento(TENANT);
+  renderAboutInline(TENANT);
+  renderTopbarMeta(TENANT);
+  renderFooter(TENANT);
+  setupNavVisibility(TENANT);
+  updatePageMeta(TENANT);
+  loadHeroAndStorefront();
+
+  sectionLoaders.services = loadServices;
+  sectionLoaders.menu     = () => loadMenu(null);
+  sectionLoaders.orders   = loadOrdersSection;
+  sectionLoaders.rentals  = loadRentals;
+  sectionLoaders.reviews  = () => loadReviews(false);
+  sectionLoaders.blog     = loadBlog;
+  sectionLoaders.contact  = renderContactSection;
+  sectionLoaders.profile  = renderProfileSection;
+
+  // RACE FIX: init() used to call loadServices() directly without marking
+  // sectionLoaded.services, leaving a window (while the fetch is in flight)
+  // where goSection('services') sees the flag as falsy and invokes
+  // sectionLoaders.services() a second time, double-rendering the services
+  // grid and potentially double-binding add-to-cart listeners for a moment,
+  // which can produce a duplicate toast on a single click. Setting the flag
+  // synchronously here (mirroring what goSection does) closes the window.
+  sectionLoaded.services = true;
+  loadServices();
+  loadReviews(true);
+}
+
+function updatePageMeta(t) {
+  document.title = `${t.name} — BizAL`;
+  const md = document.getElementById('meta-desc');
+  if (md) md.content = t.meta_description || t.tagline || '';
+}
+
+/* ═══════════════════════
+   MASTHEAD
+═══════════════════════ */
+function renderMasthead(t) {
+  document.getElementById('mh-name').textContent      = t.name || '';
+  document.getElementById('mh-tagline').textContent   = t.tagline || t.site_title || '';
+  document.getElementById('mh-type-tag').textContent  = `${TYPE_ICON[t.business_type]||'🏢'} ${typeLabel(t.business_type)}`;
+  document.getElementById('mh-city-text').textContent = [t.city, t.country].filter(Boolean).join(', ') || '—';
+  if (t.founded_year) {
+    document.getElementById('mh-year').textContent = `Est. ${t.founded_year}`;
+    const yrs = new Date().getFullYear() - t.founded_year;
+    const yw  = document.getElementById('stat-years-wrap');
+    if (yw) {
+      yw.style.display = '';
+      const el = document.getElementById('stat-years');
+      el.setAttribute('data-count', yrs);
+      el.setAttribute('data-suffix', '+');
+    }
+  }
+  if (t.cover_photo || t.logo) {
+    const img = document.getElementById('cover-photo');
+    img.src   = t.cover_photo || t.logo;
+    img.onload = () => { img.classList.add('loaded'); document.getElementById('masthead').classList.add('has-cover'); };
+  }
+  if (t.whatsapp) {
+    const num   = t.whatsapp.replace(/[^0-9+]/g, '');
+    const waBtn = document.getElementById('mh-wa-btn');
+    waBtn.href  = `https://wa.me/${num}`;
+    waBtn.classList.remove('hidden');
+    const fab = document.getElementById('wa-btn');
+    fab.href  = `https://wa.me/${num}`;
+    fab.classList.add('show');
+  }
+  if (t.phone || t.email || t.address) {
+    document.getElementById('mh-contact-btn').classList.remove('hidden');
+    document.getElementById('mh-contact-btn').addEventListener('click', () => goSection('contact'));
+  }
+  const bt = t.business_type;
+  const ctaBtn = document.getElementById('mh-cta-btn');
+  if (isFood(bt)) {
+    const orderBtn = document.getElementById('mh-order-btn');
+    orderBtn.classList.remove('hidden');
+    orderBtn.addEventListener('click', () => goSection('orders'));
+    if (canReserve()) {
+      ctaBtn.textContent = 'Rezervo Tavolinë';
+      ctaBtn.addEventListener('click', () => openBookingModal());
+    } else {
+      ctaBtn.textContent = 'Na Kontaktoni';
+      ctaBtn.addEventListener('click', () => goSection('contact'));
+    }
+  } else if (isRental(bt)) {
+    ctaBtn.textContent = 'Na Kontaktoni';
+    ctaBtn.addEventListener('click', () => goSection('contact'));
+  } else if (isShop(bt)) {
+    const shopBtn = document.getElementById('mh-shop-btn');
+    shopBtn.classList.remove('hidden');
+    shopBtn.addEventListener('click', () => goSection('services'));
+    ctaBtn.textContent = 'Na Kontaktoni';
+    ctaBtn.addEventListener('click', () => goSection('contact'));
+  } else if (isB2B(bt)) {
+    const shopBtn = document.getElementById('mh-shop-btn');
+    shopBtn.textContent = '✨ Shiko Shërbimet';
+    shopBtn.classList.remove('hidden');
+    shopBtn.addEventListener('click', () => goSection('services'));
+    ctaBtn.textContent = 'Na Kontaktoni';
+    ctaBtn.addEventListener('click', () => goSection('contact'));
+  } else if (isAppt(bt)) {
+    ctaBtn.textContent = 'Na Kontaktoni';
+    ctaBtn.addEventListener('click', () => goSection('contact'));
+  } else {
+    ctaBtn.textContent = 'Na Kontaktoni';
+    ctaBtn.addEventListener('click', () => goSection('contact'));
+  }
+  if (t.logo) {
+    const lb = document.getElementById('logo-bar');
+    lb.style.display = 'flex';
+    document.getElementById('logo-bar-img').src          = t.logo;
+    document.getElementById('logo-bar-name').textContent = t.name;
+  }
+  statObs.observe(document.getElementById('masthead-stats'));
+  const mobBtn = document.getElementById('mob-btn-book');
+  mobBtn.textContent = canReserve() ? ctaBtn.textContent : 'Kontakt';
+  mobBtn.addEventListener('click', () => {
+    closeDrawer();
+    if (canReserve() && isFood(bt)) openBookingModal();
+    else goSection('contact');
+  });
+}
+
+function renderTopbarMeta(t) {
+  document.getElementById('topbar-name').textContent = t.name || '';
+  const badge = document.getElementById('topbar-type-badge');
+  badge.textContent = typeLabel(t.business_type);
+  badge.classList.remove('hidden');
+  if (t.logo_url) {
+    document.getElementById('topbar-bizal-text').style.display = 'none';
+    const li = document.getElementById('topbar-logo-img');
+    li.src = t.logo_url;
+    li.style.display = 'inline-block';
+  }
+}
+
+function hasFeature(t, key) {
+  if (!t || !Array.isArray(t.features)) return false;
+  const f = t.features.find(f => f.key === key);
+  if (!f) return false;
+  if (f.value === true) return true;
+  return ['true', '1', 'yes'].includes(String(f.value || '').toLowerCase());
+}
+
+function setupNavVisibility(t) {
+  const bt = t.business_type;
+  if (hasFeature(t, 'blog')) { showEl('tab-blog'); showEl('tnl-blog'); showEl('ml-blog'); }
+  const rentalsTab = document.getElementById('tab-rentals');
+  if (rentalsTab) {
+    if (bt === 'hotel')              rentalsTab.innerHTML = '🏨 Dhoma <span class="tab-count" id="tab-rentals-count">0</span>';
+    else if (bt === 'boat_rental')   rentalsTab.innerHTML = '⛵ Barka';
+    else if (bt === 'property_rental') rentalsTab.innerHTML = '🏠 Prona';
+    else if (bt === 'equipment_rental') rentalsTab.innerHTML = '🔧 Pajisjet';
+  }
+  const svcTab = document.getElementById('tab-services');
+  if (svcTab && isShop(bt)) {
+    svcTab.innerHTML = `🛍️ Produkte <span class="tab-count" id="tab-services-count">0</span>`;
+    const tnlSvc = document.getElementById('tnl-services');
+    if (tnlSvc) tnlSvc.textContent = 'Produkte';
+    const mlSvc = document.getElementById('ml-services');
+    if (mlSvc) mlSvc.textContent = '🛍️ Produkte';
+  }
+}
+
+/* ═══════════════════════════════════════
+   PAGE SECTIONS (Ndërtuesi i Faqes)
+   Reads what the tenant admin configured in the page/section builder
+   (storefront/manage/sections/) and applies it to the public site:
+   hides locked (original) blocks the admin turned off, and inserts the
+   admin's own custom blocks (text/image/cta/gallery/spacer) in the right
+   position relative to that page's locked content.
+
+   Every "locked" section in the builder maps 1:1 to a specific DOM node
+   here (a "slot") identified by id="pslot-<page_key>-<lock_key>" (or, for
+   Overview, a data-lock-key attribute on a bento cell — see renderBento).
+   If a tenant has never opened the builder for a given page, the public
+   sections endpoint returns an empty list and this leaves that page's
+   markup completely untouched — nothing regresses for tenants who never
+   used the feature.
+═══════════════════════════════════════ */
+const pageSectionsCache = {};
+
+async function fetchPageSections(pageKey) {
+  if (pageSectionsCache[pageKey]) return pageSectionsCache[pageKey];
+  try {
+    const r = await fetch(`/api/storefront/sections/?tenant=${slug}&page=${encodeURIComponent(pageKey)}&page_size=100`);
+    const d = r.ok ? await r.json() : [];
+    const list = Array.isArray(d) ? d : (d.results || []);
+    pageSectionsCache[pageKey] = list;
+    return list;
+  } catch {
+    pageSectionsCache[pageKey] = [];
+    return [];
+  }
+}
+
+// Very small subset of markdown (bold/italic/links + line breaks) matching
+// what the admin's ps-md-toolbar (tenant_admin.html) actually inserts.
+// Input is escaped first, so the tags added afterwards are the only markup.
+function renderLiteMarkdown(raw) {
+  return esc(raw)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+    .replace(/\n/g, '<br>');
+}
+
+function renderCustomSectionBlock(sec) {
+  if (sec.section_type === 'text') {
+    if (!sec.title && !sec.body) return '';
+    return `
+      <div class="ps-block ps-text reveal">
+        ${sec.title ? `<h3 class="ps-title">${esc(sec.title)}</h3>` : ''}
+        ${sec.body ? `<div class="ps-body">${renderLiteMarkdown(sec.body)}</div>` : ''}
+      </div>`;
+  }
+  if (sec.section_type === 'image') {
+    if (!sec.image) return '';
+    return `
+      <div class="ps-block ps-image reveal">
+        <img src="${esc(sec.image)}" alt="${esc(sec.title || '')}" loading="lazy"/>
+        ${sec.title ? `<div class="ps-title">${esc(sec.title)}</div>` : ''}
+        ${sec.body ? `<div class="ps-caption">${esc(sec.body)}</div>` : ''}
+      </div>`;
+  }
+  if (sec.section_type === 'cta') {
+    if (!sec.title && !sec.cta_label) return '';
+    const url = sec.cta_url || '#';
+    const external = /^https?:\/\//.test(url);
+    return `
+      <div class="ps-block ps-cta reveal">
+        ${sec.title ? `<h3 class="ps-title">${esc(sec.title)}</h3>` : ''}
+        ${sec.body ? `<p class="ps-sub">${esc(sec.body)}</p>` : ''}
+        ${sec.cta_label ? `<a class="btn-brand ps-cta-btn" href="${esc(url)}" ${external ? 'target="_blank" rel="noopener"' : ''}>${esc(sec.cta_label)}</a>` : ''}
+      </div>`;
+  }
+  if (sec.section_type === 'gallery') {
+    const urls = Array.isArray(sec.data?.images) ? sec.data.images : [];
+    if (!urls.length) return '';
+    return `
+      <div class="ps-block ps-gallery reveal">
+        ${sec.title ? `<h3 class="ps-title">${esc(sec.title)}</h3>` : ''}
+        <div class="ps-gallery-grid">
+          ${urls.map(u => `<img src="${esc(u)}" alt="" loading="lazy"/>`).join('')}
+        </div>
+      </div>`;
+  }
+  if (sec.section_type === 'spacer') {
+    return `<div class="ps-block ps-spacer" aria-hidden="true"></div>`;
+  }
+  return '';
+}
+
+// Hides/shows the locked slot `slotId` and inserts any custom blocks for
+// `pageKey` immediately before or after it, in the order the admin set.
+// Safe to call more than once (e.g. on a blog tag refilter) — previously
+// injected blocks for this slot are removed and rebuilt each time.
+async function applyPageSections(pageKey, slotId) {
+  const slot = document.getElementById(slotId);
+  if (!slot) return;
+  const parent = slot.parentNode;
+  parent.querySelectorAll(`.ps-block[data-slot="${slotId}"]`).forEach(el => el.remove());
+
+  const sections = await fetchPageSections(pageKey);
+  if (!sections.length) return;
+
+  const lockedEntry = sections.find(s => s.locked);
+  slot.style.display = lockedEntry ? '' : 'none';
+  const lockedOrder = lockedEntry ? lockedEntry.order : null;
+
+  let afterCursor = slot;
+  sections.filter(s => !s.locked).forEach(sec => {
+    const html = renderCustomSectionBlock(sec);
+    if (!html) return;
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    const el = tmp.firstElementChild;
+    if (!el) return;
+    el.dataset.slot = slotId;
+    if (lockedOrder !== null && sec.order <= lockedOrder) {
+      parent.insertBefore(el, slot);
+    } else {
+      parent.insertBefore(el, afterCursor.nextSibling);
+      afterCursor = el;
+    }
+  });
+
+  observeReveals(parent);
+}
+
+/* ═══════════════════════
+   BENTO GRID
+═══════════════════════ */
+// Shared "Rreth Biznesit" (about/story) card markup — used both inside the
+// Overview bento grid and, inline, at the bottom of other tab panels
+// (Flotë, Vlerësime, Kontakt, …) so the business story is visible no matter
+// which tab the visitor lands on.
+function buildAboutCard(t, span) {
+  if (!t.story) return '';
+  const sp = span || (t.story.length > 280 ? 'bc-8' : 'bc-6');
+  return `
+    <div class="bc bc-story ${sp} reveal">
+      <div class="lbl">Rreth Biznesit</div>
+      <h2>${esc(t.site_title || t.name)}</h2>
+      <p>${esc(t.story)}</p>
+    </div>`;
+}
+
+// Renders the about card into any inline placeholder containers found in
+// non-Overview panels (class="about-inline"). Each gets its own mini
+// `.bento` wrapper so the `.bc-12` grid-column span behaves the same as it
+// does inside the main bento grid.
+function renderAboutInline(t) {
+  if (!t.story) return;
+  document.querySelectorAll('.about-inline').forEach(el => {
+    el.innerHTML = `<div class="bento">${buildAboutCard(t, 'bc-12')}</div>`;
+    observeReveals(el);
+    el.querySelectorAll('.bc').forEach(addTilt);
+  });
+}
+
+async function renderBento(t) {
+  const grid  = document.getElementById('bento-grid');
+  // Keyed by the same lock_key values the backend seeds for the 'overview'
+  // page (see DEFAULT_LOCKED_SECTIONS in storefront/views.py) so the admin
+  // builder's hide/reorder choices can be applied generically below. The
+  // "story/about" card intentionally has no key — it isn't one of the
+  // builder's manageable rows (it now lives on its own custom page), so it
+  // always renders first, unaffected by the builder.
+  const storyHtml = t.story ? buildAboutCard(t) : '';
+  const cellMap = {};
+
+  const contactItems = [];
+  if (t.phone)        contactItems.push({ ic:'📞', lbl:'Telefon',  val:`<a href="tel:${t.phone}">${t.phone}</a>` });
+  if (t.whatsapp)     { const n=t.whatsapp.replace(/[^0-9+]/g,''); contactItems.push({ ic:'💬', lbl:'WhatsApp', val:`<a href="https://wa.me/${n}" target="_blank">${t.whatsapp}</a>` }); }
+  if (t.email)        contactItems.push({ ic:'✉️', lbl:'Email',    val:`<a href="mailto:${t.email}">${t.email}</a>` });
+  if (t.address||t.city) contactItems.push({ ic:'📍', lbl:'Adresa', val:[t.address,t.city,t.country].filter(Boolean).join(', ') });
+  if (contactItems.length) {
+    cellMap.contact = `
+      <div class="bc bc-4 reveal">
+        <div class="lbl">Kontakt</div>
+        <div class="contact-row">
+          ${contactItems.map(i=>`
+            <div class="contact-item">
+              <div class="contact-ic">${i.ic}</div>
+              <div><div class="contact-lbl">${i.lbl}</div><div class="contact-val">${i.val}</div></div>
+            </div>`).join('')}
+        </div>
+      </div>`;
+  }
+  if (t.business_hours && Object.keys(t.business_hours).length) {
+    cellMap.hours = `
+      <div class="bc bc-3 reveal">
+        <div class="lbl">Orari</div>
+        <div class="hours-list">
+          ${Object.entries(t.business_hours).map(([d,v])=>`
+            <div class="hours-row"><span class="hours-day">${d}</span><span class="hours-time">${v}</span></div>`).join('')}
+        </div>
+      </div>`;
+  }
+  if (t.founded_year) {
+    const yrs = new Date().getFullYear() - t.founded_year;
+    cellMap.experience = `
+      <div class="bc bc-3 reveal" style="background:var(--surface2);border-style:dashed">
+        <div class="lbl">Eksperiencë</div>
+        <span class="years-counter" data-count="${yrs}" data-suffix="">0</span>
+        <span class="years-lbl">Vite në treg</span>
+        <div style="margin-top:10px;font-size:.78rem;color:var(--muted)">Themeluar ${t.founded_year}</div>
+      </div>`;
+  }
+  const socials = [];
+  if (t.facebook)  socials.push({ ic:'📘', name:'Facebook',  handle:t.facebook.replace(/.*\/([^/]+)\/?$/,'@$1'), url:t.facebook });
+  if (t.instagram) socials.push({ ic:'📸', name:'Instagram', handle:t.instagram.replace(/.*\/([^/]+)\/?$/,'@$1'), url:t.instagram });
+  if (t.tiktok)    socials.push({ ic:'🎵', name:'TikTok',    handle:t.tiktok.replace(/.*\/([^/]+)\/?$/,'$1'), url:t.tiktok });
+  if (socials.length) {
+    cellMap.socials = `
+      <div class="bc bc-3 reveal">
+        <div class="lbl">Rrjetet Sociale</div>
+        <div class="social-links">
+          ${socials.map(s=>`
+            <a class="soc-link" href="${s.url}" target="_blank" rel="noopener">
+              <span class="soc-ic">${s.ic}</span>
+              <span class="soc-name">${esc(s.name)}</span>
+              <span class="soc-handle">${esc(s.handle)}</span>
+            </a>`).join('')}
+        </div>
+      </div>`;
+  }
+  if (t.city || t.address) {
+    const q = encodeURIComponent([t.address, t.city, t.country].filter(Boolean).join(', '));
+    cellMap.map = `
+      <div class="bc bc-4 map-cell reveal" style="padding:16px">
+        <div class="lbl" style="margin-bottom:10px">Lokacioni</div>
+        <iframe src="https://maps.google.com/maps?q=${q}&output=embed" title="Harta" loading="lazy" allowfullscreen></iframe>
+        <div style="margin-top:8px;font-size:.78rem;color:var(--muted)">${[t.address,t.city].filter(Boolean).join(', ')}</div>
+      </div>`;
+  }
+  if (t.meta_description) {
+    cellMap.seo = `
+      <div class="bc bc-4 reveal" style="border-style:dashed">
+        <div class="lbl">SEO & Përshkrim</div>
+        <p style="font-size:.88rem;color:var(--muted);line-height:1.7">${esc(t.meta_description)}</p>
+      </div>`;
+  }
+
+  // Default order (used verbatim if the tenant never opened the page
+  // builder for 'overview' — i.e. the public sections endpoint comes back
+  // empty). This matches the original hardcoded order exactly, so nothing
+  // changes for tenants who never touch the builder.
+  const DEFAULT_ORDER = ['contact', 'hours', 'experience', 'socials', 'map', 'seo'];
+  const sections = await fetchPageSections('overview');
+  let bodyCells;
+  if (!sections.length) {
+    bodyCells = DEFAULT_ORDER.filter(k => cellMap[k]).map(k => cellMap[k]);
+  } else {
+    const items = [];
+    sections.forEach(s => {
+      if (s.locked) {
+        // Locked but with no underlying data (e.g. "Rrjetet Sociale" is
+        // visible in the builder but the tenant has no social links yet)
+        // simply contributes nothing — there's nothing to render either way.
+        if (cellMap[s.lock_key]) items.push({ order: s.order, html: cellMap[s.lock_key] });
+      } else {
+        const inner = renderCustomSectionBlock(s);
+        if (inner) items.push({ order: s.order, html: `<div class="bc bc-12 reveal">${inner}</div>` });
+      }
+    });
+    items.sort((a, b) => a.order - b.order);
+    bodyCells = items.map(i => i.html);
+  }
+
+  grid.innerHTML = storyHtml + bodyCells.join('');
+  setTimeout(() => {
+    observeReveals(grid);
+    grid.querySelectorAll('.bc').forEach(addTilt);
+    grid.querySelectorAll('[data-count]').forEach(el => {
+      const obs2 = new IntersectionObserver(entries => {
+        if (entries[0].isIntersecting) { animateCounter(el, el.dataset.count, el.dataset.suffix || ''); obs2.disconnect(); }
+      }, { threshold: 0.4 });
+      obs2.observe(el);
+    });
+  }, 60);
+}
+
+/* ═══════════════════════════════════════
+   HERO SLIDES + STOREFRONT PAGES
+═══════════════════════════════════════ */
+async function loadHeroAndStorefront() {
+  try {
+    const [heroResp, pagesResp] = await Promise.all([
+      fetch(`/api/storefront/hero/?tenant=${slug}&page_size=100`),
+      fetch(`/api/storefront/pages/?tenant=${slug}&page_size=100`),
+    ]);
+    const slidesRaw = heroResp.ok ? await heroResp.json() : [];
+    const pagesRaw  = pagesResp.ok ? await pagesResp.json() : [];
+    // Both of these are DRF ListAPIViews with no pagination override,
+    // so they come back as a paginated envelope
+    // {count, next, previous, results: [...]}, not a bare array.
+    // `slides`/`pages` used to be checked with Array.isArray() directly,
+    // which is always false for that envelope, so activeSlides/pubPages
+    // were silently [] no matter how many hero slides or pages existed.
+    const slides = Array.isArray(slidesRaw) ? slidesRaw : (slidesRaw.results || []);
+    const pages  = Array.isArray(pagesRaw)  ? pagesRaw  : (pagesRaw.results  || []);
+    const grid   = document.getElementById('bento-grid');
+    if (!grid) return;
+    const activeSlides = Array.isArray(slides) ? slides.filter(s => s.is_active) : [];
+    if (activeSlides.length) {
+      const heroEl = document.createElement('div');
+      heroEl.className = 'bc bc-12 hero-carousel reveal';
+      heroEl.id = 'hero-carousel';
+      let current = 0;
+      const renderSlide = () => {
+        const s = activeSlides[current];
+        heroEl.innerHTML = `
+          <div class="hero-slide" style="position:relative;border-radius:var(--radius,12px);overflow:hidden;min-height:220px;background:${s.image ? `url(${s.image}) center/cover no-repeat` : 'var(--surface2)'}">
+            <div style="position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.5) 0%,transparent 60%);display:flex;flex-direction:column;justify-content:flex-end;padding:24px">
+              ${s.title ? `<h2 style="color:#fff;margin:0 0 4px;font-size:1.5rem">${escHtml(s.title)}</h2>` : ''}
+              ${s.subtitle ? `<p style="color:rgba(255,255,255,.85);margin:0 0 12px;font-size:.9rem">${escHtml(s.subtitle)}</p>` : ''}
+              ${s.cta_label && s.cta_url ? `<a href="${escHtml(s.cta_url)}" class="btn-hero-cta" style="align-self:flex-start;padding:8px 20px;background:var(--brand-accent,var(--tenant-primary,var(--ink)));color:#fff;border-radius:var(--tenant-radius-sm,6px);text-decoration:none;font-weight:600">${escHtml(s.cta_label)}</a>` : ''}
+            </div>
+            ${activeSlides.length > 1 ? `
+              <button onclick="heroNav(-1)" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.25);border:none;border-radius:50%;width:32px;height:32px;color:#fff;cursor:pointer;font-size:1.1rem">‹</button>
+              <button onclick="heroNav(1)"  style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.25);border:none;border-radius:50%;width:32px;height:32px;color:#fff;cursor:pointer;font-size:1.1rem">›</button>
+              <div style="position:absolute;bottom:8px;right:12px;display:flex;gap:5px">
+                ${activeSlides.map((_,i)=>`<div style="width:7px;height:7px;border-radius:50%;background:${i===current?'#fff':'rgba(255,255,255,.4)'}"></div>`).join('')}
+              </div>` : ''}
+          </div>`;
+      };
+      window.heroNav = (dir) => {
+        current = (current + dir + activeSlides.length) % activeSlides.length;
+        renderSlide();
+      };
+      renderSlide();
+      if (activeSlides.length > 1) setInterval(() => heroNav(1), 5000);
+      grid.insertBefore(heroEl, grid.firstChild);
+    }
+    const pubPages = Array.isArray(pages) ? pages.filter(p => p.is_published) : [];
+    // Extra pages (e.g. "Kushtet & Termat", "Privatësia" …) are created by the
+    // tenant in the admin's page builder — this list is not static, it can
+    // contain any number of arbitrary pages. Each one gets its own real tab
+    // (topbar link + mobile drawer link + tab-btn + section-panel), built
+    // generically off `page.slug`/`page.title`/`page.body` by
+    // renderExtraPageTab() below — no hardcoded per-page markup needed, and
+    // adding/renaming/unpublishing a page in the admin is reflected on the
+    // next page load automatically.
+    const extraNavSlot = document.getElementById('tnl-extra-pages');
+    const extraMobSlot = document.getElementById('ml-extra-pages');
+    if (extraNavSlot) extraNavSlot.innerHTML = '';
+    if (extraMobSlot) extraMobSlot.innerHTML = '';
+    document.querySelectorAll('.section-panel[data-extra-page]').forEach(p => p.remove());
+    document.querySelectorAll('.tab-btn[data-extra-page]').forEach(b => b.remove());
+    pubPages.forEach(page => renderExtraPageTab(page));
+    applyNavConfig(TENANT);
+    // CRIT FIX: every card above (hero carousel, sections, extra-page cards)
+    // has class="reveal", which starts at opacity:0 and only becomes visible
+    // once IntersectionObserver adds .vis to it (see revObs/observeReveals
+    // near the SCROLL REVEAL section). The only other place that registers
+    // elements with that observer is renderBento()'s setTimeout(...,60),
+    // which fires long before this function's Promise.all(fetch) resolves —
+    // so everything appended here was never observed and stayed at
+    // opacity:0 forever, even though it was 100% correctly in the DOM.
+    // Re-running observeReveals(grid) is safe to call again: elements that
+    // already have .vis just get re-observed harmlessly (revObs unobserves
+    // on first intersection anyway).
+    observeReveals(grid);
+  } catch (err) {
+    // Was a bare `catch (_) {}` — silently swallowing failures here is
+    // exactly what made "section saved but not visible" bugs invisible in
+    // the console during debugging. Logging costs nothing and the page
+    // still degrades gracefully (hero/sections/pages just don't render).
+    console.error('loadHeroAndStorefront failed:', err);
+  }
+}
+
+// Builds one full tab (topbar link + mobile drawer link + tab-btn +
+// section-panel) for a tenant-created StorefrontPage, e.g. "Kushtet &
+// Termat", "Privatësia", or anything else added later in the admin's page
+// builder. Fully generic — nothing here is hardcoded to a specific page,
+// so any number of pages with any title/slug work the same way.
+function renderExtraPageTab(page) {
+  const id = 'page-' + page.slug;
+
+  // Tab button (section-tabs bar)
+  const tabsInner = document.querySelector('#section-tabs .tabs-inner');
+  if (tabsInner) {
+    const btn = document.createElement('button');
+    btn.className = 'tab-btn';
+    btn.setAttribute('role', 'tab');
+    btn.dataset.extraPage = 'true';
+    btn.dataset.section = id;
+    btn.textContent = '📄 ' + page.title;
+    btn.addEventListener('click', e => { e.preventDefault(); goSection(id); });
+    tabsInner.appendChild(btn);
+  }
+
+  // Desktop topbar link
+  const extraNavSlot = document.getElementById('tnl-extra-pages');
+  if (extraNavSlot) {
+    const a = document.createElement('a');
+    a.href = '#'; a.className = 'tnl'; a.dataset.section = id; a.textContent = page.title;
+    a.addEventListener('click', e => { e.preventDefault(); goSection(id); });
+    extraNavSlot.appendChild(a);
+  }
+
+  // Mobile drawer link
+  const extraMobSlot = document.getElementById('ml-extra-pages');
+  if (extraMobSlot) {
+    const a = document.createElement('a');
+    a.href = '#'; a.className = 'mob-link'; a.dataset.section = id; a.textContent = '📄 ' + page.title;
+    a.addEventListener('click', e => { e.preventDefault(); closeDrawer(); goSection(id); });
+    extraMobSlot.appendChild(a);
+  }
+
+  // Section panel — content is already fully known from the pages fetch,
+  // so it's rendered straight away rather than through the lazy
+  // sectionLoaders mechanism (there's nothing more to load).
+  const wrap = document.querySelector('#content-area .wrap');
+  if (wrap) {
+    const section = document.createElement('section');
+    section.className = 'section-panel';
+    section.id = 'panel-' + id;
+    section.dataset.extraPage = 'true';
+    section.setAttribute('role', 'tabpanel');
+    const titleDiv = document.createElement('div');
+    titleDiv.className = 'lbl';
+    titleDiv.textContent = page.title;
+    const heading = document.createElement('h2');
+    heading.style.marginBottom = '24px';
+    heading.textContent = page.title;
+    const bodyDiv = document.createElement('div');
+    bodyDiv.className = 'page-body';
+    bodyDiv.style.cssText = 'font-size:.92rem;line-height:1.75;color:var(--text-secondary,var(--muted))';
+    bodyDiv.innerHTML = page.body || ''; // tenant-entered HTML, trusted (same as StorefrontPage rendering elsewhere)
+    section.appendChild(titleDiv);
+    section.appendChild(heading);
+    section.appendChild(bodyDiv);
+    wrap.appendChild(section);
+  }
+
+  sectionLoaded[id] = true; // nothing to lazy-load, content is already in the DOM
+}
+
+// Applies the tenant's nav_config (set in the admin's "Struktura e Faqes"
+// panel) to the three parallel nav surfaces: desktop topbar (#topbar-nav),
+// mobile drawer (#mob-panel), and the section tab bar (#section-tabs
+// .tabs-inner). Each surface holds elements with a matching data-section
+// attribute — built-ins use their plain key ("overview", "reviews", …),
+// custom pages use "page-<slug>" (nav_config stores them as "page:<slug>").
+//
+// With no nav_config set (new/unmigrated tenants — nav_config defaults to
+// {}), this is a no-op and the default DOM order/visibility is left exactly
+// as-is, so existing tenants see no change.
+//
+// Hiding is additive only: this never *removes* the 'hidden' class, only
+// adds it. Business-type-driven visibility (see loadServices()) already
+// hides tabs that don't apply to this tenant's business type; nav_config
+// hiding stacks on top of that rather than overriding it, so a tenant can't
+// accidentally reveal a section their business type doesn't support.
+// 'profile' is a login-conditional tab, not part of nav_config, so it's
+// left in place (pushed after everything else) rather than reordered.
+function applyNavConfig(t) {
+  const rawTabs = t && t.nav_config && Array.isArray(t.nav_config.tabs) ? t.nav_config.tabs : null;
+  if (!rawTabs || !rawTabs.length) return;
+
+  const order = rawTabs.map(entry => ({
+    key: entry.key.startsWith('page:') ? 'page-' + entry.key.slice(5) : entry.key,
+    hidden: !!entry.hidden,
+  }));
+
+  const containers = [
+    document.getElementById('topbar-nav'),
+    document.getElementById('mob-panel'),
+    document.querySelector('#section-tabs .tabs-inner'),
+  ].filter(Boolean);
+
+  containers.forEach(container => {
+    const profileEl = container.querySelector('[data-section="profile"]');
+    order.forEach(({ key, hidden }) => {
+      const el = container.querySelector(`[data-section="${key}"]`);
+      if (!el) return; // e.g. a page that was deleted since nav_config was saved
+      container.appendChild(el); // re-appending in order moves it to the new position
+      if (hidden) el.classList.add('hidden');
+    });
+    if (profileEl) container.appendChild(profileEl);
+  });
+}
+
+window.openStorefrontPage = async function(pageSlug) {
+  const r = await fetch(`/api/storefront/pages/${pageSlug}/?tenant=${slug}`);
+  if (!r.ok) return;
+  const page = await r.json();
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9000;display:flex;align-items:center;justify-content:center;padding:16px';
+  const box = document.createElement('div');
+  box.style.cssText = 'background:var(--surface,#fff);border-radius:12px;padding:28px 24px;max-width:640px;width:100%;max-height:80vh;overflow-y:auto;position:relative';
+  const closeBtn = document.createElement('button');
+  closeBtn.style.cssText = 'position:absolute;top:12px;right:16px;background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--text-muted)';
+  closeBtn.textContent = '✕';
+  closeBtn.addEventListener('click', () => overlay.remove());
+  const h2 = document.createElement('h2');
+  h2.style.cssText = 'margin:0 0 16px';
+  h2.textContent = page.title;
+  const bodyDiv = document.createElement('div');
+  bodyDiv.style.cssText = 'font-size:.9rem;line-height:1.75';
+  bodyDiv.innerHTML = page.body || '';   // trusted tenant HTML — render as-is
+  box.appendChild(closeBtn);
+  box.appendChild(h2);
+  box.appendChild(bodyDiv);
+  overlay.appendChild(box);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+};
+
+/* ═══════════════════════════════════════
+   LOAD SERVICES
+═══════════════════════════════════════ */
+async function loadServices() {
+  const bt = TENANT?.business_type;
+  let endpoint = '';
+  // BUG FIX: hotel tenants were being routed to /api/rentals/ (RentalItem),
+  // but hotel rooms live in the hotels app as RoomType — a hotel with no
+  // RentalItem rows (i.e. every hotel, since rooms are never created there)
+  // always got an empty listing. Route hotels to their own room-types
+  // endpoint instead.
+  if (bt === 'hotel')   endpoint = `/api/hotels/room-types/?tenant=${slug}`;
+  else if (isRental(bt)) endpoint = `/api/rentals/?tenant=${slug}`;
+  else if (isFood(bt))  endpoint = `/api/menu/?tenant=${slug}`;
+  else if (isShop(bt))  endpoint = `/api/inventory/?tenant=${slug}&limit=100`;
+  else                  endpoint = `/api/appointments/services/?tenant=${slug}`;
+
+  try {
+    const r = await fetch(endpoint);
+    if (!r.ok) throw new Error(r.status);
+    const d = await r.json();
+    if (isFood(bt)) {
+      const cats = Array.isArray(d) ? d : (d.results || []);
+      ALL_SERVICES = cats.flatMap(c => (c.items || []).map(i => ({...i, _cat: c.name})));
+      loadMenu(cats);
+    } else if (bt === 'hotel') {
+      // RoomType has base_price / no `status` field (availability is a
+      // per-room, per-date concept, not a static flag on the type) — normalize
+      // to the shape renderRentals() and openBookingModal() already expect,
+      // and tag the resource so booking submission knows to send
+      // resource_type: 'room_type' rather than 'rental_item'.
+      const types = Array.isArray(d) ? d : (d.results || []);
+      ALL_SERVICES = types.map(rt => ({
+        ...rt,
+        price_per_day: rt.base_price,
+        status: 'available', // real availability is checked per-date at booking time
+        rental_type: 'room',
+        _resourceType: 'room_type',
+      }));
+      if (!ALL_SERVICES.length) throw new Error('empty');
+    } else {
+      ALL_SERVICES = Array.isArray(d) ? d : (d.results || []);
+      if (!ALL_SERVICES.length) throw new Error('empty');
+    }
+  } catch {
+    ALL_SERVICES = [];
+    if (isFood(bt)) {
+      renderMenuCats([]);
+    } else if (isRental(bt)) {
+      renderRentals([]);
+    } else {
+      renderServices([]);
+    }
+  }
+
+  const ct     = ALL_SERVICES.length || 0;
+  const statEl = document.getElementById('stat-services');
+  statEl.setAttribute('data-count', ct);
+  statEl.textContent = ct || '—';
+  document.getElementById('tab-services-count').textContent = ct;
+
+  const lbl = document.getElementById('stat-services-lbl');
+  if (lbl) {
+    if (isRental(bt))    lbl.textContent = bt === 'hotel' ? 'Dhoma' : bt === 'boat_rental' ? 'Anije' : bt === 'property_rental' ? 'Prona' : bt === 'equipment_rental' ? 'Pajisje' : 'Automjete';
+    else if (isFood(bt)) lbl.textContent = 'Artikuj Menu';
+    else if (isShop(bt)) lbl.textContent = 'Produkte';
+    else                 lbl.textContent = 'Shërbime';
+  }
+
+  const heading = document.getElementById('services-heading');
+  const lblEl   = document.getElementById('services-lbl');
+  if (heading) {
+    if (isShop(bt))      { heading.textContent = 'Produktet Tona'; if (lblEl) lblEl.textContent = 'Produkte'; }
+    else if (isB2B(bt))  { heading.textContent = 'Shërbimet Tona'; if (lblEl) lblEl.textContent = 'Shërbime'; }
+    else if (isAppt(bt)) { heading.textContent = 'Shërbimet Tona'; if (lblEl) lblEl.textContent = 'Shërbime'; }
+    else if (isFood(bt)) { heading.textContent = 'Menu Jonë'; }
+    else                 { heading.textContent = 'Oferta Jonë'; }
+  }
+
+  const rentalsHeading = document.getElementById('rentals-heading');
+  const rentalsLbl     = document.getElementById('rentals-lbl');
+  if (rentalsHeading && isRental(bt)) {
+    // BUG FIX: rentals-lbl (the small pill/kicker above the heading) was
+    // hardcoded to "Flota" in the HTML and never updated here, so hotel/
+    // boat/property/equipment tenants all showed "Flota" above a heading
+    // that correctly said "Dhoma të Disponueshme" etc. Now both are kept
+    // in sync from the same branch.
+    if (bt === 'hotel') {
+      rentalsHeading.textContent = 'Dhoma të Disponueshme';
+      if (rentalsLbl) rentalsLbl.textContent = 'Dhoma';
+    } else if (bt === 'boat_rental') {
+      rentalsHeading.textContent = 'Barka të Disponueshme';
+      if (rentalsLbl) rentalsLbl.textContent = 'Barka';
+    } else if (bt === 'property_rental') {
+      rentalsHeading.textContent = 'Prona të Disponueshme me Qira';
+      if (rentalsLbl) rentalsLbl.textContent = 'Prona';
+    } else if (bt === 'equipment_rental') {
+      rentalsHeading.textContent = 'Pajisjet e Disponueshme';
+      if (rentalsLbl) rentalsLbl.textContent = 'Pajisje';
+    } else {
+      rentalsHeading.textContent = 'Flotë e Disponueshme';
+      if (rentalsLbl) rentalsLbl.textContent = 'Flota';
+    }
+  }
+
+  if (isRental(bt)) {
+    renderRentals(ALL_SERVICES);
+    applyPageSections('rentals', 'pslot-rentals-grid');
+    sectionLoaded.rentals = true;
+    showEl('tab-rentals'); showEl('tnl-rentals'); showEl('ml-rentals');
+    hideEl('tab-services'); hideEl('tnl-services'); hideEl('ml-services');
+    hideEl('tab-menu');    hideEl('tnl-menu');    hideEl('ml-menu');
+    hideEl('tab-orders');  hideEl('tnl-orders');  hideEl('ml-orders');
+  } else if (isFood(bt)) {
+    applyPageSections('menu', 'pslot-menu-grid');
+    sectionLoaded.menu = true;
+    showEl('tab-menu');   showEl('tnl-menu');   showEl('ml-menu');
+    showEl('tab-orders'); showEl('tnl-orders'); showEl('ml-orders');
+    hideEl('tab-services'); hideEl('tnl-services'); hideEl('ml-services');
+    hideEl('tab-rentals');  hideEl('tnl-rentals');  hideEl('ml-rentals');
+  } else {
+    renderServices(ALL_SERVICES);
+    applyPageSections('services', 'pslot-services-grid');
+    sectionLoaded.services = true;
+    showEl('tab-services'); showEl('tnl-services'); showEl('ml-services');
+    hideEl('tab-rentals');  hideEl('tnl-rentals');  hideEl('ml-rentals');
+    hideEl('tab-menu');     hideEl('tnl-menu');     hideEl('ml-menu');
+    hideEl('tab-orders');   hideEl('tnl-orders');   hideEl('ml-orders');
+  }
+}
+
+document.getElementById('view-list').addEventListener('click', () => {
+  currentView = 'list';
+  document.getElementById('view-list').classList.add('active');
+  document.getElementById('view-grid-btn').classList.remove('active');
+  renderServices(ALL_SERVICES);
+});
+document.getElementById('view-grid-btn').addEventListener('click', () => {
+  currentView = 'grid';
+  document.getElementById('view-grid-btn').classList.add('active');
+  document.getElementById('view-list').classList.remove('active');
+  renderServices(ALL_SERVICES);
+});
+
+function getSvcIcon(svc) { return svc.icon || SVC_ICON[TENANT?.business_type] || SVC_ICON.default; }
+function getActionLabel(bt) {
+  if (isShop(bt)) return 'Shto';
+  if (isB2B(bt))  return 'Shiko';
+  if (isAppt(bt)) return canReserve() ? 'Rezervo' : 'Kontaktoni';
+  return 'Shiko';
+}
+
+function renderServices(items) {
+  const container = document.getElementById('svc-container');
+  const bt = TENANT?.business_type || '';
+  if (!items.length) {
+    container.innerHTML = '<div class="empty-state"><span>✨</span><p>Nuk ka shërbime të listuara ende.</p></div>';
+    return;
+  }
+  const actionLabel = getActionLabel(bt);
+  if (currentView === 'grid') {
+    container.innerHTML = `<div class="svc-grid">${items.map(s => {
+      // Products (shop tenants) carry `in_stock`; appointment-style services
+      // carry `is_available`. Check whichever the item actually has instead
+      // of always falling back to "available" when in_stock is undefined.
+      const isProduct = s.in_stock !== undefined;
+      const avail = isProduct ? s.in_stock : (s.is_available !== false);
+      const stockInfo = isProduct ? stockLabel(s) : null;
+      const price = s.price ? fmtPrice(s.price) : '';
+      return `
+        <div class="svc-grid-card reveal">
+          <div class="svc-grid-thumb">
+            <span style="position:relative;z-index:1">${getSvcIcon(s)}</span>
+            <span class="svc-grid-avail ${isProduct ? stockInfo.cls : (avail?'yes':'no')}">${isProduct ? stockInfo.text : (avail?'✓ Disponueshëm':'Jo disponueshëm')}</span>
+          </div>
+          <div class="svc-grid-body">
+            <div class="svc-grid-name">${esc(s.name)}</div>
+            ${s.description ? `<div class="svc-grid-desc">${esc(s.description)}</div>` : ''}
+            <div class="svc-grid-footer">
+              ${price ? `<div class="svc-grid-price">${price}</div>` : '<span></span>'}
+              <button class="btn-book" ${avail?'':'disabled'} data-svc-id="${s.id}" data-svc-name="${esc(s.name)}" data-svc-price="${s.price||0}" data-svc-stock="${isProduct?s.stock:''}" style="font-size:.72rem;padding:5px 12px">
+                ${avail ? actionLabel : '—'}
+              </button>
+            </div>
+          </div>
+        </div>`;
+    }).join('')}</div>`;
+  } else {
+    container.innerHTML = `<div class="svc-list">${items.map(s => {
+      const isProduct = s.in_stock !== undefined;
+      const avail = isProduct ? s.in_stock : (s.is_available !== false);
+      const stockInfo = isProduct ? stockLabel(s) : null;
+      const price = s.price ? fmtPrice(s.price) : '';
+      const dur   = s.duration_minutes ? `⏱ ${s.duration_minutes} min` : '';
+      const cat   = s.category_name || s.category?.name || s.category || s._cat || '';
+      return `
+        <div class="svc-card reveal">
+          <div>
+            <div class="svc-name">${esc(s.name)}</div>
+            ${s.description ? `<div class="svc-desc">${esc(s.description)}</div>` : ''}
+            <div class="svc-meta">
+              ${dur ? `<span class="svc-duration">${dur}</span>` : ''}
+              ${cat ? `<span class="svc-cat-tag">${esc(cat)}</span>` : ''}
+              <span class="svc-avail ${isProduct ? stockInfo.cls : (avail?'yes':'no')}">${isProduct ? stockInfo.text : (avail?'E disponueshme':'Jo disponueshme')}</span>
+            </div>
+          </div>
+          <div class="svc-right">
+            ${price ? `<div class="svc-price">${price}</div>` : ''}
+            <button class="btn-book" ${avail?'':'disabled'} data-svc-id="${s.id}" data-svc-name="${esc(s.name)}" data-svc-price="${s.price||0}" data-svc-stock="${isProduct?s.stock:''}">
+              ${avail ? actionLabel : 'Jo disponueshme'}
+            </button>
+          </div>
+        </div>`;
+    }).join('')}</div>`;
+  }
+  observeReveals(container);
+  container.querySelectorAll('.btn-book[data-svc-name]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (isShop(bt)) {
+        const stock = btn.dataset.svcStock !== '' ? Number(btn.dataset.svcStock) : Infinity;
+        addToCart(btn.dataset.svcId, btn.dataset.svcName, btn.dataset.svcPrice, stock);
+        const orig = btn.textContent;
+        btn.textContent = '✓ Shtuar!';
+        setTimeout(() => { btn.textContent = orig; }, 1200);
+      } else if (isB2B(bt) || !canReserve()) {
+        goSection('contact');
+      } else {
+        openBookingModal(btn.dataset.svcName, Number(btn.dataset.svcPrice) || 0, btn.dataset.svcId, 'service');
+      }
+    });
+  });
+  const searchEl = document.getElementById('svc-search');
+  const filterEl = document.getElementById('svc-filter');
+  if (searchEl) searchEl.oninput  = filterServices;
+  if (filterEl) filterEl.onchange = filterServices;
+}
+
+function filterServices() {
+  const q = (document.getElementById('svc-search')?.value || '').toLowerCase();
+  const f = document.getElementById('svc-filter')?.value || '';
+  renderServices(ALL_SERVICES.filter(s => {
+    const matchQ = !q || s.name.toLowerCase().includes(q) || (s.description||'').toLowerCase().includes(q);
+    // BUG FIX: products (shop/B2B tenants) carry `in_stock`, not `is_available`.
+    // Checking is_available alone meant "Të disponueshme"/"Jo të disponueshme"
+    // was a no-op for every product-catalog business type — undefined !== false
+    // is always true, so "available" matched everything and "unavailable"
+    // matched nothing. Mirror the isProduct/avail check used in renderServices().
+    const isProduct = s.in_stock !== undefined;
+    const avail = isProduct ? s.in_stock : (s.is_available !== false);
+    const matchF = !f
+      || (f === 'available'   && avail)
+      || (f === 'unavailable' && !avail);
+    return matchQ && matchF;
+  }));
+}
+
+/* ═══════════════════════
+   MENU (view only)
+═══════════════════════ */
+let menuData = [];
+async function loadMenu(preloaded) {
+  if (preloaded) { menuData = preloaded; renderMenuCats(menuData); return; }
+  try {
+    const r = await fetch(`/api/menu/?tenant=${slug}`);
+    if (!r.ok) throw new Error(r.status);
+    menuData = await r.json();
+    if (!Array.isArray(menuData)) menuData = menuData.results || [];
+    if (!menuData.length) throw new Error('empty');
+  } catch {
+    menuData = [];
+  }
+  renderMenuCats(menuData);
+}
+
+function renderMenuCats(cats) {
+  const nav = document.getElementById('menu-cat-nav');
+  nav.innerHTML = '';
+  if (!cats.length) {
+    document.getElementById('menu-grid').innerHTML = '<div class="empty-state" style="grid-column:1/-1"><span>🍽️</span><p>Nuk ka artikuj menu.</p></div>';
+    return;
+  }
+  const all = cats.flatMap(c => (c.items||[]).map(i => ({...i, _cat: c.name})));
+  const makeBtn = (label, active, items) => {
+    const btn = document.createElement('button');
+    btn.className   = 'menu-cat-btn' + (active ? ' active' : '');
+    btn.textContent = label;
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#menu-cat-nav .menu-cat-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderMenuItems(items);
+    });
+    return btn;
+  };
+  nav.appendChild(makeBtn('Të gjitha', true, all));
+  cats.forEach(cat => nav.appendChild(makeBtn(cat.name, false, cat.items || [])));
+  renderMenuItems(all);
+}
+
+function renderMenuItems(items) {
+  const grid = document.getElementById('menu-grid');
+  if (!items.length) { grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><span>🍽️</span><p>Nuk ka artikuj.</p></div>'; return; }
+  grid.innerHTML = items.map(i => `
+    <div class="menu-card reveal">
+      <div class="menu-card-body">
+        <div class="menu-item-name">${esc(i.name)}</div>
+        ${i.description ? `<div class="menu-item-desc">${esc(i.description)}</div>` : ''}
+        ${i._cat ? `<span class="menu-item-unavail">${esc(i._cat)}</span>` : ''}
+        ${i.is_available===false ? '<span class="menu-item-unavail">⚠ Jo disponueshëm</span>' : ''}
+      </div>
+      ${i.price ? `<div class="menu-price">${fmtPrice(i.price)}</div>` : ''}
+    </div>`).join('');
+  observeReveals(grid);
+}
+
+/* ═══════════════════════
+   ORDERS SECTION
+═══════════════════════ */
+function loadOrdersSection() {
+  if (menuData.length) { renderOrderCats(menuData); return; }
+  fetch(`/api/menu/?tenant=${slug}`)
+    .then(r => r.ok ? r.json() : [])
+    .then(d => {
+      menuData = Array.isArray(d) ? d : (d.results || []);
+      renderOrderCats(menuData);
+    })
+    .catch(() => { renderOrderCats([]); });
+}
+
+function renderOrderCats(cats) {
+  const nav = document.getElementById('order-cat-nav');
+  if (!nav) return;
+  nav.innerHTML = '';
+  if (!cats.length) {
+    document.getElementById('order-grid').innerHTML = '<div class="empty-state" style="grid-column:1/-1"><span>🍽️</span><p>Nuk ka artikuj.</p></div>';
+    applyPageSections('orders', 'pslot-orders-view');
+    return;
+  }
+  const all = cats.flatMap(c => (c.items||[]).map(i => ({...i, _cat: c.name})));
+  const makeBtn = (label, active, items) => {
+    const btn = document.createElement('button');
+    btn.className   = 'menu-cat-btn' + (active ? ' active' : '');
+    btn.textContent = label;
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#order-cat-nav .menu-cat-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderOrderItems(items);
+    });
+    return btn;
+  };
+  nav.appendChild(makeBtn('Të gjitha', true, all));
+  cats.forEach(cat => nav.appendChild(makeBtn(cat.name, false, cat.items || [])));
+  renderOrderItems(all);
+  updateCartBadge();
+  applyPageSections('orders', 'pslot-orders-view');
+}
+
+function renderOrderItems(items) {
+  const grid = document.getElementById('order-grid');
+  if (!grid) return;
+  if (!items.length) { grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><span>🍽️</span><p>Nuk ka artikuj.</p></div>'; return; }
+  grid.innerHTML = items.map(i => {
+    const avail = i.is_available !== false;
+    return `
+      <div class="order-card reveal">
+        <div class="order-card-top">
+          <div class="menu-card-body">
+            <div class="menu-item-name">${esc(i.name)}</div>
+            ${i.description ? `<div class="menu-item-desc">${esc(i.description)}</div>` : ''}
+            ${i._cat ? `<span class="menu-item-unavail">${esc(i._cat)}</span>` : ''}
+          </div>
+          ${i.price ? `<div class="menu-price" style="flex-shrink:0">${fmtPrice(i.price)}</div>` : ''}
+        </div>
+        ${avail
+          ? `<button class="btn-add-cart" data-id="${i.id}" data-name="${esc(i.name)}" data-price="${i.price||0}">+ Shto në shportë</button>`
+          : `<span style="font-size:.72rem;color:var(--hint);font-weight:600;text-transform:uppercase;letter-spacing:.06em">Jo disponueshëm</span>`
+        }
+      </div>`;
+  }).join('');
+  observeReveals(grid);
+  grid.querySelectorAll('.btn-add-cart').forEach(btn => {
+    btn.addEventListener('click', () => {
+      addToCart(btn.dataset.id, btn.dataset.name, btn.dataset.price);
+      const orig = btn.textContent;
+      btn.textContent = '✓ Shtuar!';
+      btn.classList.add('added');
+      setTimeout(() => { btn.textContent = orig; btn.classList.remove('added'); }, 1200);
+    });
+  });
+}
+
+/* ═══════════════════════
+   RENTALS
+═══════════════════════ */
+async function loadRentals() {
+  let items = [];
+  try {
+    const r = await fetch(`/api/rentals/?tenant=${slug}`);
+    if (!r.ok) throw new Error(r.status);
+    const d = await r.json();
+    items = Array.isArray(d) ? d : (d.results || []);
+    if (!items.length) throw new Error('empty');
+  } catch {
+    items = [];
+  }
+  renderRentals(items);
+}
+
+function renderRentals(items) {
+  const grid = document.getElementById('rental-grid');
+  const bt   = TENANT?.business_type || 'car_rental';
+  if (!items.length) {
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><span>🚗</span><p>Nuk ka listim të disponueshëm.</p></div>';
+    return;
+  }
+  const ICONS = { car:'🚗', van:'🚐', suv:'🚙', truck:'🚚', motorcycle:'🏍️', boat:'⛵', room:'🛏️', apartment:'🏠', equipment:'🔧' };
+  const priceLabel = bt === 'hotel' ? '/ natë' : bt === 'property_rental' ? '/ muaj' : '/ ditë';
+  const btnLabel   = 'Kontaktoni';
+  grid.innerHTML = items.map(item => {
+    const specs   = item.specs || {};
+    const icon    = ICONS[item.rental_type] || (bt === 'hotel' ? '🛏️' : bt === 'boat_rental' ? '⛵' : '🔧');
+    const avail   = item.status === 'available';
+    const specEntries = Object.entries(specs)
+      .filter(([k, v]) => v !== false && v !== null && v !== undefined)
+      .map(([k, v]) => {
+        if (k === 'ac' && v === true) return 'A/C';
+        if (k === 'furnished' && v === true) return 'I mobiluar';
+        if (k === 'seats') return `${v} ulëse`;
+        return String(v);
+      });
+    return `
+      <div class="rental-card reveal">
+        <div class="rental-thumb">
+          <span style="position:relative;z-index:1;font-size:3rem">${icon}</span>
+          <span class="rental-status ${avail?'available':'rented'}">${avail?'E disponueshme':'E zënë'}</span>
+        </div>
+        <div class="rental-body">
+          <div class="rental-name">${esc(item.name)}</div>
+          <div class="rental-specs">${specEntries.map(s=>`<span class="spec-tag">${esc(s)}</span>`).join('')}</div>
+          <div class="rental-footer">
+            <div class="rental-price">${item.price_per_day ? fmtPrice(item.price_per_day) : '—'} <span>${priceLabel}</span></div>
+            <button class="btn-book" ${avail?'':'disabled'} data-svc-id="${item.id}" data-resource-type="${item._resourceType || 'rental_item'}" data-svc-name="${esc(item.name)}" data-svc-price="${item.price_per_day||0}">
+              ${avail ? btnLabel : 'E zënë'}
+            </button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+  grid.querySelectorAll('.btn-book[data-svc-name]').forEach(btn => {
+    btn.addEventListener('click', () => goSection('contact'));
+  });
+  observeReveals(grid);
+}
+
+/* ═══════════════════════
+   REVIEWS
+═══════════════════════ */
+const AVG_COLORS  = ['#C03028','#C17B2A','#1A7A4A','#6c3483','#1a5276','#8B4513'];
+let selectedStars = 0;
+const STAR_LABELS = ['','E keqe','E dobët','E mirë','Shumë e mirë','E shkëlqyer!'];
+let carouselReviews = [];
+let carIdx   = 0;
+let carTimer = null;
+
+async function loadReviews(overviewOnly = false) {
+  let reviews = [];
+  try {
+    const r = await fetch(`/api/reviews/?tenant=${slug}`);
+    const d = r.ok ? await r.json() : { results: [] };
+    reviews = d.results || d || [];
+    if (!reviews.length) throw new Error('empty');
+  } catch {
+    reviews = [];
+  }
+  const count = reviews.length;
+  const avg   = count ? reviews.reduce((s, rv) => s + rv.rating, 0) / count : 0;
+  const statRevEl = document.getElementById('stat-reviews-count');
+  const statRatEl = document.getElementById('stat-rating');
+  statRevEl.setAttribute('data-count', count || '0');
+  statRevEl.textContent = count || '—';
+  statRatEl.setAttribute('data-count', avg ? avg.toFixed(1) : '0');
+  statRatEl.textContent = avg ? avg.toFixed(1) : '—';
+  document.getElementById('tab-reviews-count').textContent = count;
+  if (!overviewOnly) {
+    renderReviewSummary(reviews, avg, count);
+    renderReviewCards(reviews);
+    setupCarousel(reviews);
+    setupReviewForm();
+    applyPageSections('reviews', 'pslot-reviews-list');
+  }
+}
+
+function setupCarousel(reviews) {
+  const top = reviews.filter(r => r.rating >= 4).slice(0, 5);
+  if (top.length < 2) return;
+  carouselReviews = top;
+  const el   = document.getElementById('rev-carousel');
+  el.classList.remove('hidden');
+  const dots = document.getElementById('car-dots');
+  dots.innerHTML = top.map((_,i) => `<div class="rev-dot ${i===0?'active':''}" onclick="goCarousel(${i})"></div>`).join('');
+  showCarouselSlide(0);
+  carTimer = setInterval(() => goCarousel((carIdx + 1) % top.length), 4500);
+}
+function goCarousel(idx) {
+  clearInterval(carTimer);
+  carIdx = idx;
+  showCarouselSlide(idx);
+  carTimer = setInterval(() => goCarousel((carIdx + 1) % carouselReviews.length), 4500);
+}
+window.goCarousel = goCarousel;
+
+function showCarouselSlide(idx) {
+  const rv  = carouselReviews[idx];
+  if (!rv) return;
+  const qEl = document.getElementById('car-quote');
+  qEl.style.opacity = '0'; qEl.style.transform = 'translateY(6px)';
+  setTimeout(() => {
+    qEl.textContent = `"${rv.comment||''}"`;
+    document.getElementById('car-name').textContent  = rv.user_name || rv.reviewer_name || 'Klient';
+    document.getElementById('car-biz').textContent   = rv.business_name || '';
+    document.getElementById('car-stars').textContent = '⭐'.repeat(rv.rating || 5);
+    qEl.style.opacity = '1'; qEl.style.transform = 'none';
+    document.querySelectorAll('.rev-dot').forEach((d,i) => d.classList.toggle('active', i === idx));
+  }, 180);
+}
+
+function renderReviewSummary(reviews, avg, count) {
+  document.getElementById('rv-avg').textContent   = avg ? avg.toFixed(1) : '—';
+  document.getElementById('rv-total').textContent = `bazuar në ${count} vlerësime`;
+  document.getElementById('rv-avg-stars').innerHTML = starsHTML(Math.round(avg), '1rem');
+  const bars = document.getElementById('rv-mini-bars');
+  bars.innerHTML = [5,4,3,2,1].map(n => {
+    const c = reviews.filter(r => r.rating === n).length;
+    return `<div class="mbar"><span>${n}⭐</span><div class="mbar-track"><div class="mbar-fill" id="mbar-${n}"></div></div><span style="width:18px;text-align:right;font-size:.7rem;font-weight:600">${c}</span></div>`;
+  }).join('');
+  const sumObs = new IntersectionObserver(entries => {
+    if (!entries[0].isIntersecting) return;
+    [5,4,3,2,1].forEach(n => {
+      const c   = reviews.filter(r => r.rating === n).length;
+      const pct = count ? (c / count * 100) : 0;
+      setTimeout(() => { const b = document.getElementById('mbar-' + n); if (b) b.style.width = pct + '%'; }, 100);
+    });
+    sumObs.disconnect();
+  }, { threshold: 0.3 });
+  sumObs.observe(bars);
+}
+
+function renderReviewCards(reviews) {
+  const flow = document.getElementById('reviews-flow');
+  if (!reviews.length) { flow.innerHTML = '<div class="empty-state"><span>⭐</span><p>Bëhu i pari!</p></div>'; return; }
+  flow.innerHTML = reviews.map((rv, i) => {
+    const initials = (rv.user_name || rv.reviewer_name || 'K').substring(0, 2).toUpperCase();
+    const color    = AVG_COLORS[i % AVG_COLORS.length];
+    const verified = rv.rating >= 4 ? `<span style="font-size:.65rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 7px;border-radius:10px;background:var(--green-s);color:var(--green);margin-left:6px">✓ Verifikuar</span>` : '';
+    return `
+      <div class="review-card reveal">
+        <div class="rv-header">
+          <div class="rv-user">
+            <div class="rv-avatar" style="background:${color}">${escHtml(initials)}</div>
+            <div>
+              <div class="rv-name">${escHtml(rv.user_name||rv.reviewer_name||'Klient')}${verified}</div>
+              ${rv.business_name ? `<div class="rv-biz">${escHtml(rv.business_name)}</div>` : ''}
+            </div>
+          </div>
+          <div class="rv-date">${escHtml((rv.created_at||'').substring(0,10))}</div>
+        </div>
+        <div class="rv-body">"${escHtml(rv.comment||'')}"</div>
+        <div class="rv-stars">${starsHTML(rv.rating, '.82rem')}</div>
+      </div>`;
+  }).join('');
+  observeReveals(flow);
+}
+
+function starsHTML(n, size = '1rem') {
+  return Array.from({length:5}, (_, i) => `<span class="rv-star ${i<n?'on':''}" style="font-size:${size}">⭐</span>`).join('');
+}
+
+function setupReviewForm() {
+  const formWrap = document.getElementById('rev-form-wrap');
+  formWrap.style.display = 'block';
+  const picker = document.getElementById('star-picker');
+  picker.innerHTML = Array.from({length:5}, (_,i) => `<button class="spick" data-v="${i+1}" aria-label="${i+1} yje">⭐</button>`).join('');
+  picker.querySelectorAll('.spick').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedStars = +btn.dataset.v;
+      picker.querySelectorAll('.spick').forEach((b,i) => b.classList.toggle('on', i < selectedStars));
+      document.getElementById('spick-lbl').textContent = STAR_LABELS[selectedStars] || '';
+    });
+    btn.addEventListener('mouseenter', () => {
+      const v = +btn.dataset.v;
+      picker.querySelectorAll('.spick').forEach((b,i) => b.style.filter = i < v ? 'none' : 'grayscale(1) opacity(.3)');
+    });
+    btn.addEventListener('mouseleave', () => {
+      picker.querySelectorAll('.spick').forEach((b,i) => b.style.filter = i < selectedStars ? 'none' : 'grayscale(1) opacity(.3)');
+    });
+  });
+  let _reviewSubmitting = false;  // FIX: guard against multi-click / retry spam
+  document.getElementById('rv-submit').addEventListener('click', async () => {
+    if (_reviewSubmitting) return;  // FIX: block duplicate in-flight requests
+    const name    = document.getElementById('rv-name').value.trim();
+    const comment = document.getElementById('rv-comment').value.trim();
+    const fb      = document.getElementById('rv-feedback');
+    if (!name || !comment || !selectedStars) { fb.textContent = '⚠ Plotësoni emrin, vlerësimin dhe komentin.'; fb.className = 'form-feedback err'; return; }
+    const btn = document.getElementById('rv-submit');
+    _reviewSubmitting = true;
+    btn.disabled = true; btn.textContent = 'Duke dërguar…';
+    if (!Auth.isLoggedIn()) {
+      fb.textContent = '⚠ Duhet të identifikoheni për të lënë vlerësim.';
+      fb.className   = 'form-feedback err';
+      btn.disabled = false; btn.textContent = 'Dërgo Vlerësimin →';
+      _reviewSubmitting = false;
+      return;
+    }
+    try {
+      // FIX: POST /api/reviews/ requires a tenant subdomain (TenantDomainOnly
+      // permission). Auth.API_BASE points to localhost:8000 (main domain in dev)
+      // where request.tenant is None → every POST returned 403.
+      // Build the URL against the tenant port so TenantMiddleware can resolve it.
+      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const reviewUrl = isLocal
+        ? `http://localhost:8001/api/reviews/?tenant=${encodeURIComponent(slug)}`
+        : `/api/reviews/?tenant=${encodeURIComponent(slug)}`;
+      const token = Auth.getAccess();
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      const r = await fetch(reviewUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ rating: selectedStars, comment }),
+      });
+      if (r.ok || r.status === 201) {
+        fb.textContent = '🎉 Faleminderit! Vlerësimi do shfaqet pas moderimit.';
+        fb.className   = 'form-feedback ok';
+        ['rv-name','rv-business','rv-comment'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+        selectedStars = 0;
+        picker.querySelectorAll('.spick').forEach(b => { b.classList.remove('on'); b.style.filter = ''; });
+        document.getElementById('spick-lbl').textContent = 'Zgjidhni vlerësimin';
+        toast('⭐ Vlerësimi u dërgua!');
+      } else {
+        const d = await r.json().catch(() => ({}));
+        fb.textContent = Object.values(d).flat().join(' ') || 'Gabim. Provoni përsëri.';
+        fb.className   = 'form-feedback err';
+      }
+    } catch {
+      fb.textContent = 'Nuk u arrit lidhja. Provoni përsëri.';
+      fb.className   = 'form-feedback err';
+    }
+    btn.disabled = false; btn.textContent = 'Dërgo Vlerësimin →';
+    _reviewSubmitting = false;
+  });
+}
+
+/* ═══════════════════════
+   BLOG
+═══════════════════════ */
+const BLOG_FALLBACK_ICONS = {'Udhëzues':'🚀','Statistika':'📊','Marketing':'🔍','Financat':'💳','Artikull':'📰','Lajme':'📢'};
+let _blogActiveTag = '';
+
+async function loadBlog() {
+  let posts = [];
+  try {
+    const r = await fetch(`/api/blog/?tenant=${slug}`);
+    const d = r.ok ? await r.json() : [];
+    posts = Array.isArray(d) ? d : (d.results || []);
+    if (!posts.length) throw new Error('empty');
+  } catch {
+    posts = [];
+  }
+  showEl('tab-blog'); showEl('tnl-blog'); showEl('ml-blog');
+  renderBlog(posts);
+  // BUG FIX: tags created in django-admin (blog.BlogTag) had no consumer
+  // anywhere in the storefront — there was no fetch of /api/blog/tags/ and
+  // no UI to filter by tag, so creating a tag there had zero visible effect
+  // on the tenant site ("blog tags don't reflect in tenant"). Load them here
+  // and render clickable filter chips that re-fetch posts scoped to a tag,
+  // using the filtering the backend (BlogPostListView) already supports.
+  loadBlogTags();
+}
+
+async function loadBlogTags() {
+  const row = document.getElementById('blog-tags-row');
+  if (!row) return;
+  let tags = [];
+  try {
+    const r = await fetch(`/api/blog/tags/?tenant=${slug}`);
+    const d = r.ok ? await r.json() : [];
+    tags = Array.isArray(d) ? d : (d.results || []);
+  } catch {
+    tags = [];
+  }
+  if (!tags.length) { row.style.display = 'none'; row.innerHTML = ''; return; }
+  row.style.display = 'flex';
+  const chip = (label, val, active) => `
+    <button class="blog-tag-chip" data-tag="${esc(val)}" style="padding:6px 14px;border-radius:999px;border:1px solid var(--border);background:${active ? 'var(--tenant-primary,var(--ink))' : 'var(--surface)'};color:${active ? '#fff' : 'var(--text)'};font-size:.8rem;cursor:pointer;font-weight:500">${esc(label)}</button>`;
+  row.innerHTML = chip('Të gjitha', '', !_blogActiveTag) + tags.map(t => chip(t.name, t.slug, _blogActiveTag === t.slug)).join('');
+  row.querySelectorAll('.blog-tag-chip').forEach(btn => {
+    btn.addEventListener('click', () => filterBlogByTag(btn.dataset.tag));
+  });
+}
+
+async function filterBlogByTag(tagSlug) {
+  _blogActiveTag = tagSlug || '';
+  const g = document.getElementById('blog-masonry');
+  if (g) g.innerHTML = '<div style="text-align:center;padding:60px 0;color:var(--muted);grid-column:1/-1"><div class="spin-el"></div></div>';
+  let posts = [];
+  try {
+    const url = `/api/blog/?tenant=${slug}` + (_blogActiveTag ? `&tag=${encodeURIComponent(_blogActiveTag)}` : '');
+    const r = await fetch(url);
+    const d = r.ok ? await r.json() : [];
+    posts = Array.isArray(d) ? d : (d.results || []);
+  } catch {
+    posts = [];
+  }
+  renderBlog(posts);
+  loadBlogTags();
+}
+
+function renderBlog(posts) {
+  const g = document.getElementById('blog-masonry');
+  if (!posts.length) {
+    g.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><span>📰</span><p>Nuk ka artikuj.</p></div>';
+  } else {
+    g.innerHTML = posts.map(p => {
+      const tag  = p.tags?.[0]?.name || 'Artikull';
+      const icon = p.icon || BLOG_FALLBACK_ICONS[tag] || '📰';
+      return `
+        <div class="blog-card reveal" data-post='${encodeURIComponent(JSON.stringify({...p, icon}))}'>
+          <div class="blog-thumb"><span style="position:relative;z-index:1">${icon}</span></div>
+          <div class="blog-body">
+            <div class="blog-tag">${esc(tag)}</div>
+            <div class="blog-title">${esc(p.title)}</div>
+            <div class="blog-excerpt">${esc(p.excerpt || '')}</div>
+            <div class="blog-footer"><span>${(p.published_at||'').substring(0,10)}</span><span>3 min lexim</span></div>
+          </div>
+        </div>`;
+    }).join('');
+    g.querySelectorAll('.blog-card').forEach(c => {
+      c.addEventListener('click', () => { try { openArticle(JSON.parse(decodeURIComponent(c.dataset.post))); } catch {} });
+    });
+    observeReveals(g);
+  }
+  applyPageSections('blog', 'pslot-blog-list');
+}
+
+function openArticle(p) {
+  const modal = document.getElementById('art-modal');
+  const tag   = p.tags?.[0]?.name || 'Artikull';
+  document.getElementById('art-content').innerHTML = `
+    <div style="font-size:2.4rem;margin-bottom:10px">${p.icon||'📰'}</div>
+    <div class="blog-tag" style="display:inline-block;margin-bottom:8px">${tag}</div>
+    <h2 style="font-family:var(--font-d);font-weight:400;font-size:1.7rem;margin-bottom:6px;line-height:1.2">${esc(p.title)}</h2>
+    <div style="font-size:.74rem;color:var(--muted);margin-bottom:20px">${esc((p.published_at||'').substring(0,10))} · 3 min lexim</div>
+    <div class="art-body">${DOMPurify.sanitize(p.body || p.excerpt || '')}</div>`;
+  modal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+document.getElementById('art-cls').addEventListener('click', closeArticle);
+document.getElementById('art-overlay').addEventListener('click', closeArticle);
+function closeArticle() { document.getElementById('art-modal').classList.remove('open'); document.body.style.overflow = ''; }
+
+/* ═══════════════════════
+   CONTACT
+═══════════════════════ */
+let contactRendered = false;
+function renderContactSection() {
+  if (!TENANT || contactRendered) return;
+  contactRendered = true;
+  const t     = TENANT;
+  const panel = document.getElementById('contact-info-panel');
+  const items = [
+    t.phone    && { ic:'📞', lbl:'Telefon',  val:`<a href="tel:${esc(t.phone)}">${esc(t.phone)}</a>` },
+    t.whatsapp && { ic:'💬', lbl:'WhatsApp', val:`<a href="https://wa.me/${esc(t.whatsapp.replace(/[^0-9+]/g,''))}" target="_blank">${esc(t.whatsapp)}</a>` },
+    t.email    && { ic:'✉️', lbl:'Email',    val:`<a href="mailto:${esc(t.email)}">${esc(t.email)}</a>` },
+    (t.address||t.city) && { ic:'📍', lbl:'Adresa', val:[t.address,t.city,t.country].filter(Boolean).map(esc).join(', ') },
+    t.facebook && { ic:'📘', lbl:'Facebook', val:`<a href="${esc(t.facebook)}" target="_blank" rel="noopener">${esc(t.facebook)}</a>` },
+    t.instagram&& { ic:'📸', lbl:'Instagram',val:`<a href="${esc(t.instagram)}" target="_blank" rel="noopener">${esc(t.instagram)}</a>` },
+    t.tiktok   && { ic:'🎵', lbl:'TikTok',   val:`<a href="${esc(t.tiktok)}" target="_blank" rel="noopener">${esc(t.tiktok)}</a>` },
+  ].filter(Boolean);
+  if (t.business_hours && Object.keys(t.business_hours).length) {
+    const hrs = Object.entries(t.business_hours).map(([d,v]) => `${esc(d)}: ${esc(v)}`).join(' · ');
+    items.push({ ic:'🕐', lbl:'Orari', val: hrs });
+  }
+  panel.innerHTML = items.map(i => `
+    <div class="contact-info-card reveal">
+      <div class="ci-icon">${i.ic}</div>
+      <div><div class="ci-lbl">${i.lbl}</div><div class="ci-val">${i.val}</div></div>
+    </div>`).join('');
+  observeReveals(panel);
+  if (t.city || t.address) {
+    const q   = encodeURIComponent([t.address, t.city, t.country].filter(Boolean).join(', '));
+    const map = document.getElementById('contact-map');
+    map.classList.remove('hidden');
+    document.getElementById('map-iframe').src = `https://maps.google.com/maps?q=${q}&output=embed`;
+  }
+  document.getElementById('ct-submit').addEventListener('click', async () => {
+    const name  = document.getElementById('ct-name').value.trim();
+    const email = document.getElementById('ct-email').value.trim();
+    const subj  = document.getElementById('ct-subject').value.trim();
+    const msg   = document.getElementById('ct-message').value.trim();
+    const fb    = document.getElementById('ct-feedback');
+    const btn   = document.getElementById('ct-submit');
+    if (!name || !email || !msg) { fb.textContent = '⚠ Plotësoni emrin, emailin dhe mesazhin.'; fb.className = 'form-feedback err'; return; }
+    btn.disabled = true; btn.textContent = 'Duke dërguar…';
+    try {
+      const r = await fetch(Auth.API_BASE + '/api/contact/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenant: slug, name, email, subject: subj, message: msg }),
+      });
+      if (r.ok) {
+        fb.textContent = '✅ Mesazhi u dërgua! Do ju kthehemi brenda 2 orësh.';
+        fb.className   = 'form-feedback ok';
+        ['ct-name','ct-email','ct-subject','ct-message'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+        toast('✅ Mesazhi u dërgua!');
+      } else {
+        fb.textContent = 'Gabim. Shkruani direkt: ' + (t.email || '');
+        fb.className   = 'form-feedback err';
+      }
+    } catch {
+      fb.textContent = 'Nuk u arrit lidhja. Shkruani direkt: ' + (t.email || '');
+      fb.className   = 'form-feedback err';
+    }
+    btn.disabled = false; btn.textContent = 'Dërgo Mesazhin →';
+  });
+  applyPageSections('contact', 'pslot-contact-form');
+}
+
+/* ═══════════════════════
+   PROFILE
+═══════════════════════ */
+function renderProfileSection() {
+  if (!Auth.isLoggedIn()) { goSection('overview'); return; }
+  // Render inline — no redirect to /account/.
+  // Load the user's bookings at this tenant and display them.
+  loadProfileBookings();
+  loadNotifPrefs();
+}
+
+/* ── Notification preferences ── */
+async function loadNotifPrefs() {
+  let prefs = JSON.parse(localStorage.getItem('bz-notif-prefs') || '{}');
+  try {
+    const r = await Auth.get('/auth/me/notifications/');
+    if (r.ok) {
+      const server = await r.json();
+      if (server && Object.keys(server).length) {
+        prefs = server;
+        localStorage.setItem('bz-notif-prefs', JSON.stringify(prefs));
+      }
+    }
+  } catch {}
+  ['booking', 'order', 'reminder', 'promo'].forEach(k => {
+    const el = document.getElementById('prof-notif-' + k);
+    if (el && prefs[k] !== undefined) el.checked = prefs[k];
+  });
+}
+
+document.getElementById('prof-notif-save-btn')?.addEventListener('click', async () => {
+  const fb  = document.getElementById('prof-notif-fb');
+  const btn = document.getElementById('prof-notif-save-btn');
+  const prefs = {};
+  ['booking', 'order', 'reminder', 'promo'].forEach(k => {
+    prefs[k] = !!document.getElementById('prof-notif-' + k)?.checked;
+  });
+  localStorage.setItem('bz-notif-prefs', JSON.stringify(prefs));
+  btn.disabled = true; btn.textContent = 'Duke ruajtur…';
+  try {
+    const r = await Auth.patch('/auth/me/notifications/', prefs);
+    if (!r.ok) throw new Error('save_failed');
+    fb.textContent = '✅ Preferencat u ruajtën!'; fb.className = 'form-feedback ok';
+    toast('✅ Preferencat u ruajtën!');
+  } catch {
+    fb.textContent = '⚠ U ruajt lokalisht, por sinkronizimi me serverin dështoi.';
+    fb.className = 'form-feedback err';
+  }
+  btn.disabled = false; btn.textContent = 'Ruaj Preferencat';
+  setTimeout(() => { fb.className = 'form-feedback'; fb.textContent = ''; }, 3000);
+});
+
+/* ── Delete account ── */
+document.getElementById('prof-delete-account-btn')?.addEventListener('click', async () => {
+  const c1 = window.confirm('Jeni i sigurt? Ky veprim është e papërsëritshme. Llogaria dhe të gjitha të dhënat tuaja do humbasin.');
+  if (!c1) return;
+  const c2 = window.confirm('Konfirmim final: fshi llogarinë timen dhe të gjitha të dhënat?');
+  if (!c2) return;
+  try {
+    await Auth.del('/auth/me/delete/');
+    Auth.clear();
+    toast('Llogaria u fshi.', 'twarn');
+    setTimeout(() => window.location.href = '/', 1500);
+  } catch {
+    toast('Gabim gjatë fshirjes. Kontaktoni support@bizal.al', 'error');
+  }
+});
+
+function loadProfileBookings() {
+  const bt = TENANT?.business_type;
+  const titleEl = document.getElementById('prof-bookings-title');
+  // FIX: shop/market business types check out through the same cart →
+  // /api/orders/ flow as food tenants (see the ord-submit handler above,
+  // which posts { product, quantity } items for isShop(bt)). This branch
+  // used to fall through to the "else" (reservations) case for every
+  // non-food type, so market/pharmacy/etc. tenants showed "Rezervimet e
+  // Mia" and queried /api/bookings/ — an endpoint they never write to —
+  // so the profile page always looked empty even after placing orders.
+  if (isFood(bt) || isShop(bt)) {
+    if (titleEl) titleEl.textContent = 'Porositë e Mia';
+    loadProfileOrders();
+  } else {
+    if (titleEl) titleEl.textContent = 'Rezervimet e Mia';
+    loadProfileBookingsList();
+  }
+}
+
+async function loadProfileBookingsList() {
+  const el = document.getElementById('prof-bookings-list');
+  if (!el) return;
+  const bt = TENANT?.business_type;
+  try {
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const url = isLocal
+      ? `http://localhost:8001/api/bookings/?tenant=${encodeURIComponent(slug)}`
+      : `/api/bookings/?tenant=${encodeURIComponent(slug)}`;
+    const token = Auth.getAccess();
+    const headers = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const r = await fetch(url, { headers });
+    if (!r.ok) { el.textContent = 'Nuk mund të ngarkohen rezervimet.'; return; }
+    const data = await r.json();
+    const list = Array.isArray(data) ? data : (data.results || []);
+    if (!list.length) {
+      el.innerHTML = '<span style="color:var(--hint)">Nuk keni rezervime ende.</span>';
+      return;
+    }
+    const STATUS_LABEL = { pending:'⏳ Në pritje', confirmed:'✅ Konfirmuar', active:'▶ Aktiv',
+      completed:'✔ Kompletuar', cancelled:'❌ Anuluar', no_show:'🚫 Nuk u paraqit' };
+    // Distinct from booking status — shown only for rentals (cars, equipment,
+    // boats, property), reflects whether the resource itself is currently
+    // available for new bookings (independent of this past booking's state).
+    const AVAILABILITY_LABEL = { available: '🟢 E lirë', booked: '🟡 E rezervuar',
+      maintenance: '🔧 Në mirëmbajtje', unavailable: '🔴 E zënë' };
+    const canCancel = s => ['pending','confirmed'].includes(s);
+    el.innerHTML = list.slice(0, 10).map(b => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);gap:10px">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(b.resource_label || b.booking_type || 'Rezervim')}</div>
+          ${b.start_date ? `<div style="font-size:.78rem;color:var(--muted);margin-top:2px">📅 ${b.start_date}${b.end_date && b.end_date !== b.start_date ? ' → ' + b.end_date : ''}</div>` : ''}
+          ${isRental(bt) && b.resource_status ? `<div style="font-size:.74rem;color:var(--muted);margin-top:2px">Disponueshmëria: ${AVAILABILITY_LABEL[b.resource_status] || b.resource_status}</div>` : ''}
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+          <span style="font-size:.74rem;padding:3px 10px;border-radius:20px;background:var(--bg);border:1px solid var(--border)">${STATUS_LABEL[b.status] || b.status}</span>
+          ${canCancel(b.status) ? `<button class="btn-cancel-bk" data-id="${b.id}" style="font-size:.72rem;padding:3px 10px;border-radius:20px;background:none;border:1px solid var(--border);color:var(--muted);cursor:pointer">Anulo</button>` : ''}
+        </div>
+      </div>`).join('');
+    el.querySelectorAll('.btn-cancel-bk').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Anulo këtë rezervim?')) return;
+        btn.disabled = true; btn.textContent = '…';
+        const isLoc = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const cancelUrl = isLoc
+          ? `http://localhost:8001/api/bookings/${btn.dataset.id}/cancel/?tenant=${encodeURIComponent(slug)}`
+          : `/api/bookings/${btn.dataset.id}/cancel/?tenant=${encodeURIComponent(slug)}`;
+        const tkn = Auth.getAccess();
+        const hdrs = { 'Content-Type': 'application/json' };
+        if (tkn) hdrs['Authorization'] = `Bearer ${tkn}`;
+        try {
+          const cr = await fetch(cancelUrl, { method: 'POST', headers: hdrs });
+          if (cr.ok) { toast('Rezervimi u anulua.'); loadProfileBookingsList(); }
+          else if (cr.status === 400) {
+            // Already cancelled/transitioned elsewhere (e.g. another open tab,
+            // or a double-click that beat the disabled state) — the booking
+            // itself is fine, just stale on screen. Refresh instead of
+            // implying the cancel failed.
+            toast('Rezervimi tashmë ishte përditësuar. Po rifreskohet…', 'warning');
+            loadProfileBookingsList();
+          }
+          else { btn.disabled = false; btn.textContent = 'Anulo'; toast('Nuk u anulua. Provoni përsëri.', 'error'); }
+        } catch { btn.disabled = false; btn.textContent = 'Anulo'; toast('Gabim rrjeti.', 'error'); }
+      });
+    });
+  } catch {
+    el.textContent = 'Gabim rrjeti.';
+  }
+}
+
+/* Restaurants / bars / bakeries / delivery kitchens: show orders, not bookings */
+async function loadProfileOrders() {
+  const el = document.getElementById('prof-bookings-list');
+  if (!el) return;
+  try {
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const url = isLocal
+      ? `http://localhost:8001/api/orders/?tenant=${encodeURIComponent(slug)}`
+      : `/api/orders/?tenant=${encodeURIComponent(slug)}`;
+    const token = Auth.getAccess();
+    const headers = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const r = await fetch(url, { headers });
+    if (!r.ok) { el.textContent = 'Nuk mund të ngarkohen porositë.'; return; }
+    const data = await r.json();
+    const list = Array.isArray(data) ? data : (data.results || []);
+    if (!list.length) {
+      el.innerHTML = '<span style="color:var(--hint)">Nuk keni porosi ende.</span>';
+      return;
+    }
+    const STATUS_LABEL = { pending:'⏳ Në pritje', confirmed:'✅ Konfirmuar', preparing:'👨‍🍳 Po përgatitet',
+      ready:'📦 Gati', delivered:'✔ Dorëzuar', completed:'✔ Kompletuar', cancelled:'❌ Anuluar' };
+    el.innerHTML = list.slice(0, 10).map(o => {
+      const itemsSummary = (o.items || []).map(it => `${it.quantity}× ${esc(it.menu_item_name || it.product_name || '')}`).join(', ');
+      return `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);gap:10px">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${itemsSummary || 'Porosi #' + o.id}</div>
+          <div style="font-size:.78rem;color:var(--muted);margin-top:2px">${o.order_type === 'delivery' ? '🚚 Dërgesë' : (o.order_type === 'pickup' ? '🛍️ Marrje' : '🍽️ Në tavolinë')}${o.total_price ? ' · ' + o.total_price + ' L' : ''}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+          <span style="font-size:.74rem;padding:3px 10px;border-radius:20px;background:var(--bg);border:1px solid var(--border)">${STATUS_LABEL[o.status] || o.status}</span>
+        </div>
+      </div>`;
+    }).join('');
+  } catch {
+    el.textContent = 'Gabim rrjeti.';
+  }
+}
+
+/* ═══════════════════════
+   FOOTER
+═══════════════════════ */
+function renderFooter(t) {
+  document.getElementById('footer-tagline-text').textContent = t.tagline || '';
+  document.getElementById('footer-copy').textContent = `© ${new Date().getFullYear()} ${t.name}. Të gjitha të drejtat e rezervuara.`;
+  const socLinks = [
+    t.facebook  && `<a href="${t.facebook}"  target="_blank" rel="noopener">📘 Facebook</a>`,
+    t.instagram && `<a href="${t.instagram}" target="_blank" rel="noopener">📸 Instagram</a>`,
+    t.tiktok    && `<a href="${t.tiktok}"    target="_blank" rel="noopener">🎵 TikTok</a>`,
+  ].filter(Boolean);
+  document.getElementById('footer-social-links').innerHTML = socLinks.join('') || '<span style="color:var(--hint);font-size:.8rem">—</span>';
+  const ctLinks = [
+    t.phone && `<a href="tel:${t.phone}">📞 ${t.phone}</a>`,
+    t.email && `<a href="mailto:${t.email}">✉️ ${t.email}</a>`,
+    (t.address||t.city) && `<a>📍 ${[t.address,t.city].filter(Boolean).join(', ')}</a>`,
+  ].filter(Boolean);
+  document.getElementById('footer-contact-links').innerHTML = ctLinks.join('');
+  if (t.business_hours) {
+    document.getElementById('footer-hours-links').innerHTML = Object.entries(t.business_hours).map(([d,v]) => `<a>${esc(d)}: ${esc(v)}</a>`).join('');
+  }
+  // Platform-level Terms & Privacy (BizAL's own, not this tenant's) — these
+  // live on main.html, not on the tenant subdomain, so link out to it.
+  const termsLink = document.getElementById('footer-terms-link');
+  const privacyLink = document.getElementById('footer-privacy-link');
+  if (termsLink) termsLink.href = mainSiteUrl('/kushtet/');
+  if (privacyLink) privacyLink.href = mainSiteUrl('/privatesia/');
+}
+
+/* ── Password reset CONFIRM ── */
+let _resetUid = null, _resetToken = null;
+function closeResetConfirm() {
+  document.getElementById('reset-confirm-overlay').style.display = 'none';
+  history.replaceState(null, '', '/');
+}
+async function doResetConfirm() {
+  const pw1 = document.getElementById('reset-confirm-pw1').value;
+  const pw2 = document.getElementById('reset-confirm-pw2').value;
+  const errEl = document.getElementById('reset-confirm-err');
+  const btn = document.getElementById('reset-confirm-btn');
+  errEl.style.display = 'none';
+  if (!pw1 || pw1.length < 8) { errEl.textContent = 'Fjalëkalimi duhet të ketë minimumi 8 karaktere.'; errEl.style.display=''; return; }
+  if (pw1 !== pw2) { errEl.textContent = 'Fjalëkalimet nuk përputhen.'; errEl.style.display=''; return; }
+  btn.disabled = true; btn.textContent = 'Duke ruajtur...';
+  try {
+    const r = await fetch('/api/auth/password-reset/confirm/', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uid: _resetUid, token: _resetToken, new_password: pw1 }),
+    });
+    const d = await r.json().catch(() => ({}));
+    if (r.ok) {
+      document.getElementById('reset-confirm-form').style.display = 'none';
+      document.getElementById('reset-confirm-success').style.display = '';
+    } else {
+      errEl.textContent = Array.isArray(d.detail) ? d.detail.join(' ') : (d.detail || 'Linku është i pavlefshëm ose ka skaduar.');
+      errEl.style.display = '';
+    }
+  } catch { errEl.textContent = 'Gabim rrjeti. Provo sërish.'; errEl.style.display=''; }
+  btn.disabled = false; btn.textContent = 'Ruaj Fjalëkalimin';
+}
+
+/* ── Email verification ── */
+function closeVerifyEmail() {
+  document.getElementById('verify-email-overlay').style.display = 'none';
+  history.replaceState(null, '', '/');
+}
+async function doVerifyEmail(uid, token) {
+  try {
+    const r = await fetch(`/api/auth/verify-email/${encodeURIComponent(uid)}/${encodeURIComponent(token)}/`);
+    const d = await r.json().catch(() => ({}));
+    document.getElementById('verify-email-loading').style.display = 'none';
+    if (r.ok) {
+      document.getElementById('verify-email-ok').style.display = '';
+    } else {
+      document.getElementById('verify-email-err-msg').textContent = d.detail || 'Linku ka skaduar ose është i pavlefshëm.';
+      document.getElementById('verify-email-err').style.display = '';
+    }
+  } catch {
+    document.getElementById('verify-email-loading').style.display = 'none';
+    document.getElementById('verify-email-err-msg').textContent = 'Gabim rrjeti. Provo sërish më vonë.';
+    document.getElementById('verify-email-err').style.display = '';
+  }
+}
+
+(function handleAuthLinkIntercept() {
+  const parts = window.location.pathname.split('/').filter(Boolean);
+  if (parts.length === 3 && parts[0] === 'reset-password') {
+    _resetUid = decodeURIComponent(parts[1]);
+    _resetToken = decodeURIComponent(parts[2]);
+    document.getElementById('reset-confirm-overlay').style.display = 'flex';
+  } else if (parts.length === 3 && parts[0] === 'verify-email') {
+    const uid = decodeURIComponent(parts[1]);
+    const token = decodeURIComponent(parts[2]);
+    document.getElementById('verify-email-overlay').style.display = 'flex';
+    doVerifyEmail(uid, token);
+  }
+})();
+
+/* ── BOOT ── */
+init();
+</script>
+
+<!-- Password Reset CONFIRM Modal -->
+<div id="reset-confirm-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center">
+  <div style="background:var(--surface,#fff);border-radius:12px;padding:28px 24px;width:100%;max-width:380px;margin:0 16px">
+    <h3 style="margin:0 0 4px;font-size:1.1rem">Vendos Fjalëkalim të Ri</h3>
+    <p style="font-size:.82rem;color:var(--text-muted,#888);margin:0 0 16px">Shkruaj fjalëkalimin e ri për llogarinë tënde.</p>
+    <div id="reset-confirm-form">
+      <input type="password" id="reset-confirm-pw1" placeholder="Fjalëkalimi i ri" style="width:100%;padding:10px 12px;border:1px solid var(--border,#e0e0e0);border-radius:8px;margin-bottom:10px;font-size:.9rem">
+      <input type="password" id="reset-confirm-pw2" placeholder="Konfirmo fjalëkalimin" style="width:100%;padding:10px 12px;border:1px solid var(--border,#e0e0e0);border-radius:8px;margin-bottom:10px;font-size:.9rem">
+      <div id="reset-confirm-err" style="color:#e53e3e;font-size:.78rem;margin-bottom:8px;display:none"></div>
+      <div style="display:flex;gap:10px">
+        <button id="reset-confirm-btn" onclick="doResetConfirm()" class="cta-btn" style="flex:1;padding:10px">Ruaj Fjalëkalimin</button>
+        <button onclick="closeResetConfirm()" style="padding:10px 16px;border:1px solid var(--border,#e0e0e0);border-radius:8px;background:none;cursor:pointer">Anulo</button>
+      </div>
+    </div>
+    <div id="reset-confirm-success" style="display:none;text-align:center;padding:12px 0">
+      <div style="font-size:2rem;margin-bottom:8px">✅</div>
+      <p style="font-size:.9rem;margin:0 0 16px">Fjalëkalimi u ndryshua me sukses! Tani mund të hysh.</p>
+      <button onclick="closeResetConfirm(); openAuthModal('login');" class="cta-btn" style="width:100%">Hyr</button>
+    </div>
+  </div>
+</div>
+
+<!-- Email Verification Result Modal -->
+<div id="verify-email-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center">
+  <div style="background:var(--surface,#fff);border-radius:12px;padding:28px 24px;width:100%;max-width:380px;margin:0 16px;text-align:center">
+    <div id="verify-email-loading">
+      <div style="font-size:2rem;margin-bottom:8px">📧</div>
+      <p style="font-size:.9rem;margin:0">Duke verifikuar email-in tënd...</p>
+    </div>
+    <div id="verify-email-ok" style="display:none">
+      <div style="font-size:2rem;margin-bottom:8px">✅</div>
+      <p style="font-size:.9rem;margin:0 0 16px">Email u verifikua me sukses!</p>
+      <button onclick="closeVerifyEmail()" class="cta-btn" style="width:100%">Vazhdo</button>
+    </div>
+    <div id="verify-email-err" style="display:none">
+      <div style="font-size:2rem;margin-bottom:8px">⚠️</div>
+      <p id="verify-email-err-msg" style="font-size:.9rem;margin:0 0 16px">Linku ka skaduar ose është i pavlefshëm.</p>
+      <button onclick="closeVerifyEmail()" class="cta-btn" style="width:100%">Mbyll</button>
+    </div>
+  </div>
+</div>
+
+<!-- BizBot AI Chatbot (Enterprise only) -->
+<script src="{% static 'js/chatbot.js' %}"></script>
+<script>
+  (function () {
+    function tryInit () {
+      if (typeof TENANT === 'undefined' || TENANT === null) { setTimeout(tryInit, 300); return; }
+      if (hasFeature(TENANT, 'chatbot')) {
+        BizBot.init({ slug: TENANT.slug, name: TENANT.name, type: TENANT.business_type, phone: TENANT.phone || '', whatsapp: TENANT.whatsapp || '' });
+      }
+    }
+    document.addEventListener('DOMContentLoaded', function () { setTimeout(tryInit, 500); });
+  })();
+</script>
+
+</body>
+</html>

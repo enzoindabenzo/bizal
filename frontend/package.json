@@ -1,0 +1,13 @@
+{
+  "name": "bizal-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Vanilla JS/HTML/CSS frontend for BizAL. package.json exists solely to run the Jest test suite under static/js/__tests__ — there is no build step.",
+  "scripts": {
+    "test": "jest"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0"
+  }
+}
