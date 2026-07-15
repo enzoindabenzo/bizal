@@ -1,5 +1,8 @@
 # BizAL — Multi-Tenant SaaS Platform for Albanian SMBs
 
+[![Tests](https://github.com/enzoindabenzo/bizal/actions/workflows/tests.yml/badge.svg)](https://github.com/enzoindabenzo/bizal/actions/workflows/tests.yml)
+[![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/enzoindabenzo/bizal/main/.github/badges/coverage.json)](https://github.com/enzoindabenzo/bizal/actions/workflows/tests.yml)
+
 BizAL is a Django REST Framework backend powering white-label portals for 25+ Albanian business types (restaurants, hotels, clinics, car rentals, gyms, pharmacies, and more). Each business gets its own branded subdomain and feature set based on their subscription plan.
 
 > See `CHANGELOG.md` for version history and `ARCHITECTURE.md` for design
