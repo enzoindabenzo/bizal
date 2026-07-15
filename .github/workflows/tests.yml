@@ -50,7 +50,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.11"
           cache: "pip"
           cache-dependency-path: backend/requirements-dev.txt
 
@@ -126,7 +126,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.11"
       # Makefile already defines this exact CI target: fails the build if
       # requirements.in changed without regenerating the committed lockfile.
       - run: make lock-check
