@@ -1,0 +1,334 @@
+/* ═══════════════════════════════════════════════════════
+   BizAL — Django admin theme
+   Retheme of Django's built-in admin CSS variables to match
+   brand.css (Cormorant Garamond + DM Sans, warm neutral palette).
+   Loaded after admin/css/base.css via admin/base_site.html
+   override, so these declarations win.
+═══════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;1,400&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap');
+
+/* Unfold's dark-mode toggle is Tailwind class-based (darkMode:'class' — it
+   adds/removes a `dark` class on <html>), NOT the `data-theme` attribute
+   this project's onboarding/marketing pages use for their own toggle. The
+   old selector below (`html[data-theme="light"], :root`) never actually
+   matched Unfold's real dark mode, which meant only the bare `:root` half
+   was ever in effect — these "light" brand colors were hard-locked on at
+   all times, including while Unfold itself was switched to dark mode,
+   fighting Unfold's own dark: Tailwind styles for everything these
+   variables don't cover. Scoping properly to `html:not(.dark)` / `html.dark`
+   lets Unfold's real toggle drive which set of variables applies. */
+html:not(.dark) {
+  --primary:        #1A1A1A;   /* ink */
+  --secondary:      #5F5B53;   /* slate */
+  --accent:         #7A4010;   /* warning/gold accent */
+  --primary-fg:     #FAFAF8;   /* parchment */
+
+  --body-fg:        #111111;
+  --body-bg:         #FAFAF8;
+  --body-quiet-color: #5F5B53;
+  --body-loud-color:  #111111;
+
+  --header-color:   #FAFAF8;
+  --header-branding-color: #FAFAF8;
+  --header-bg:      #0E0E0E;   /* chrome-bg */
+  --header-link-color: #FAFAF8;
+
+  --breadcrumbs-fg:      rgba(247,246,243,.75);
+  --breadcrumbs-link-fg: #FAFAF8;
+  --breadcrumbs-bg:      #161616;
+
+  --link-fg:            #1A1A1A;
+  --link-hover-color:   #7A4010;
+  --link-selected-fg:   #7A4010;
+
+  --hairline-color:  #EAE8E3;
+  --border-color:    #D8D5CE;
+
+  --error-fg:        #8B1A1A;
+
+  --message-success-bg: #EBF4EE;
+  --message-warning-bg: #FDF2E6;
+  --message-error-bg:   #FAEAEA;
+
+  --darkened-bg:  #F2F1EE;
+  --selected-bg:  #F2F1EE;
+  --selected-row: #FDF2E6;
+
+  --button-fg:      #FAFAF8;
+  --button-bg:      #1A1A1A;
+  --button-hover-bg: #333333;
+  --default-button-bg:       #5F5B53;
+  --default-button-hover-bg: #3E3B36;
+  --close-button-bg:         #9A9590;
+  --close-button-hover-bg:   #5F5B53;
+  --delete-button-bg:        #8B1A1A;
+  --delete-button-hover-bg:  #6E1414;
+
+  --object-tools-fg: var(--button-fg);
+  --object-tools-bg: #5F5B53;
+  --object-tools-hover-bg: #3E3B36;
+
+  --font-family-primary:
+    'DM Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui,
+    Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* Dark-mode equivalents — same palette relationships, inverted. Without
+   this block, toggling Unfold's dark mode left these variables pointed at
+   the light-mode values (see note above), which is what produced the
+   "styling looks wrong" effect: Unfold's own chrome would go dark while
+   BizAL's brand accents, header, and message colors stayed stuck in light
+   values, or vice-versa depending on cascade order. */
+html.dark {
+  --primary:        #FAFAF8;
+  --secondary:      #A8A29E;
+  --accent:         #D9963F;
+  --primary-fg:     #111111;
+
+  --body-fg:        #F2F1EE;
+  --body-bg:         #1C1917;
+  --body-quiet-color: #A8A29E;
+  --body-loud-color:  #FAFAF8;
+
+  --header-color:   #FAFAF8;
+  --header-branding-color: #FAFAF8;
+  --header-bg:      #0E0E0E;
+  --header-link-color: #FAFAF8;
+
+  --breadcrumbs-fg:      rgba(247,246,243,.65);
+  --breadcrumbs-link-fg: #FAFAF8;
+  --breadcrumbs-bg:      #161616;
+
+  --link-fg:            #F2F1EE;
+  --link-hover-color:   #D9963F;
+  --link-selected-fg:   #D9963F;
+
+  --hairline-color:  #33302B;
+  --border-color:    #44403C;
+
+  --error-fg:        #E27272;
+
+  --message-success-bg: #17301F;
+  --message-warning-bg: #3A2A12;
+  --message-error-bg:   #3A1717;
+
+  --darkened-bg:  #262220;
+  --selected-bg:  #262220;
+  --selected-row: #3A2A12;
+
+  --button-fg:      #111111;
+  --button-bg:      #F2F1EE;
+  --button-hover-bg: #D8D5CE;
+  --default-button-bg:       #57534E;
+  --default-button-hover-bg: #78716C;
+  --close-button-bg:         #57534E;
+  --close-button-hover-bg:   #78716C;
+  --delete-button-bg:        #8B1A1A;
+  --delete-button-hover-bg:  #A82222;
+
+  --object-tools-fg: var(--button-fg);
+  --object-tools-bg: #57534E;
+  --object-tools-hover-bg: #78716C;
+
+  --font-family-primary:
+    'DM Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui,
+    Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* Headings read as BizAL's serif, everything else stays DM Sans */
+#header #site-name,
+.dashboard #content h1,
+h1, h2.section-title,
+.module h2, .module caption {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  letter-spacing: .01em;
+}
+
+#header {
+  padding: 14px 40px;
+}
+
+#branding h1, #branding h1 a:link, #branding h1 a:visited {
+  color: var(--header-branding-color);
+  font-weight: 600;
+}
+
+div.breadcrumbs {
+  font-family: 'DM Sans', system-ui, sans-serif;
+}
+
+.button, input[type=submit], input[type=button], .submit-row input, a.button {
+  border-radius: 6px;
+  text-transform: none;
+  font-weight: 500;
+}
+
+#changelist-filter {
+  border-radius: 8px;
+}
+
+.module {
+  border-radius: 8px;
+}
+
+.selector-chosen h2, .calendar caption, .calendarbox h2 {
+  background: var(--header-bg);
+}
+
+/* ── BizAL platform-admin dashboard (admin/index.html) ─────────────────
+   Namespaced under .bizal-dashboard so nothing here leaks into the
+   ordinary changelist/changeform pages. */
+.bizal-dashboard { margin-bottom: 28px; font-family: var(--font-family-primary); }
+
+.bizal-section-title {
+  margin: 28px 0 12px;
+  font-size: .8125rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--body-quiet-color);
+}
+.bizal-section-title:first-child { margin-top: 0; }
+
+.bizal-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.bizal-kpi-card {
+  background: var(--body-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+
+.bizal-kpi-value {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 2rem;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--body-loud-color);
+}
+
+.bizal-kpi-label {
+  margin-top: 6px;
+  font-size: .75rem;
+  color: var(--body-quiet-color);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.bizal-kpi-card.is-warning .bizal-kpi-value { color: var(--accent); }
+.bizal-kpi-card.is-danger .bizal-kpi-value  { color: var(--error-fg); }
+
+/* Analytics charts — two-thirds/one-third split on wide screens (trend
+   chart gets more room than the plan-distribution donut), stacking to a
+   single column on narrow screens. */
+.bizal-analytics-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+@media (max-width: 900px) {
+  .bizal-analytics-grid { grid-template-columns: 1fr; }
+}
+
+.bizal-chart-card {
+  background: var(--body-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+
+.bizal-chart-card h2 {
+  margin: 0 0 4px;
+  font-size: .8125rem;
+  font-family: var(--font-family-primary);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  color: var(--body-quiet-color);
+}
+
+.bizal-chart-sub {
+  margin: 0 0 12px;
+  font-size: .75rem;
+  color: var(--body-quiet-color);
+}
+
+.bizal-chart-card canvas { display: block; }
+
+/* Chart.js with maintainAspectRatio:false sizes the canvas to fill its
+   immediate positioned parent — max-height on the canvas itself does NOT
+   reliably cap it. This wrapper is what actually constrains chart height. */
+.bizal-chart-canvas-wrap {
+  position: relative;
+  height: 220px;
+  width: 100%;
+}
+.bizal-chart-canvas-wrap canvas {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.bizal-panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.bizal-panel {
+  background: var(--body-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.bizal-panel h2 {
+  margin: 0;
+  padding: 12px 16px;
+  font-size: .8125rem;
+  font-family: var(--font-family-primary);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  color: var(--body-quiet-color);
+  background: var(--darkened-bg);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.bizal-panel ul { list-style: none; margin: 0; padding: 0; }
+
+.bizal-panel li {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--hairline-color);
+  font-size: .8125rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.bizal-panel li:last-child { border-bottom: none; }
+
+.bizal-panel .bizal-muted { color: var(--body-quiet-color); font-size: .75rem; }
+.bizal-panel .bizal-empty { padding: 16px; color: var(--body-quiet-color); font-size: .8125rem; }
+
+.bizal-badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: .6875rem;
+  font-weight: 600;
+}
+.bizal-badge.plan-trial      { background: var(--message-warning-bg); color: var(--accent); }
+.bizal-badge.plan-starter    { background: var(--darkened-bg); color: var(--body-quiet-color); }
+.bizal-badge.plan-pro        { background: var(--message-success-bg); color: #1A6B42; }
+.bizal-badge.plan-enterprise { background: #1A1A1A; color: #FAFAF8; }
+.bizal-badge.status-failed   { background: var(--message-error-bg); color: var(--error-fg); }

@@ -1,0 +1,20 @@
+[run]
+branch = False
+omit =
+    */migrations/*
+    manage.py
+    seed.py
+    bizal/wsgi.py
+    bizal/asgi.py
+    bizal/celery.py
+    bizal/settings/*
+    */tests.py
+    */test_*.py
+    */tests/test_*.py
+
+[report]
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise NotImplementedError
+    if __name__ == .__main__.:

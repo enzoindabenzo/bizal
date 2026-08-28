@@ -1,0 +1,29 @@
+# Without this file, `COPY . .` in the Dockerfile bakes EVERYTHING in this
+# directory into the image layers — including .env with real API keys.
+# .gitignore does NOT protect against this; it only affects git, not
+# `docker build`. This is what actually keeps secrets out of the image.
+
+.env
+.env.*
+backend/.env
+backend/.env.*
+# Reference/example files never need to be in the image either — nothing
+# reads them at runtime, so there's no reason to bake them into a layer.
+
+.git
+.gitignore
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+.coverage
+htmlcov
+
+node_modules
+frontend/node_modules
+
+*.sqlite3
+media/
+staticfiles/
+
+.DS_Store

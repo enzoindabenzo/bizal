@@ -1,0 +1,28 @@
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# L-4 FIX: Set timezone so datetime.date.today() and Django's timezone.localdate()
+# return Albanian time in development, matching the production image. Without this,
+# running the dev image directly with `docker run` (outside docker-compose, which
+# injects TZ=Europe/Tirane) would silently use UTC, causing date-logic bugs in
+# appointment overlap checks and send_appointment_reminders for times 00:00–02:00.
+ENV TZ=Europe/Tirane
+
+# LOW-3 FIX: create the /etc/localtime symlink and write /etc/timezone to
+# mirror what the production Dockerfile does. Without this, system-level
+# tools (cron, shell scripts, `date` command, postgres log timestamps) use
+# UTC inside the dev container while TZ=Europe/Tirane is only respected by
+# Python/glibc — creating a confusing discrepancy that can mask
+# timezone-related bugs that only surface after deployment.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq-dev gcc curl tzdata \
+    && ln -snf /usr/share/zoneinfo/$TZ /etc/localtime \
+    && echo "$TZ" > /etc/timezone \
+    && rm -rf /var/lib/apt/lists/*
+COPY requirements.txt requirements-dev.txt .
+RUN pip install --no-cache-dir -r requirements-dev.txt
+
+COPY . .
+
+EXPOSE 8000 8001

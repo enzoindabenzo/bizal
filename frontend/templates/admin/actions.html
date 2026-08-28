@@ -1,0 +1,22 @@
+{% extends "admin/actions.html" %}
+{% load i18n %}
+
+{# BUG FIX: Unfold's stock "Run" button is gated behind `x-show="action"`,
+   which only turns truthy once Alpine.js binds the hidden `action` value
+   from the action <select>'s `x-model="action"` attribute. If that
+   binding hasn't fired yet (slow Alpine init, a `change` event that
+   doesn't reach Alpine, etc.), the admin can pick an action — e.g.
+   "Eksporto rreshtat e zgjedhur si CSV" — and there's simply no button
+   to submit it with, matching the report of choosing an action with
+   nothing to run it through.
+
+   Rendering the button unconditionally restores vanilla Django admin's
+   behavior (the "Go" button next to the action select is always
+   present) and removes the dependency on that particular bit of Alpine
+   state ever resolving. Submitting with no action selected is already a
+   harmless no-op on the Django side, so nothing else needs to change. #}
+{% block actions-submit %}
+    <button type="submit" class="bg-primary-900 cursor-pointer flex font-medium items-center justify-center px-3 py-1 rounded-default text-sm text-white whitespace-nowrap" title="{% translate "Run the selected action" %}" name="index" value="{{ action_index|default:0 }}">
+        {% trans "Run" %}
+    </button>
+{% endblock %}

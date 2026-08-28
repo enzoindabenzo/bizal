@@ -1,0 +1,23 @@
+# Secrets — .dockerignore keeps these out of the image, this keeps them out of git
+.env
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.coverage
+htmlcov/
+
+node_modules/
+frontend/node_modules/
+
+*.sqlite3
+media/
+staticfiles/
+
+.DS_Store

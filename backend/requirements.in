@@ -1,0 +1,36 @@
+# Direct production dependencies — source of truth.
+#
+# This file is the INPUT to pip-compile. Edit version constraints here,
+# never in requirements.txt directly — requirements.txt is a generated
+# lockfile and any manual edit to it will be silently overwritten the
+# next time `make lock` (or `pip-compile requirements.in`) runs.
+#
+# Regenerate the lockfile with:
+#   pip install pip-tools
+#   pip-compile requirements.in --output-file requirements.txt --strip-extras
+#
+# Or simply: make lock   (see Makefile in repo root)
+#
+# dev/test-only packages (coverage, pytest, flower) live in
+# requirements-dev.in / requirements-dev.txt instead.
+Django==4.2.13
+django-unfold==0.89.0
+djangorestframework==3.15.2
+djangorestframework-simplejwt==5.3.1
+django-cors-headers==4.4.0
+django-ratelimit==4.1.0
+django-redis==5.4.0
+django-storages==1.14.4
+django-filter==24.3
+django-celery-beat==2.7.0
+python-dotenv==1.2.2
+psycopg2-binary==2.9.9
+stripe==10.5.0
+redis==5.0.8
+Pillow==10.4.0
+whitenoise==6.7.0
+gunicorn==22.0.0
+xhtml2pdf==0.2.16
+boto3==1.35.0
+celery[redis]==5.4.0
+sentry-sdk[django]==2.8.0

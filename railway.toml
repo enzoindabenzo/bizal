@@ -1,0 +1,28 @@
+# Railway config for the BizAL "web" service.
+#
+# This applies to whichever service you point at the repo root with the
+# default Dockerfile. Create your celery-worker / celery-beat services the
+# same way (same repo, same Dockerfile) but override their Start Command in
+# the Railway dashboard — railway.toml only configures one deploy target,
+# so it can't express three different start commands for three services.
+#
+#   celery-worker start command:
+#     celery -A bizal worker --loglevel=info --concurrency=2
+#
+#   celery-beat start command:
+#     celery -A bizal beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+#
+# Both of those should also skip entrypoint.sh (they don't need
+# migrate/collectstatic — `web` already does that on every deploy), which
+# happens automatically once you set a custom Start Command in the Railway
+# dashboard — Railway runs it directly instead of the image's ENTRYPOINT.
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+healthcheckPath = "/health/"
+healthcheckTimeout = 100
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
