@@ -48,7 +48,16 @@ def _daily_counts(queryset, date_field, days):
     both the tenant-signups series and the activity-volume series instead
     of duplicating the bucketing logic per metric.
     """
-    now = timezone.now()
+    # timezone.localtime() first: TruncDate below buckets rows by calendar
+    # day in the active Django timezone (TIME_ZONE='Europe/Tirane'), not in
+    # UTC. now() returns a UTC-tzinfo datetime, so zeroing hour/minute/second
+    # on it directly gives UTC midnight, not Tirane midnight — those two
+    # only disagree for a couple of hours a day (Tirane is UTC+1/+2), but
+    # in that window a row created "now" gets bucketed under tomorrow by
+    # TruncDate while this function looks for it under today, and every
+    # count silently comes back 0. Converting to local time first makes
+    # both sides agree on where a day starts.
+    now = timezone.localtime(timezone.now())
     start = (now - timedelta(days=days - 1)).replace(hour=0, minute=0, second=0, microsecond=0)
 
     counts_by_day = {
