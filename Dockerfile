@@ -44,6 +44,7 @@ COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY backend/ .
+COPY frontend/ /frontend/
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
@@ -59,7 +60,7 @@ RUN chmod +x /entrypoint.sh
 # fail with a permission error under the non-root user below.
 RUN useradd --create-home --shell /bin/bash appuser \
     && mkdir -p /app/media /app/staticfiles \
-    && chown -R appuser:appuser /app
+    && chown -R appuser:appuser /app /frontend
 USER appuser
 
 EXPOSE 8000
