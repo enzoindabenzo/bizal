@@ -20,12 +20,22 @@ lock:
 	pip-compile requirements.in --output-file requirements.txt --strip-extras
 
 # CI target: fail the build if requirements.in changed without regenerating
-# requirements.txt. Compiles into a temp file and diffs against the
+# requirements.txt. Compiles into a scratch copy and diffs against the
 # committed lockfile rather than overwriting it in place.
+#
+# The scratch copy is compiled with --output-file requirements.txt (same
+# basename as the committed file, just in a different directory) rather
+# than an arbitrary /tmp path. pip-compile embeds the literal --output-file
+# value it was given into the generated header comment, so comparing against
+# a differently-named output file would make line 5 of the diff fail
+# unconditionally, every time, independent of whether the actual dependency
+# pins are in sync.
 lock-check:
-	cd backend && pip install -q pip-tools && \
-	pip-compile requirements.in --output-file /tmp/requirements.lock.check --strip-extras && \
-	diff -u requirements.txt /tmp/requirements.lock.check && \
+	rm -rf /tmp/lock-check && mkdir -p /tmp/lock-check && \
+	cp backend/requirements.in /tmp/lock-check/requirements.in && \
+	pip install -q pip-tools && \
+	cd /tmp/lock-check && pip-compile requirements.in --output-file requirements.txt --strip-extras && cd - >/dev/null && \
+	diff -u backend/requirements.txt /tmp/lock-check/requirements.txt && \
 	echo "OK: requirements.txt is in sync with requirements.in"
 
 # Headless load test against a locally-running server (see backend/loadtest/
