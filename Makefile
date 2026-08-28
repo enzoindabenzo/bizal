@@ -19,9 +19,20 @@ SHELL := /bin/bash
 # requirements.txt via `-r requirements.txt` and pins only its own
 # additional direct packages (coverage/flower/pytest), so it is already
 # fully pinned by hand without a transitive closure of its own.
+#
+# --upgrade is required here, not optional. Without it, pip-compile finds
+# the existing requirements.txt and leaves any pin alone that still
+# satisfies requirements.in, even when a newer release exists — so a
+# transitive dependency bump (e.g. wcwidth 0.8.2 -> 0.8.3) would never get
+# picked up by `make lock` no matter how many times you ran it. lock-check
+# doesn't have this problem: its scratch compile starts with no existing
+# requirements.txt, so it always resolves fresh and always finds the
+# newest version. Without --upgrade the two targets aren't symmetric, and
+# lock-check would fail forever on any transitive bump with no fix
+# possible via `make lock`.
 lock:
 	cd backend && pip install -q pip-tools && \
-	pip-compile requirements.in --output-file requirements.txt --strip-extras
+	pip-compile requirements.in --output-file requirements.txt --strip-extras --upgrade
 
 # CI target: fail the build if requirements.in changed without regenerating
 # requirements.txt. Compiles into a scratch copy and diffs against the
