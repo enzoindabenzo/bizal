@@ -76,6 +76,26 @@ ALLOWED_HOSTS = [
 # domain ALLOWED_HOSTS/CSRF_TRUSTED_ORIGINS/FRONTEND_BASE_URL use below.
 MAIN_DOMAIN = os.environ.get('MAIN_DOMAIN', 'bizal.al').strip()
 
+# ── ALLOW_TENANT_QUERY_PARAM ────────────────────────────────────────────────
+# Tenant resolution is normally subdomain-only (see tenants/middleware.py):
+# <slug>.MAIN_DOMAIN. That requires wildcard DNS pointed at the deploy,
+# which a single-domain host like a bare Railway-generated
+# *.up.railway.app URL cannot provide (Railway does not offer wildcard
+# subdomains on its own generated domain — only on a custom domain you
+# add yourself). Without this, there is no way to reach ANY tenant on a
+# platform-only deployment, e.g. during initial setup before a real
+# domain + wildcard DNS is configured.
+#
+# When enabled, tenants/middleware.py additionally accepts a tenant via
+# ?tenant=<slug> (remembered in the session after the first request) on
+# ANY host — not just local dev — exactly like the existing local-dev
+# fallback strategy. Off by default; this is strictly a bring-up/staging
+# aid and should be left unset (or 'false') once real subdomain routing
+# via a custom domain is in place, since it lets any visitor to the main
+# host address any active tenant without going through DNS/subdomain
+# isolation.
+ALLOW_TENANT_QUERY_PARAM = os.environ.get('ALLOW_TENANT_QUERY_PARAM', 'false').strip().lower() == 'true'
+
 # ── CSRF_TRUSTED_ORIGINS ──────────────────────────────────────────────────
 # This was missing entirely, which is why POSTs to /django-admin/ (and any
 # other Django-rendered POST form — tenant login, onboarding, etc.) fail

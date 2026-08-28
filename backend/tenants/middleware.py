@@ -210,6 +210,28 @@ class TenantMiddleware:
                     )
                 return self._get_tenant(slug, strict=False)
 
+        # ── STAGING / BRING-UP FALLBACK ──────────────────────────────────
+        # Only reached if none of the above matched: not the main domain,
+        # not a subdomain of it, not local dev. If ALLOW_TENANT_QUERY_PARAM
+        # is on (see settings/base.py), apply the same ?tenant=<slug>
+        # (remembered via session) strategy as the local-dev TENANT_PORT
+        # branch above, but on whatever host actually served the request.
+        # This exists so a platform-only deployment (e.g. a bare Railway
+        # *.up.railway.app domain, before any custom wildcard-DNS domain
+        # is configured) can still reach tenants at all, since there is no
+        # subdomain to resolve one from. Uses strict=False, same as the
+        # local-dev branch, so a pending/inactive tenant can still be
+        # previewed during bring-up.
+        if settings.ALLOW_TENANT_QUERY_PARAM:
+            slug = request.GET.get('tenant', '').strip()
+            if slug:
+                request.session[SESSION_KEY] = slug
+                request.session.modified = True
+            else:
+                slug = request.session.get(SESSION_KEY, '').strip()
+            if slug:
+                return self._get_tenant(slug, strict=False)
+
         return None
 
     def _get_tenant(self, slug, strict=True):
