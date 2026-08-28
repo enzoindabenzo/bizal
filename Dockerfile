@@ -1,36 +1,67 @@
+# BizAL — production image.
+#
+# Build context is the REPO ROOT (see docker-compose.prod.yml's
+# `context: .` and railway.toml's dockerfilePath = "Dockerfile") — all
+# COPY paths below are relative to the repo root, not backend/.
+#
+# Used by:
+#   - docker-compose.prod.yml (web/spa services), which overrides
+#     `entrypoint: ["/entrypoint.sh"]` explicitly for web and disables it
+#     for spa — either way it expects /entrypoint.sh to exist in the image.
+#   - Railway (railway.toml), which does NOT override the entrypoint for the
+#     `web` service, so this file's own ENTRYPOINT is what actually runs.
+#     Set a custom Start Command in the Railway dashboard for the
+#     celery-worker / celery-beat services instead — see railway.toml.
+#
+# BUG FIX (this session): this file had been overwritten with a copy of
+# backend/Dockerfile.dev. That version installed requirements-dev.txt
+# (baking pytest/coverage/locust into the production image), assumed a
+# `context: ./backend` build context that doesn't match what compose/
+# Railway actually use here, and had no COPY of entrypoint.sh, no
+# ENTRYPOINT, and no CMD — a container built from it would start, run
+# nothing, and exit immediately. On Railway that means: build succeeds,
+# deploy "succeeds", the healthcheck never passes, and it crash-loops
+# forever with no error in the logs to point at.
+
 FROM python:3.12-slim
 
 WORKDIR /app
 
-# L-4 FIX: Set timezone so datetime.date.today() and Django's timezone.localdate()
-# return Albanian time in development, matching the production image. Without this,
-# running the dev image directly with `docker run` (outside docker-compose, which
-# injects TZ=Europe/Tirane) would silently use UTC, causing date-logic bugs in
-# appointment overlap checks and send_appointment_reminders for times 00:00–02:00.
+# Match Django's TIME_ZONE (Europe/Tirane) at the OS level too, so cron,
+# shell scripts, and log timestamps agree with what Python/glibc report.
 ENV TZ=Europe/Tirane
 
-# LOW-3 FIX: create the /etc/localtime symlink and write /etc/timezone to
-# mirror what the production Dockerfile does. Without this, system-level
-# tools (cron, shell scripts, `date` command, postgres log timestamps) use
-# UTC inside the dev container while TZ=Europe/Tirane is only respected by
-# Python/glibc — creating a confusing discrepancy that can mask
-# timezone-related bugs that only surface after deployment.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev gcc curl tzdata \
     && ln -snf /usr/share/zoneinfo/$TZ /etc/localtime \
     && echo "$TZ" > /etc/timezone \
     && rm -rf /var/lib/apt/lists/*
-# AUDIT FIX: requirements-dev.txt's first line is `-r requirements.txt`, so pip
-# needs requirements.txt present in the build context when this RUN executes.
-# Only requirements-dev.txt was being COPYed here — pip install then failed with
-# "Could not open requirements file: ... requirements.txt" on every single dev
-# build (web, spa, celery, celery-beat all share this Dockerfile), making
-# `docker compose build` unusable out of the box. COPY both files, in the same
-# dependency order Dockerfile (prod) uses, before installing.
-COPY requirements.txt .
-COPY requirements-dev.txt .
-RUN pip install --no-cache-dir -r requirements-dev.txt
 
-COPY . .
+# Production image installs ONLY backend/requirements.txt — never
+# requirements-dev.txt (pytest/coverage/locust have no business in the
+# deployed image).
+COPY backend/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-EXPOSE 8000 8001
+COPY backend/ .
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Run as a non-root user rather than root inside the container.
+#
+# /app/media is excluded by .dockerignore and gets mounted as a volume
+# (docker-compose.prod.yml's media_data volume, or a Railway Volume per
+# .env.railway.example) — MEDIA_ROOT uses local FileSystemStorage by
+# default (settings/base.py), so it's actively written to at runtime.
+# Pre-creating it here, owned by appuser, before the volume is ever
+# mounted means Docker/Railway inherit that ownership onto the volume's
+# root instead of defaulting to root:root, which would make every upload
+# fail with a permission error under the non-root user below.
+RUN useradd --create-home --shell /bin/bash appuser \
+    && mkdir -p /app/media /app/staticfiles \
+    && chown -R appuser:appuser /app
+USER appuser
+
+EXPOSE 8000
+
+ENTRYPOINT ["/entrypoint.sh"]
