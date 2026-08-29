@@ -829,10 +829,17 @@ function esc(s)     { return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&
 function escHtml(s) { return esc(s); }
 
 // Table-reservation bookings only make sense for the one tenant that
-// actually offers them — every other tenant (food or otherwise) gets a
-// "Kontaktoni" CTA instead of a booking modal that has nothing to book.
+// actually offers them — every other food tenant gets a "Kontaktoni" CTA
+// instead of a booking modal that has nothing to book. This flag is scoped
+// to that one case; it must NOT be used to gate appointment-type (isAppt)
+// service bookings, which have a real, working time-slot booking modal for
+// every tenant and should always say/do "Rezervo", not "Kontaktoni".
 const ADRIATIK_SLUG = 'restorant-adriatiku';
 function canReserve() { return TENANT?.slug === ADRIATIK_SLUG; }
+// Union used anywhere a CTA needs to decide "Rezervo" vs "Kontaktoni":
+// either the one table-reservation tenant, or any appointment-type
+// (isAppt) service business, which always has a working booking modal.
+function wantsBooking(bt) { return canReserve() || isAppt(bt); }
 
 const slug       = getSlug();
 let TENANT       = null;
@@ -850,7 +857,7 @@ function updateAuthUI() {
     area.innerHTML = `
       <button class="user-greeting" id="user-greeting"
         style="background:none;border:none;cursor:pointer;font-size:.78rem;color:var(--muted);font-family:var(--font-b)">…</button>
-      <button class="btn-brand" id="btn-book-now-auth">${canReserve() ? 'Rezervo' : 'Kontakt'}</button>
+      <button class="btn-brand" id="btn-book-now-auth">${wantsBooking(TENANT?.business_type) ? 'Rezervo' : 'Kontakt'}</button>
       <button class="btn-out-sm" id="btn-logout">Dil</button>`;
     if (mobArea) mobArea.innerHTML = `<button class="btn-out-sm" style="flex:1" id="mob-btn-logout">Dil</button>`;
     document.getElementById('user-greeting')?.addEventListener('click', () => {
@@ -858,7 +865,7 @@ function updateAuthUI() {
       goSection('profile');
     });
     document.getElementById('btn-book-now-auth')?.addEventListener('click', () => {
-      if (canReserve()) openBookingModal();
+      if (wantsBooking(TENANT?.business_type)) openBookingModal();
       else goSection('contact');
     });
     const doLogout = async () => {
@@ -1664,8 +1671,8 @@ function renderMasthead(t) {
     ctaBtn.textContent = 'Na Kontaktoni';
     ctaBtn.addEventListener('click', () => goSection('contact'));
   } else if (isAppt(bt)) {
-    ctaBtn.textContent = 'Na Kontaktoni';
-    ctaBtn.addEventListener('click', () => goSection('contact'));
+    ctaBtn.textContent = 'Rezervo';
+    ctaBtn.addEventListener('click', () => openBookingModal());
   } else {
     ctaBtn.textContent = 'Na Kontaktoni';
     ctaBtn.addEventListener('click', () => goSection('contact'));
@@ -1678,10 +1685,10 @@ function renderMasthead(t) {
   }
   statObs.observe(document.getElementById('masthead-stats'));
   const mobBtn = document.getElementById('mob-btn-book');
-  mobBtn.textContent = canReserve() ? ctaBtn.textContent : 'Kontakt';
+  mobBtn.textContent = wantsBooking(bt) ? ctaBtn.textContent : 'Kontakt';
   mobBtn.addEventListener('click', () => {
     closeDrawer();
-    if (canReserve() && isFood(bt)) openBookingModal();
+    if (wantsBooking(bt)) openBookingModal();
     else goSection('contact');
   });
 }
@@ -2384,7 +2391,7 @@ function getSvcIcon(svc) { return svc.icon || SVC_ICON[TENANT?.business_type] ||
 function getActionLabel(bt) {
   if (isShop(bt)) return 'Shto';
   if (isB2B(bt))  return 'Shiko';
-  if (isAppt(bt)) return canReserve() ? 'Rezervo' : 'Kontaktoni';
+  if (isAppt(bt)) return 'Rezervo';
   return 'Shiko';
 }
 
@@ -2460,7 +2467,7 @@ function renderServices(items) {
         const orig = btn.textContent;
         btn.textContent = '✓ Shtuar!';
         setTimeout(() => { btn.textContent = orig; }, 1200);
-      } else if (isB2B(bt) || !canReserve()) {
+      } else if (isB2B(bt) || !wantsBooking(bt)) {
         goSection('contact');
       } else {
         openBookingModal(btn.dataset.svcName, Number(btn.dataset.svcPrice) || 0, btn.dataset.svcId, 'service');
