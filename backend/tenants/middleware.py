@@ -223,14 +223,28 @@ class TenantMiddleware:
         # local-dev branch, so a pending/inactive tenant can still be
         # previewed during bring-up.
         if settings.ALLOW_TENANT_QUERY_PARAM:
-            slug = request.GET.get('tenant', '').strip()
-            if slug:
-                request.session[SESSION_KEY] = slug
+            explicit = request.GET.get('tenant', '').strip()
+            slug = explicit or request.session.get(SESSION_KEY, '').strip()
+            if explicit:
+                request.session[SESSION_KEY] = explicit
                 request.session.modified = True
-            else:
-                slug = request.session.get(SESSION_KEY, '').strip()
             if slug:
-                return self._get_tenant(slug, strict=False)
+                try:
+                    return self._get_tenant(slug, strict=False)
+                except Http404:
+                    # A slug that doesn't resolve must not permanently break
+                    # navigation. If it came from THIS request's own
+                    # ?tenant= param, still 404 — the visitor asked for
+                    # that slug explicitly and should see it doesn't exist.
+                    # If it only came from a stale/bad session value from
+                    # an earlier request, clear it and fall through to "no
+                    # tenant" instead — otherwise every future request
+                    # (including bare '/') keeps re-raising on a slug the
+                    # visitor isn't even asking for anymore.
+                    if explicit:
+                        raise
+                    request.session.pop(SESSION_KEY, None)
+                    request.session.modified = True
 
         return None
 

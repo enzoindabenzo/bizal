@@ -1771,7 +1771,7 @@ window.BIZAL_ALLOW_TENANT_QUERY_PARAM = {{ allow_tenant_query_param|yesno:"true,
             });
             if (wantsBusiness) { window.location.href = '/onboarding/'; return; }
             if (nextParam && nextParam.startsWith('/')) { window.location.href = nextParam; }
-            else { const hostParts = window.location.hostname.split('.'); const tenantSlugFromHost = hostParts.length > 2 ? hostParts[0] : ''; const slug = tenantSlugFromHost || localStorage.getItem('tenant_slug') || ''; window.location.href = slug ? `https://${slug}.${hostParts.slice(-2).join('.')}/` : '/'; }
+            else { const slug = localStorage.getItem('tenant_slug') || ''; window.location.href = slug ? Auth.getTenantAdminUrl(slug).replace(/\/admin\/$/, '/') : '/'; }
           }, 1200);
         }
         else { fb.textContent = Object.values(d).flat().join(' ') || 'Gabim gjatë regjistrimit.'; fb.className = 'fb err'; }
@@ -1855,13 +1855,15 @@ window.BIZAL_ALLOW_TENANT_QUERY_PARAM = {{ allow_tenant_query_param|yesno:"true,
                   fb.textContent = '✅ Mirë se vini! Duke ju ridrejtuar...';
                   fb.className = 'fb ok';
                   setTimeout(() => {
-                      // In production redirect to the tenant's own subdomain.
-                      // In local dev fall back to ?tenant= query-param strategy.
-                      const host = window.location.hostname;
-                      const isLocal = host === 'localhost' || host === '127.0.0.1';
-                      const dest = isLocal
-                          ? `http://localhost:8001/?tenant=${tenantSlug}`
-                          : `https://${tenantSlug}.bizal.al`;
+                      // Auth.getTenantAdminUrl() already handles local dev
+                      // (?tenant= on :8001), the ALLOW_TENANT_QUERY_PARAM
+                      // staging case (?tenant= on the current host — e.g. a
+                      // bare Railway domain with no wildcard DNS), and real
+                      // production (slug.MAIN_DOMAIN). Reusing it here
+                      // avoids a second, unsynced copy of that logic that
+                      // silently reverts to a hardcoded ".bizal.al" domain
+                      // this deployment doesn't actually own DNS for.
+                      const dest = Auth.getTenantAdminUrl(tenantSlug).replace(/\/admin\/$/, '/');
                       window.location.replace(dest);
                   }, 800);
               } else {
@@ -1890,11 +1892,10 @@ window.BIZAL_ALLOW_TENANT_QUERY_PARAM = {{ allow_tenant_query_param|yesno:"true,
               fb.textContent = '↪ Ky email i përket një biznesi tashmë të konfiguruar. Duke ju çuar te portali juaj...';
               fb.className = 'fb ok';
               localStorage.setItem('tenant_slug', e.redirectSlug);
-              const host = window.location.hostname;
-              const isLocal = host === 'localhost' || host === '127.0.0.1';
-              const dest = isLocal
-                  ? `http://localhost:8001/?tenant=${e.redirectSlug}`
-                  : `https://${e.redirectSlug}.bizal.al`;
+              // See the getTenantAdminUrl() call above — same reasoning
+              // applies here: don't duplicate the local-dev/staging/
+              // production branching a third time in this file.
+              const dest = Auth.getTenantAdminUrl(e.redirectSlug).replace(/\/admin\/$/, '/');
               setTimeout(() => window.location.href = dest, 1200);
           } else {
               fb.textContent = e?.message || 'Gabim rrjeti. Provoni përsëri.';
