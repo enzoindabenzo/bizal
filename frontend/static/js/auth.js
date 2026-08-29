@@ -64,7 +64,7 @@ function getTenantAdminUrl(slug) {
   const h = window.location.hostname;
   const isLocalDev = h === 'localhost' || h === '127.0.0.1';
   if (!slug) return isLocalDev ? '/admin/' : 'https://bizal.al/admin/';
-  if (isLocalDev) return `http://${h}:8001/?tenant=${encodeURIComponent(slug)}`;
+  if (isLocalDev) return `http://${h}:8001/admin/?tenant=${encodeURIComponent(slug)}`;
   // Bring-up/staging deployment with no wildcard-DNS domain configured yet
   // (see settings.ALLOW_TENANT_QUERY_PARAM): route via ?tenant=<slug> on
   // the CURRENT host instead of guessing a subdomain. The old guess — take
@@ -76,7 +76,7 @@ function getTenantAdminUrl(slug) {
   // yields "railway.app" — a domain Railway itself owns, not this
   // deployment — producing an admin link that can never resolve.
   if (window.BIZAL_ALLOW_TENANT_QUERY_PARAM) {
-    return `${window.location.origin}/?tenant=${encodeURIComponent(slug)}`;
+    return `${window.location.origin}/admin/?tenant=${encodeURIComponent(slug)}`;
   }
   // Production with a real wildcard-DNS domain: reuse the current domain's
   // suffix so this also works on a non-bizal.al deployment (e.g. a staging

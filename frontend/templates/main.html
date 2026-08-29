@@ -1892,7 +1892,11 @@ window.BIZAL_ALLOW_TENANT_QUERY_PARAM = {{ allow_tenant_query_param|yesno:"true,
                       // avoids a second, unsynced copy of that logic that
                       // silently reverts to a hardcoded ".bizal.al" domain
                       // this deployment doesn't actually own DNS for.
-                      const dest = Auth.getTenantAdminUrl(tenantSlug).replace(/\/admin\/$/, '/');
+                      // NOTE: unlike the customer-signup branch above, this
+                      // is a business owner logging in — they must land in
+                      // /admin/, not the public storefront, so the URL is
+                      // used as-is (no stripping /admin/ off the end).
+                      const dest = Auth.getTenantAdminUrl(tenantSlug);
                       window.location.replace(dest);
                   }, 800);
               } else {
@@ -1923,8 +1927,9 @@ window.BIZAL_ALLOW_TENANT_QUERY_PARAM = {{ allow_tenant_query_param|yesno:"true,
               localStorage.setItem('tenant_slug', e.redirectSlug);
               // See the getTenantAdminUrl() call above — same reasoning
               // applies here: don't duplicate the local-dev/staging/
-              // production branching a third time in this file.
-              const dest = Auth.getTenantAdminUrl(e.redirectSlug).replace(/\/admin\/$/, '/');
+              // production branching a third time in this file. This is
+              // also an owner login, so the /admin/ URL is used as-is.
+              const dest = Auth.getTenantAdminUrl(e.redirectSlug);
               setTimeout(() => window.location.href = dest, 1200);
           } else {
               fb.textContent = e?.message || 'Gabim rrjeti. Provoni përsëri.';
