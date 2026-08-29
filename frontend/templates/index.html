@@ -501,6 +501,7 @@
         <div style="display:flex;gap:12px">
           <a href="#" id="footer-terms-link">Kushtet e Përdorimit</a>
           <a href="#" id="footer-privacy-link">Privatësia</a>
+          <a href="/">bizal.al</a>
         </div>
       </div>
     </div>
@@ -1620,9 +1621,13 @@ function renderMasthead(t) {
       el.setAttribute('data-suffix', '+');
     }
   }
-  if (t.cover_photo || t.logo) {
+  if (t.cover_photo) {
+    // Only ever use the actual cover photo here — a logo is a small,
+    // usually square/icon-heavy image, and stretching it full-bleed across
+    // the masthead via object-fit:cover made it look zoomed-in/oversized
+    // and distorted instead of like a proper banner.
     const img = document.getElementById('cover-photo');
-    img.src   = t.cover_photo || t.logo;
+    img.src   = t.cover_photo;
     img.onload = () => { img.classList.add('loaded'); document.getElementById('masthead').classList.add('has-cover'); };
   }
   if (t.whatsapp) {

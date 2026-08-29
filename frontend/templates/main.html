@@ -1817,16 +1817,14 @@ window.BIZAL_ALLOW_TENANT_QUERY_PARAM = {{ allow_tenant_query_param|yesno:"true,
           if (d.slug) localStorage.setItem('tenant_slug', d.slug);
           localStorage.removeItem('bizal_referral_code');
           // The tenant is already created at this point (this form just did
-          // it) — ask whether to continue into the setup wizard now or later,
-          // instead of forcing it. This form already collected the name,
-          // slug, and business type (onboarding step 1's exact fields), so a
-          // "yes" skips straight to step 2 rather than asking again.
-          const wantsSetup = await askTenantConfirm({
-            title: 'Biznesi u krijua! Vazhdojmë me konfigurimin?',
-            message: 'Shtoni tani kontaktet, faqen dhe pamjen e biznesit, ose e bëni më vonë nga paneli.',
-            yesLabel: 'Po, vazhdo →',
-            noLabel: 'Jo, më vonë'
-          });
+          // it) — go straight into step 2 of the setup wizard instead of
+          // asking first. This form already collected the name, slug, and
+          // business type (onboarding step 1's exact fields), so there's
+          // nothing left to confirm, and an extra "do you want to
+          // continue?" popup here was an unnecessary interaction step
+          // between a successful signup and actually landing the person on
+          // /onboarding/ — remove the ask, not just skip it silently.
+          //
           // Hand the session to /onboarding/ directly via the URL instead of
           // relying on it surviving the full-page navigation on its own.
           // The access token lives in memory only (see auth.js) and is
@@ -1838,12 +1836,12 @@ window.BIZAL_ALLOW_TENANT_QUERY_PARAM = {{ allow_tenant_query_param|yesno:"true,
           // re-login) gives the async refresh time to complete. Passing the
           // tokens we already have right here removes that race entirely;
           // Auth.pickupTokensFromUrl() consumes and strips them on arrival.
-          if (wantsSetup && d.access) {
+          if (d.access) {
             const qs = new URLSearchParams({ step: '2', access_token: d.access });
             if (d.refresh) qs.set('refresh_token', d.refresh);
             window.location.href = '/onboarding/?' + qs.toString();
           } else {
-            window.location.href = wantsSetup ? '/onboarding/?step=2' : '/';
+            window.location.href = '/onboarding/?step=2';
           }
         }
         else { fb.textContent = Object.values(d).flat().join(' ') || 'Gabim. Provoni përsëri.'; fb.className = 'fb err'; }
