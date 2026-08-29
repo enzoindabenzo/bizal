@@ -372,10 +372,47 @@
   border-bottom: .5px solid var(--border);
 }
 
+/* ── Hamburger (mobile sidebar toggle) ───────────────────
+   Hidden on desktop; the sidebar is always visible there so
+   there's nothing to toggle. Shown only inside the 768px query. */
+.hamburger-btn { display: none; }
+
+/* ── Sidebar backdrop (mobile) ───────────────────────────
+   Separate element (not the .sidebar box-shadow trick) so it
+   can actually receive click-to-close taps. */
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 10, 10, .4);
+  z-index: 49;
+}
+
 /* ── Responsive ───────────────────────────────────────── */
 @media (max-width: 768px) {
   .sidebar { position: fixed; left: -240px; transition: left .25s var(--ease); }
-  .sidebar.open { left: 0; box-shadow: 0 0 0 100vw rgba(10,10,10,.4); }
+  .sidebar.open { left: 0; }
+  .sidebar-backdrop.open { display: block; }
+  .hamburger-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px; height: 32px;
+    flex-shrink: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    border: .5px solid var(--border);
+    color: var(--text-muted);
+    font-size: 15px;
+    cursor: pointer;
+  }
+  .hamburger-btn:hover { background: var(--vapor); color: var(--text); }
+  /* Trim the topbar down so it doesn't feel crowded next to the
+     new hamburger: tighter padding/gap, and let the title truncate
+     instead of pushing the right-side controls off-balance. */
+  .topbar { padding: 0 12px; gap: 8px; }
+  .topbar-title { font-size: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .topbar-right { gap: 6px; }
   .content { padding: 16px; }
   .stats-grid { grid-template-columns: 1fr 1fr; }
 }
@@ -389,4 +426,3 @@ tr[draggable="true"] { transition: background var(--transition); }
 tr[draggable="true"].dragging { opacity: .4; background: var(--surface2); }
 tr[draggable="true"] .drag-handle { cursor: grab; }
 tr[draggable="true"] .drag-handle:active { cursor: grabbing; }
-

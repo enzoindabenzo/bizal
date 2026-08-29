@@ -42,7 +42,7 @@
 
 <!-- APP -->
 <div id="app" class="app-shell hidden">
-  <aside class="sidebar">
+  <aside class="sidebar" id="app-sidebar">
     <div class="sidebar-header">
       <div class="sidebar-brand" id="sb-brand">Admin Panel</div>
       <div class="sidebar-sub">Menaxhim Biznesi</div>
@@ -94,12 +94,14 @@
     </div>
   </aside>
 
+  <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
   <div class="main">
     <header class="topbar">
+      <button class="hamburger-btn" id="sidebar-toggle" aria-label="Hap menunë" aria-expanded="false" aria-controls="app-sidebar">☰</button>
       <div class="topbar-title" id="topbar-title">Dashboard</div>
       <div class="topbar-right">
         <button class="theme-toggle" id="theme-toggle">🌙</button>
-        <a id="tb-view-site" href="/" target="_blank" class="btn btn-ghost btn-sm">↗ Faqja</a>
       </div>
     </header>
     <main class="content" id="main-content">
@@ -240,6 +242,32 @@ document.getElementById('theme-toggle').addEventListener('click', () => {
   localStorage.setItem('bizal-theme', n);
   document.querySelectorAll('.theme-toggle').forEach(b => b.textContent = n==='dark' ? '☀️' : '🌙');
 });
+
+// ── Mobile sidebar (hamburger) ─────────────────────────────────
+(function(){
+  const sidebar = document.getElementById('app-sidebar');
+  const backdrop = document.getElementById('sidebar-backdrop');
+  const toggle = document.getElementById('sidebar-toggle');
+  function openSidebar(){
+    sidebar.classList.add('open');
+    backdrop.classList.add('open');
+    toggle.setAttribute('aria-expanded', 'true');
+  }
+  function closeSidebar(){
+    sidebar.classList.remove('open');
+    backdrop.classList.remove('open');
+    toggle.setAttribute('aria-expanded', 'false');
+  }
+  toggle.addEventListener('click', () => {
+    sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+  });
+  backdrop.addEventListener('click', closeSidebar);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSidebar(); });
+  // Close after picking a page from the drawer, same as tapping outside.
+  sidebar.addEventListener('click', (e) => {
+    if (e.target.closest('[data-view]')) closeSidebar();
+  });
+})();
 
 // ── Delegated actions ────────────────────────────────────────
 // Central dispatcher for buttons rendered inside dynamic innerHTML strings
@@ -465,7 +493,6 @@ function buildSidebar() {
   const slug   = TENANT.slug || new URLSearchParams(location.search).get('tenant') || '';
   const siteUrl = slug ? `/?tenant=${slug}` : '/';
   document.getElementById('sf-view-site').href = siteUrl;
-  document.getElementById('tb-view-site').href = siteUrl;
 
   const bt = TENANT.business_type || '';
   const isRental      = ['car_rental','equipment_rental','boat_rental','property_rental'].includes(bt);

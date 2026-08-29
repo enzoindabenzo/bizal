@@ -245,7 +245,12 @@
     .feedback.success{background:rgba(16,185,129,.1);color:var(--success);border-color:rgba(16,185,129,.25)}
     .feedback.error{background:rgba(239,68,68,.1);color:var(--danger);border-color:rgba(239,68,68,.25)}
     .plan-badge{display:inline-flex;align-items:center;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;background:rgba(var(--primary-rgb),.12);color:var(--primary);text-transform:uppercase;letter-spacing:.06em}
-    @media(max-width:640px){.sidebar{display:none}.form-grid{grid-template-columns:1fr}.content{padding:16px}}
+    /* NOTE: .sidebar visibility on mobile is handled by admin.css's
+       768px query (position:fixed + .open toggle for the hamburger
+       drawer). This file must not set display:none here — it has no
+       .open exception and would permanently hide the sidebar with
+       no way to reveal it, breaking the hamburger below 640px. */
+    @media(max-width:640px){.form-grid{grid-template-columns:1fr}.content{padding:16px}}
   
     /* ── Utility classes (extracted from repeated inline style= attributes;
        see BIZAL_FINAL_AUDIT_AND_FIX_REPORT.md §6) ── */

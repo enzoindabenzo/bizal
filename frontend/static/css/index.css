@@ -433,10 +433,44 @@
          functional benefit. */
       #topbar { padding:0 14px;gap:8px; }
       #topbar-name { max-width:110px; }
+      /* Drop the purely decorative separator and the business-type
+         badge on mobile — neither carries information the visitor
+         needs, and both just eat width the logo/name need on a
+         narrow screen. */
+      .topbar-sep { display:none; }
+      #topbar-type-badge { display:none; }
+      .topbar-logo-link { font-size:1.02rem; }
+      /* nav-auth-area was rendering up to 3 pieces (greeting text +
+         a padded CTA button + a padded logout button) at full desktop
+         size right next to the theme toggle — that's what was actually
+         making the header feel chunky on phones, not the tabs (already
+         hidden) or the badge/separator (already dropped above). */
+      .nav-auth-area { gap:5px; }
+      .nav-auth-area .btn-brand,
+      .nav-auth-area .btn-out-sm { padding:7px 11px; font-size:12px; }
+      .user-greeting { max-width:64px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:inline-block !important; vertical-align:middle; }
+      .icon-btn { width:30px; height:30px; font-size:13px; }
+
+      /* Hero/masthead and content padding were desktop-sized (60/52px,
+         24px, 20px card padding) at every viewport — heavy vertical
+         whitespace and wide gutters read as "chunky" on a narrow
+         screen even though nothing was technically broken. */
+      #masthead { padding:36px 16px 28px; }
+      .masthead-inner { gap:18px; }
+      #mh-tagline { margin-bottom:16px; }
+      .mh-actions .btn-mh-primary,
+      .mh-actions .btn-mh-ghost { padding:9px 16px; font-size:13px; }
+      .masthead-right { gap:16px; }
+      .mh-stat-num { font-size:1.5rem; }
+      #logo-bar { padding:16px 16px 0; gap:10px; }
+      #content-area { padding:20px 0 40px; }
+      .wrap { padding:0 16px; }
+      .bento { gap:10px; }
+      .bc, .ps-block { padding:16px; }
       .reviews-layout { grid-template-columns:1fr; }
       .contact-section-grid { grid-template-columns:1fr; }
       .footer-grid { grid-template-columns:1fr 1fr; }
-      .bc-8,.bc-4,.bc-3 { grid-column:span 12; }
+      .bc-8,.bc-6,.bc-4,.bc-3 { grid-column:span 12; }
       .form-row { grid-template-columns:1fr; }
     }
     @media (max-width:480px) {
