@@ -120,6 +120,7 @@ print("🌱 Seeding BizAL demo data...")
 # ── Superadmin ───────────────────────────────────────────────────────────────
 superadmin, _ = User.objects.get_or_create(
     email='admin@bizal.al',
+    tenant__isnull=True,
     defaults={
         'full_name': 'BizAL Admin',
         'is_staff': True,
@@ -905,6 +906,7 @@ Service.objects.get_or_create(tenant=hotel, name='Transferim Aeroport (Aeroporti
 # ════════════════════════════════════════════════════════════════════════════
 customer, _ = User.objects.get_or_create(
     email='customer@demo.al',
+    tenant__isnull=True,
     defaults={'full_name': 'Klient Demo', 'role': 'customer', 'is_active': True}
 )
 customer.set_password(CUSTOMER_PASSWORD)
