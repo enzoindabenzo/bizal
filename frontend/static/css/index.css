@@ -32,7 +32,7 @@
     .topbar-logo-link { font-family:var(--font-serif);font-weight:600;font-size:1.15rem;color:var(--text);letter-spacing:-.01em;flex-shrink:0; }
     .topbar-logo-link b { font-style:italic;font-weight:400; }
     .topbar-sep { width:.5px;height:18px;background:var(--border);flex-shrink:0; }
-    #topbar-name { font-size:13.5px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px; }
+    #topbar-name { font-size:13.5px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;min-width:0;flex-shrink:1; }
     #topbar-type-badge { font-size:10px;font-weight:500;letter-spacing:.07em;text-transform:uppercase;padding:2px 8px;border-radius:2px;background:var(--vapor);color:var(--text-muted);border:.5px solid var(--border);white-space:nowrap;flex-shrink:0; }
     .topbar-nav { display:flex;align-items:center;gap:2px;flex:1;justify-content:center; }
     .tnl { font-size:13px;font-weight:400;color:var(--text-muted);padding:5px 10px;border-radius:var(--radius-sm);transition:color var(--transition),background var(--transition); }
@@ -426,7 +426,13 @@
     /* ── Responsive ──────────────────────────────────── */
     @media (max-width:768px) {
       .topbar-nav { display:none; }
-      .hbg { display:flex; }
+      /* Hamburger + mobile drawer removed: #section-tabs (the sticky
+         Overview/Produkte/Vlerësime bar) already provides mobile
+         navigation, so the redundant drawer just added visual clutter
+         and squeezed the topbar (see #topbar-name fix above) for no
+         functional benefit. */
+      #topbar { padding:0 14px;gap:8px; }
+      #topbar-name { max-width:110px; }
       .reviews-layout { grid-template-columns:1fr; }
       .contact-section-grid { grid-template-columns:1fr; }
       .footer-grid { grid-template-columns:1fr 1fr; }

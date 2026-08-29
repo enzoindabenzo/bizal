@@ -1656,11 +1656,16 @@ function renderMasthead(t) {
     ctaBtn.textContent = 'Na Kontaktoni';
     ctaBtn.addEventListener('click', () => goSection('contact'));
   } else if (isShop(bt)) {
-    const shopBtn = document.getElementById('mh-shop-btn');
-    shopBtn.classList.remove('hidden');
-    shopBtn.addEventListener('click', () => goSection('services'));
-    ctaBtn.textContent = 'Na Kontaktoni';
-    ctaBtn.addEventListener('click', () => goSection('contact'));
+    // Previously this branch unhid mh-shop-btn ("🛍️ Shiko Produktet")
+    // AND set the primary ctaBtn to "Na Kontaktoni" — which duplicated
+    // the separate mh-contact-btn ghost button below (also "Na
+    // Kontaktoni", shown whenever phone/email/address is set), giving
+    // shop tenants two identical-looking "Na Kontaktoni" buttons and no
+    // clear primary action. Make the primary CTA the shop's actual
+    // purpose (browse products) instead, and drop the redundant ghost
+    // "Shiko Produktet" button since the primary now covers it.
+    ctaBtn.textContent = '🛍️ Shiko Produktet';
+    ctaBtn.addEventListener('click', () => goSection('services'));
   } else if (isB2B(bt)) {
     const shopBtn = document.getElementById('mh-shop-btn');
     shopBtn.textContent = '✨ Shiko Shërbimet';
