@@ -172,6 +172,47 @@
 }
 .topbar-right { display: flex; align-items: center; gap: 8px; }
 
+/* Mobile-only hamburger that opens the off-canvas sidebar drawer (see the
+   .sidebar rules under Responsive below). Hidden on desktop where the
+   sidebar is always visible. */
+.hamburger-btn {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  cursor: pointer;
+  padding: 0;
+  margin-right: 10px;
+  flex-shrink: 0;
+}
+.hamburger-btn span {
+  display: block;
+  width: 16px;
+  height: 1.5px;
+  margin: 0 auto;
+  background: var(--text);
+  border-radius: 2px;
+  transition: transform .2s var(--ease), opacity .2s var(--ease);
+}
+.hamburger-btn[aria-expanded="true"] span:nth-child(1) { transform: translateY(5.5px) rotate(45deg); }
+.hamburger-btn[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
+.hamburger-btn[aria-expanded="true"] span:nth-child(3) { transform: translateY(-5.5px) rotate(-45deg); }
+
+/* Dims/blocks the page behind the open drawer and closes it on click. */
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 10, 10, .4);
+  z-index: 49;
+}
+.sidebar-backdrop.show { display: block; }
+
 .icon-btn {
   width: 32px; height: 32px;
   border-radius: var(--radius-sm);
@@ -372,47 +413,11 @@
   border-bottom: .5px solid var(--border);
 }
 
-/* ── Hamburger (mobile sidebar toggle) ───────────────────
-   Hidden on desktop; the sidebar is always visible there so
-   there's nothing to toggle. Shown only inside the 768px query. */
-.hamburger-btn { display: none; }
-
-/* ── Sidebar backdrop (mobile) ───────────────────────────
-   Separate element (not the .sidebar box-shadow trick) so it
-   can actually receive click-to-close taps. */
-.sidebar-backdrop {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(10, 10, 10, .4);
-  z-index: 49;
-}
-
 /* ── Responsive ───────────────────────────────────────── */
 @media (max-width: 768px) {
-  .sidebar { position: fixed; left: -240px; transition: left .25s var(--ease); }
+  .hamburger-btn { display: flex; }
+  .sidebar { position: fixed; top: 0; height: 100vh; left: -240px; transition: left .25s var(--ease); }
   .sidebar.open { left: 0; }
-  .sidebar-backdrop.open { display: block; }
-  .hamburger-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px; height: 32px;
-    flex-shrink: 0;
-    border-radius: var(--radius-sm);
-    background: transparent;
-    border: .5px solid var(--border);
-    color: var(--text-muted);
-    font-size: 15px;
-    cursor: pointer;
-  }
-  .hamburger-btn:hover { background: var(--vapor); color: var(--text); }
-  /* Trim the topbar down so it doesn't feel crowded next to the
-     new hamburger: tighter padding/gap, and let the title truncate
-     instead of pushing the right-side controls off-balance. */
-  .topbar { padding: 0 12px; gap: 8px; }
-  .topbar-title { font-size: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-  .topbar-right { gap: 6px; }
   .content { padding: 16px; }
   .stats-grid { grid-template-columns: 1fr 1fr; }
 }
