@@ -26,7 +26,10 @@ def home(request):
     """
     if request.tenant:
         return render(request, 'index.html')
-    return render(request, 'main.html', {'demo_base_url': getattr(_s, 'DEMO_BASE_URL', '')})
+    return render(request, 'main.html', {
+        'demo_base_url': getattr(_s, 'DEMO_BASE_URL', ''),
+        'allow_tenant_query_param': getattr(_s, 'ALLOW_TENANT_QUERY_PARAM', False),
+    })
 
 
 def tenant_spa(request):
@@ -38,7 +41,10 @@ def tenant_spa(request):
     """
     if request.tenant:
         return render(request, 'index.html', {'tenant': request.tenant})
-    return render(request, 'main.html', {'demo_base_url': getattr(_s, 'DEMO_BASE_URL', '')})
+    return render(request, 'main.html', {
+        'demo_base_url': getattr(_s, 'DEMO_BASE_URL', ''),
+        'allow_tenant_query_param': getattr(_s, 'ALLOW_TENANT_QUERY_PARAM', False),
+    })
 
 
 def admin_panel(request):

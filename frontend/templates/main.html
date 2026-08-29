@@ -1385,6 +1385,16 @@
   });
 })();
 </script>
+<script>
+// Mirrors settings.ALLOW_TENANT_QUERY_PARAM (see bizal/settings/base.py) so
+// getTenantAdminUrl() in auth.js can route to ?tenant=<slug> on the current
+// host instead of guessing a subdomain from window.location.hostname — that
+// guess breaks on any platform-provided domain with more than one dot
+// before the "real" domain (e.g. a Railway *.up.railway.app host), since
+// naively taking the last two dot-separated segments yields a domain the
+// deployment doesn't actually control.
+window.BIZAL_ALLOW_TENANT_QUERY_PARAM = {{ allow_tenant_query_param|yesno:"true,false" }};
+</script>
 <script src="{% static 'js/ui.js' %}"></script>
 <script src="{% static 'js/auth.js' %}"></script>
 <script>

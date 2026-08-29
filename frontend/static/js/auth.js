@@ -65,9 +65,22 @@ function getTenantAdminUrl(slug) {
   const isLocalDev = h === 'localhost' || h === '127.0.0.1';
   if (!slug) return isLocalDev ? '/admin/' : 'https://bizal.al/admin/';
   if (isLocalDev) return `http://${h}:8001/?tenant=${encodeURIComponent(slug)}`;
-  // Production/staging: reuse the current domain's suffix so this also
-  // works on a non-bizal.al deployment (e.g. a staging domain) instead of
-  // hardcoding "bizal.al".
+  // Bring-up/staging deployment with no wildcard-DNS domain configured yet
+  // (see settings.ALLOW_TENANT_QUERY_PARAM): route via ?tenant=<slug> on
+  // the CURRENT host instead of guessing a subdomain. The old guess — take
+  // the last two dot-separated segments of window.location.hostname as
+  // "the base domain" — assumes that suffix is one this deployment
+  // actually controls DNS for. That's true for e.g.
+  // shop1.bizal.al → bizal.al, but false for a platform-provided host
+  // like web-production-1b881.up.railway.app, where the same logic
+  // yields "railway.app" — a domain Railway itself owns, not this
+  // deployment — producing an admin link that can never resolve.
+  if (window.BIZAL_ALLOW_TENANT_QUERY_PARAM) {
+    return `${window.location.origin}/?tenant=${encodeURIComponent(slug)}`;
+  }
+  // Production with a real wildcard-DNS domain: reuse the current domain's
+  // suffix so this also works on a non-bizal.al deployment (e.g. a staging
+  // domain) instead of hardcoding "bizal.al".
   const parts = h.split('.');
   const baseDomain = parts.length > 2 ? parts.slice(-2).join('.') : h;
   return `https://${slug}.${baseDomain}/admin/`;
