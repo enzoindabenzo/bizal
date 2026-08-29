@@ -16,16 +16,6 @@
 <!-- SCROLL PROGRESS -->
 <div id="scroll-progress" aria-hidden="true"><div id="scroll-progress-bar"></div></div>
 
-<!-- ADMIN BAR -->
-<div id="admin-bar">
-  <span id="ab-name">BizAL Admin</span>
-  <div class="ab-links">
-    <a href="/admin/" id="ab-dashboard">⚙️ Paneli Admin</a>
-    <a href="/admin/#settings" id="ab-settings">🎨 Cilësimet</a>
-    <a href="/" id="ab-main">↗ bizal.al</a>
-  </div>
-</div>
-
 <!-- TOPBAR -->
 <nav id="topbar" aria-label="Primary navigation">
   <div class="topbar-left">
@@ -910,10 +900,6 @@ async function loadMe() {
       if (fn && !fn.value) fn.value = user.full_name || '';
       const ph = document.getElementById('prof-phone');
       if (ph && !ph.value) ph.value = user.phone || '';
-      if (['owner','manager','superadmin'].includes(user.role)) {
-        const bar = document.getElementById('admin-bar');
-        if (bar) bar.style.display = 'flex';
-      }
     }
   } catch {}
 }
