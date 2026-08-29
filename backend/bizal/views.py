@@ -65,7 +65,9 @@ def onboarding(request):
     6-step business setup wizard served at /onboarding/ after signup.
     Auth and PATCH calls are handled client-side via JWT stored in localStorage.
     """
-    return render(request, 'onboarding.html')
+    return render(request, 'onboarding.html', {
+        'allow_tenant_query_param': getattr(_s, 'ALLOW_TENANT_QUERY_PARAM', False),
+    })
 
 # ── robots.txt ────────────────────────────────────────────────────────────────
 

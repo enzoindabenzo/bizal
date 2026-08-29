@@ -352,6 +352,15 @@
 </div>
 
 <script src="{% static 'js/ui.js' %}"></script>
+<script>
+// Mirrors settings.ALLOW_TENANT_QUERY_PARAM — see main.html for the full
+// explanation. auth.js's getTenantAdminUrl() (used by the final "Shko te
+// Paneli im" step below) reads this global; without it here, this page
+// falls back to guessing a subdomain from window.location.hostname, which
+// on a bare Railway-provided domain produces an unreachable
+// <slug>.railway.app URL instead of the working ?tenant=<slug> route.
+window.BIZAL_ALLOW_TENANT_QUERY_PARAM = {{ allow_tenant_query_param|yesno:"true,false" }};
+</script>
 <script src="{% static 'js/auth.js' %}"></script>
 <script>
 (function(){
