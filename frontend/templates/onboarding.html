@@ -372,6 +372,15 @@ const TOTAL_STEPS=6;
 const STEP_LABELS=['Bazë','Kontakti','Faqja','Social','Pamja','Gati!'];
 
 document.addEventListener('DOMContentLoaded',async ()=>{
+  // Consume access_token/refresh_token if we just arrived from main.html's
+  // signup/registration success handlers (see the su-btn / ur-btn "wantsSetup"
+  // redirects). This must run FIRST, before the isLoggedIn() guard below —
+  // the in-memory access token is always empty on a fresh page load (see
+  // auth.js), so without this, the guard has nothing to check except a
+  // localStorage refresh token that may not have finished writing/rotating
+  // yet, bouncing a person who WAS just signed up back to /signup/ or
+  // stranding them on step 1 until a manual refresh + re-login.
+  Auth.pickupTokensFromUrl();
   // Guard against expired/missing session. Auth.isLoggedIn() checks
   // both the in-memory access token and the localStorage refresh token without
   // making a network call. A user who lands here with no valid session is

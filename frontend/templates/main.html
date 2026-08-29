@@ -1769,7 +1769,19 @@ window.BIZAL_ALLOW_TENANT_QUERY_PARAM = {{ allow_tenant_query_param|yesno:"true,
               yesLabel: 'Po, vazhdo →',
               noLabel: 'Jo, më vonë'
             });
-            if (wantsBusiness) { window.location.href = '/onboarding/'; return; }
+            if (wantsBusiness) {
+              // Same reasoning as the su-btn handler below: hand the
+              // session to /onboarding/ via URL params instead of relying
+              // on it surviving the full-page navigation unaided.
+              if (d.access) {
+                const qs = new URLSearchParams({ access_token: d.access });
+                if (d.refresh) qs.set('refresh_token', d.refresh);
+                window.location.href = '/onboarding/?' + qs.toString();
+              } else {
+                window.location.href = '/onboarding/';
+              }
+              return;
+            }
             if (nextParam && nextParam.startsWith('/')) { window.location.href = nextParam; }
             else { const slug = localStorage.getItem('tenant_slug') || ''; window.location.href = slug ? Auth.getTenantAdminUrl(slug).replace(/\/admin\/$/, '/') : '/'; }
           }, 1200);
@@ -1815,7 +1827,24 @@ window.BIZAL_ALLOW_TENANT_QUERY_PARAM = {{ allow_tenant_query_param|yesno:"true,
             yesLabel: 'Po, vazhdo →',
             noLabel: 'Jo, më vonë'
           });
-          window.location.href = wantsSetup ? '/onboarding/?step=2' : '/';
+          // Hand the session to /onboarding/ directly via the URL instead of
+          // relying on it surviving the full-page navigation on its own.
+          // The access token lives in memory only (see auth.js) and is
+          // wiped by ANY full navigation; onboarding.html's own auth guard
+          // runs before its async token-refresh has necessarily finished,
+          // so without this it can bounce a person who WAS just signed up
+          // straight back to /signup/ — or land them on step 1 with an
+          // empty form — until a manual refresh (and often a manual
+          // re-login) gives the async refresh time to complete. Passing the
+          // tokens we already have right here removes that race entirely;
+          // Auth.pickupTokensFromUrl() consumes and strips them on arrival.
+          if (wantsSetup && d.access) {
+            const qs = new URLSearchParams({ step: '2', access_token: d.access });
+            if (d.refresh) qs.set('refresh_token', d.refresh);
+            window.location.href = '/onboarding/?' + qs.toString();
+          } else {
+            window.location.href = wantsSetup ? '/onboarding/?step=2' : '/';
+          }
         }
         else { fb.textContent = Object.values(d).flat().join(' ') || 'Gabim. Provoni përsëri.'; fb.className = 'fb err'; }
       }
