@@ -497,6 +497,15 @@ if EMAIL_USE_TLS and EMAIL_USE_SSL:
     )
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+# Without this, smtplib uses the socket module's default timeout (blocking,
+# no timeout at all) for every connect/send. On a host where outbound SMTP
+# is silently dropped rather than actively refused (common on cloud
+# platforms' default networking), that leaves whatever called send_mail()
+# hanging on the OS-level TCP timeout — minutes, sometimes longer. Any
+# send_mail() call left running synchronously in a request/response cycle
+# (or a Celery task without its own retry/backoff bound) inherits that hang.
+# 10s is generous for a normal SMTP handshake and fails fast otherwise.
+EMAIL_TIMEOUT = _env_int('EMAIL_TIMEOUT', 10)
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@bizal.al')
 ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL', 'admin@bizal.al')
 

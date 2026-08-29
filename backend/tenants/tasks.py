@@ -11,6 +11,78 @@ from django.db.utils import OperationalError
 from django.utils import timezone
 from django.core.mail import send_mail
 from django.conf import settings
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
+def send_signup_pending_review_emails(self, tenant_id, user_id):
+    """
+    Sends the two "pending review" emails (owner + internal superadmin alert)
+    after a new tenant signs up.
+
+    Moved off the request/response cycle of tenant_signup() in views.py:
+    that view previously called send_mail() twice, synchronously, inline —
+    with fail_silently=True. fail_silently only swallows exceptions once the
+    SMTP attempt *fails*; it does nothing about how long that attempt takes
+    to fail. EMAIL_TIMEOUT isn't set anywhere in settings, so a blocked or
+    unreachable SMTP host (e.g. an outbound-SMTP-blocking cloud network)
+    leaves smtplib's connect() call blocking on the OS-level TCP timeout —
+    which can be minutes, or effectively forever if packets are silently
+    dropped rather than refused. The HTTP request (and the signup button on
+    the frontend, stuck on "Duke u krijuar...") hangs right along with it.
+    Sending here, from a Celery worker, keeps that latency off the
+    request/response path entirely; retries handle transient SMTP failures.
+    """
+    from .models import Tenant
+    from accounts.models import User
+
+    try:
+        tenant = Tenant.objects.get(pk=tenant_id)
+        user = User.objects.get(pk=user_id)
+    except (Tenant.DoesNotExist, User.DoesNotExist):
+        logger.warning(
+            "send_signup_pending_review_emails: tenant %s or user %s no longer exists",
+            tenant_id, user_id,
+        )
+        return
+
+    try:
+        send_mail(
+            subject='Llogaria juaj BizAL është në shqyrtim',
+            message=(
+                f'Përshëndetje {user.full_name},\n\n'
+                f'Faleminderit që u regjistruat në BizAL!\n\n'
+                f'Llogaria për "{tenant.name}" është krijuar dhe po shqyrtohet nga ekipi ynë. '
+                f'Do t\'ju njoftojmë me email sapo të aktivizohet — zakonisht brenda 24 orësh.\n\n'
+                f'Nëse keni pyetje, shkruani te support@bizal.al\n\n'
+                f'BizAL Team'
+            ),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            fail_silently=False,
+        )
+        send_mail(
+            subject=f'[BizAL] Tenant i ri në pritje: {tenant.name}',
+            message=(
+                f'Tenant i ri u regjistrua dhe pret aktivizim.\n\n'
+                f'Emri: {tenant.name}\n'
+                f'Slug: {tenant.slug}\n'
+                f'Lloji: {tenant.business_type}\n'
+                f'Owner: {user.full_name} <{user.email}>\n\n'
+                f'Aktivizo nga paneli i superadmin-it.'
+            ),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[settings.ADMIN_EMAIL],
+            fail_silently=False,
+        )
+    except Exception as exc:
+        logger.error(
+            "send_signup_pending_review_emails failed for tenant %s (attempt %d): %s",
+            tenant_id, self.request.retries + 1, exc,
+        )
+        raise self.retry(exc=exc)
 
 
 @shared_task

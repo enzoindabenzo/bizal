@@ -671,7 +671,7 @@ class TenantSignupTests(TestCase):
 
     # ── Happy path ────────────────────────────────────────────
 
-    @patch('tenants.views.send_mail')
+    @patch('tenants.tasks.send_mail')
     def test_signup_creates_tenant_user_and_returns_jwt(self, mock_mail):
         resp = self.client.post(self.url, self.base_payload, format='json')
         self.assertEqual(resp.status_code, 201, resp.data)
@@ -693,7 +693,7 @@ class TenantSignupTests(TestCase):
         self.assertEqual(user.role, 'owner')
         self.assertEqual(user.tenant, tenant)
 
-    @patch('tenants.views.send_mail')
+    @patch('tenants.tasks.send_mail')
     def test_signup_sends_two_emails(self, mock_mail):
         self.client.post(self.url, self.base_payload, format='json')
         self.assertEqual(mock_mail.call_count, 2)
@@ -709,7 +709,7 @@ class TenantSignupTests(TestCase):
         self.assertEqual(resp.status_code, 400)
         self.assertIn('slug', resp.data)
 
-    @patch('tenants.views.send_mail')
+    @patch('tenants.tasks.send_mail')
     def test_email_already_used_on_another_tenant_is_allowed(self, mock_mail):
         # Per-tenant email uniqueness (see accounts.models.User): the same
         # person can own accounts on multiple tenants with the same email.
@@ -722,7 +722,7 @@ class TenantSignupTests(TestCase):
         resp = self.client.post(self.url, self.base_payload, format='json')
         self.assertEqual(resp.status_code, 201)
 
-    @patch('tenants.views.send_mail')
+    @patch('tenants.tasks.send_mail')
     def test_weak_password_rejected(self, mock_mail):
         payload = dict(self.base_payload, owner_password='1234')
         resp = self.client.post(self.url, payload, format='json')
@@ -736,7 +736,7 @@ class TenantSignupTests(TestCase):
 
     # ── Referral ─────────────────────────────────────────────
 
-    @patch('tenants.views.send_mail')
+    @patch('tenants.tasks.send_mail')
     def test_valid_referral_applies_credit(self, mock_mail):
         referrer = Tenant.objects.create(
             name='Referrer Co', slug='referrer-co', business_type='restaurant',
@@ -755,7 +755,7 @@ class TenantSignupTests(TestCase):
 
     # ── Race-condition guard ──────────────────────────────────
 
-    @patch('tenants.views.send_mail')
+    @patch('tenants.tasks.send_mail')
     def test_integrity_error_on_duplicate_email_returns_400_and_rolls_back_tenant(self, mock_mail):
         """
         Simulates the TOCTOU window: serializer validation passes, but
@@ -776,7 +776,7 @@ class TenantSignupTests(TestCase):
 
     # ── Trial defaults ────────────────────────────────────────
 
-    @patch('tenants.views.send_mail')
+    @patch('tenants.tasks.send_mail')
     def test_trial_ends_at_not_set_at_signup(self, mock_mail):
         # Trial clock is activation-gated: signup must
         # leave trial_ends_at unset. It only gets set when a superadmin
@@ -2921,7 +2921,7 @@ class TenantSignupTests__views_extra(TestCase):
         self.assertEqual(referrer.referral_credits, 0)
 
     def test_email_send_failure_does_not_break_signup(self):
-        with patch('tenants.views.send_mail', side_effect=Exception('smtp down')):
+        with patch('tenants.tasks.send_mail', side_effect=Exception('smtp down')):
             resp = self.client.post(
                 '/api/tenants/signup/',
                 self._payload(slug='emailfail-signup-biz', owner_email='emailfail@test.com'),
@@ -3235,7 +3235,7 @@ class TenantMeViewNoTenantTests(TestCase):
 
 
 class TenantSignupUnknownReferralTests(TestCase):
-    @patch('tenants.views.send_mail')
+    @patch('tenants.tasks.send_mail')
     def test_signup_referral_race_condition_falls_back_gracefully(self, mock_mail):
         """
         TenantSignupSerializer.validate_referral_code() already checks the

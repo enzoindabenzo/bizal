@@ -1,6 +1,5 @@
 from django.conf import settings
 from django.core.cache import cache
-from django.core.mail import send_mail
 from django.db.models import Q
 from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes
@@ -272,41 +271,33 @@ def tenant_signup(request):
 
     refresh = RefreshToken.for_user(user)
 
-    # Notify the owner their account is pending review.
-    # Done synchronously — it's a single send on an infrequent path and
-    # doesn't need to block the response meaningfully.
+    # Notify the owner (and the internal superadmin alert) their account is
+    # pending review — via a Celery task, not inline.
+    #
+    # FIX: this used to call send_mail() twice, synchronously, right here in
+    # the request/response cycle, wrapped only in `except Exception: pass`.
+    # That try/except only protects against send_mail() *raising* — it does
+    # nothing about send_mail() *hanging*. EMAIL_TIMEOUT is unset anywhere in
+    # settings, so smtplib's connection attempt uses no timeout at all; on a
+    # host where outbound SMTP is blocked/dropped rather than refused (common
+    # on cloud platforms), that connect() call blocks until the OS-level TCP
+    # timeout — which is exactly what left the signup button on the frontend
+    # stuck on "Duke u krijuar..." indefinitely. Offloading to Celery (as
+    # every other transactional email in this codebase already does — see
+    # notifications/tasks.py, tenants/tasks.py's other _send_*_email
+    # helpers) keeps SMTP latency off this response entirely.
+    # .delay() only enqueues onto the broker and returns immediately — it
+    # does not wait for the task (or its retries) to finish, so in normal
+    # (non-eager) operation nothing here can hang or fail this response.
+    # Still wrapped: a broker connection error at enqueue time, or Celery
+    # running in CELERY_TASK_ALWAYS_EAGER mode (as in tests), would
+    # otherwise propagate synchronously — and email delivery must not be
+    # able to break signup either way, per the original try/except here.
+    from .tasks import send_signup_pending_review_emails
     try:
-        send_mail(
-            subject='Llogaria juaj BizAL është në shqyrtim',
-            message=(
-                f'Përshëndetje {user.full_name},\n\n'
-                f'Faleminderit që u regjistruat në BizAL!\n\n'
-                f'Llogaria për "{tenant.name}" është krijuar dhe po shqyrtohet nga ekipi ynë. '
-                f'Do t\'ju njoftojmë me email sapo të aktivizohet — zakonisht brenda 24 orësh.\n\n'
-                f'Nëse keni pyetje, shkruani te support@bizal.al\n\n'
-                f'BizAL Team'
-            ),
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-            fail_silently=True,
-        )
-        # Internal alert so superadmin e di pa hapur panelin.
-        send_mail(
-            subject=f'[BizAL] Tenant i ri në pritje: {tenant.name}',
-            message=(
-                f'Tenant i ri u regjistrua dhe pret aktivizim.\n\n'
-                f'Emri: {tenant.name}\n'
-                f'Slug: {tenant.slug}\n'
-                f'Lloji: {tenant.business_type}\n'
-                f'Owner: {user.full_name} <{user.email}>\n\n'
-                f'Aktivizo nga paneli i superadmin-it.'
-            ),
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[settings.ADMIN_EMAIL],
-            fail_silently=True,
-        )
+        send_signup_pending_review_emails.delay(tenant_id=str(tenant.id), user_id=str(user.id))
     except Exception:
-        pass  # Email dërgimi nuk duhet të thyejë signup-in
+        logger.exception('Failed to enqueue signup notification emails for tenant %s', tenant.id)
 
     return Response({
         'message': f'Tenant created. Your {TRIAL_DAYS}-day trial will start once your account is activated.',
