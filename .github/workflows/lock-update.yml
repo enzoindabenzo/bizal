@@ -1,0 +1,55 @@
+name: Weekly lockfile update
+
+# Runs `make lock` (pip-compile --upgrade) on a schedule and opens a PR if
+# backend/requirements.txt changed. This is the "reactive fix, automated"
+# half of the lock-check story: lock-check (in ci.yml or wherever your main
+# CI lives) keeps failing the moment any transitive dependency cuts a new
+# release — that's intentional, see the Makefile comments — but instead of
+# discovering that mid-review on an unrelated PR, this job discovers it on
+# its own schedule and hands you a dedicated PR to review and merge.
+#
+# You still approve every bump by hand; this just moves *when* you're asked
+# to, off the critical path of unrelated work.
+
+on:
+  schedule:
+    # Every Monday 06:00 UTC. Adjust to taste.
+    - cron: "0 6 * * 1"
+  workflow_dispatch: {}
+    # Lets you trigger it manually from the Actions tab instead of waiting
+    # for Monday, e.g. right after a CVE announcement.
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-lockfile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          # Match whatever your main CI (lock-check) uses so the resolve
+          # this job produces is the one lock-check will also accept.
+
+      - name: Run make lock
+        run: make lock
+
+      - name: Open PR if requirements.txt changed
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "chore(deps): update backend/requirements.txt"
+          title: "chore(deps): weekly lockfile update"
+          body: |
+            Automated `make lock` run (pip-compile --upgrade against
+            backend/requirements.in). Opened because the regenerated
+            requirements.txt differs from the committed one.
+
+            Review the diff below like any dependency bump — check
+            changelogs for anything non-patch, then merge.
+          branch: chore/lockfile-update
+          delete-branch: true
+          labels: dependencies
