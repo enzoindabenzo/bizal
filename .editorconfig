@@ -1,0 +1,22 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+# Machine-generated lockfile — pip-compile always writes it with a
+# trailing newline and LF; keep any editor that opens it in agreement,
+# since make lock-check diffs it byte-for-byte against a fresh compile.
+[backend/requirements*.txt]
+insert_final_newline = true
+end_of_line = lf
+
+[*.{yml,yaml,json,md}]
+indent_size = 2
+
+[Makefile]
+indent_style = tab
