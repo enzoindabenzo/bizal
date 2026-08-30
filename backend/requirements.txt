@@ -140,7 +140,7 @@ pypdf==6.16.2
     # via xhtml2pdf
 python-bidi==0.6.11
     # via xhtml2pdf
-python-crontab==3.3.0
+python-crontab==3.4.0
     # via django-celery-beat
 python-dateutil==2.9.0.post0
     # via
@@ -203,7 +203,7 @@ vine==5.1.0
     #   amqp
     #   celery
     #   kombu
-wcwidth==0.8.3
+wcwidth==0.8.2
     # via prompt-toolkit
 webencodings==0.6.1
     # via
