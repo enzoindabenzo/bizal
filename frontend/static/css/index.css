@@ -137,9 +137,6 @@
     .btn-nav-login:hover { color:var(--text);background:var(--vapor); }
     .btn-nav-register { font-size:12.5px;font-weight:600;color:#F7F6F3;background:var(--tenant-primary,var(--ink));padding:7px 16px;border-radius:var(--radius-pill);border:none;cursor:pointer;transition:transform .15s var(--ease-out),filter .15s,box-shadow .15s;box-shadow:var(--shadow-xs); }
     .btn-nav-register:hover { filter:brightness(1.12);transform:translateY(-1px);box-shadow:var(--shadow-sm); }
-    .hbg { display:none;flex-direction:column;gap:4px;background:none;border:none;cursor:pointer;padding:6px;border-radius:var(--radius-sm);transition:background .15s; }
-    .hbg:hover { background:var(--vapor); }
-    .hbg span { display:block;width:20px;height:2px;background:var(--text);border-radius:2px;transition:var(--transition); }
     .icon-btn { width:34px;height:34px;border-radius:50%;border:none;background:none;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,transform .15s; }
     .icon-btn:hover { background:var(--vapor);transform:scale(1.06); }
     .user-greeting { border-radius:var(--radius-pill);padding:6px 12px;transition:background var(--transition);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:1;min-width:0;font-weight:500; }
@@ -147,17 +144,12 @@
     .btn-hero-cta { transition:transform .15s var(--ease-out),filter var(--transition);display:inline-block; }
     .btn-hero-cta:hover { filter:brightness(1.1);transform:translateY(-1px); }
 
-    /* ── Mobile drawer ───────────────────────────────── */
-    #mob-drawer { position:fixed;inset:0;z-index:200;pointer-events:none; }
-    #mob-drawer.open { pointer-events:all; }
-    #mob-overlay { position:absolute;inset:0;background:rgba(10,10,10,.45);backdrop-filter:blur(2px);opacity:0;transition:opacity .25s; }
-    #mob-drawer.open #mob-overlay { opacity:1; }
-    #mob-panel { position:absolute;top:0;right:0;width:270px;height:100%;background:var(--surface);border-left:1px solid var(--border);padding:24px 20px;display:flex;flex-direction:column;gap:3px;transform:translateX(100%);transition:transform .3s var(--ease-out);box-shadow:var(--shadow-lg); }
-    #mob-drawer.open #mob-panel { transform:translateX(0); }
-    .mob-link { font-size:14px;font-weight:500;color:var(--text);padding:10px 12px;border-radius:var(--radius);display:block;transition:var(--transition); }
-    .mob-link:hover { background:var(--vapor); }
-    .mob-link.active { background:var(--tenant-primary,var(--ink));color:#fff; }
-    .mob-sep { height:1px;background:var(--border);margin:12px 0; }
+    /* Mobile drawer (#mob-drawer/#mob-panel/.mob-link/.hbg) removed —
+       it was never actually reachable: its only trigger (.hbg) was
+       `display:none` with no breakpoint override, and every piece of
+       content it held (auth buttons, theme toggle, primary CTA, section
+       nav links) already has a working, visible equivalent elsewhere
+       (topbar-right / #section-tabs / masthead), so nothing was lost. */
 
     /* ── Logo bar ────────────────────────────────────── */
     #logo-bar { display:flex;align-items:center;gap:14px;padding:20px 24px 0;max-width:1100px;margin:0 auto;width:100%; }
@@ -193,7 +185,7 @@
     .mh-stat-lbl { font-size:11px;color:rgba(255,255,255,.6);margin-top:4px;display:block;white-space:nowrap; }
 
     /* ── Section tabs ────────────────────────────────── */
-    #section-tabs { background:var(--surface);border-bottom:1px solid var(--border-soft,var(--border));position:sticky;top:56px;z-index:90;overflow-x:auto;scrollbar-width:none;box-shadow:var(--shadow-xs); }
+    #section-tabs { background:var(--surface);border-bottom:1px solid var(--border-soft,var(--border));position:sticky;top:var(--topbar-h, 56px);z-index:90;overflow-x:auto;scrollbar-width:none;box-shadow:var(--shadow-xs); }
     #section-tabs::-webkit-scrollbar { display:none; }
     .tabs-inner { display:flex;gap:4px;max-width:1100px;margin:0 auto;padding:10px 20px; }
     .tab-btn { font-family:var(--font-sans);font-size:13px;font-weight:500;color:var(--text-muted);padding:9px 15px;border:none;border-radius:var(--radius-pill);background:none;cursor:pointer;white-space:nowrap;transition:color .15s,background .15s; }
@@ -331,7 +323,7 @@
     #svc-container.grid-view .svc-list { display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;border:none; }
 
     /* ── Menu ────────────────────────────────────────── */
-    .menu-cat-nav { display:flex;gap:8px;flex-wrap:wrap;margin-bottom:22px; }
+    .menu-cat-nav { display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:22px; }
     .cat-pill { font-size:12.5px;font-weight:600;padding:7px 15px;border-radius:var(--radius-pill);border:1px solid var(--border);background:var(--surface);color:var(--text-muted);cursor:pointer;transition:transform .15s var(--ease-out),background .15s,color .15s,border-color .15s; }
     .cat-pill.active,.cat-pill:hover { background:var(--tenant-primary,var(--ink));color:#fff;border-color:transparent;transform:translateY(-1px); }
     .menu-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px; }
@@ -556,11 +548,10 @@
     /* ── Responsive ──────────────────────────────────── */
     @media (max-width:768px) {
       .topbar-nav { display:none; }
-      /* Hamburger + mobile drawer removed: #section-tabs (the sticky
-         Overview/Produkte/Vlerësime bar) already provides mobile
-         navigation, so the redundant drawer just added visual clutter
-         and squeezed the topbar (see #topbar-name fix above) for no
-         functional benefit. */
+      /* #section-tabs (the sticky Overview/Produkte/Vlerësime bar) is the
+         mobile nav — the old hamburger + drawer were dead weight (see the
+         removal note near .btn-hero-cta above) and squeezed the topbar
+         (see #topbar-name fix above) for no functional benefit. */
       #topbar { padding:8px 14px;gap:8px; }
       #topbar-name { max-width:100px; }
       #topbar-type-badge { max-width:80px; }

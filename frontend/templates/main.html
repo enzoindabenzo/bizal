@@ -1701,7 +1701,17 @@ window.BIZAL_ALLOW_TENANT_QUERY_PARAM = {{ allow_tenant_query_param|yesno:"true,
         (function step(now) { const t = Math.min((now - s) / dur, 1); const e = 1 - Math.pow(1 - t, 3); el.textContent = (dec ? (target * e).toFixed(1) : Math.floor(target * e).toLocaleString('sq')) + sfx; if (t < 1) requestAnimationFrame(step); })(performance.now());
       });
     }
-    new IntersectionObserver(ents => { ents.forEach(e => { if (e.isIntersecting) animCounters(); }); }, { threshold: .3 }).observe(document.querySelector('.stats'));
+    const statsObserver = new IntersectionObserver(ents => {
+      ents.forEach(e => {
+        if (e.isIntersecting) {
+          animCounters();
+          statsObserver.disconnect(); // run once — otherwise every re-entry into
+                                       // view (scroll away and back) replayed the
+                                       // count-up animation from 0 again.
+        }
+      });
+    }, { threshold: .3 });
+    statsObserver.observe(document.querySelector('.stats'));
 
     let _authedEmail = '';
     function updateBizFormAuthState() {

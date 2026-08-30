@@ -48,34 +48,14 @@
     </button>
     <button class="icon-btn" id="theme-toggle" title="Ndrysho temën" aria-label="Toggle theme"><span data-icn="moon"></span></button>
     <div id="nav-auth-area" class="nav-auth-area"></div>
-    <button class="hbg" id="hbg" aria-label="Open menu" aria-expanded="false">
-      <span></span><span></span><span></span>
-    </button>
   </div>
 </nav>
 
-<!-- MOBILE DRAWER -->
-<div id="mob-drawer" aria-hidden="true">
-  <div id="mob-overlay"></div>
-  <div id="mob-panel">
-    <a href="#" class="mob-link active" data-section="overview"><span data-icn="house"></span> Overview</a>
-    <a href="#" class="mob-link hidden" data-section="services" id="ml-services"><span data-icn="sparkle"></span> Shërbime</a>
-    <a href="#" class="mob-link hidden" data-section="menu" id="ml-menu"><span data-icn="fork"></span> Menu</a>
-    <a href="#" class="mob-link hidden" data-section="orders" id="ml-orders"><span data-icn="cart"></span> Porosit</a>
-    <a href="#" class="mob-link hidden" data-section="rentals" id="ml-rentals"><span data-icn="car"></span> Flotë</a>
-    <a href="#" class="mob-link" data-section="reviews"><span data-icn="star"></span> Vlerësime</a>
-    <a href="#" class="mob-link hidden" data-section="blog" id="ml-blog"><span data-icn="newspaper"></span> Blog</a>
-    <span id="ml-extra-pages" style="display:contents"></span>
-    <a href="#" class="mob-link" data-section="contact"><span data-icn="phone"></span> Kontakt</a>
-    <a href="#" class="mob-link hidden" data-section="profile" id="ml-profile"><span data-icn="user"></span> Profili Im</a>
-    <div class="mob-sep"></div>
-    <div id="mob-auth-area" style="display:flex;gap:8px;flex-wrap:wrap"></div>
-    <div style="display:flex;gap:8px;margin-top:4px">
-      <button class="btn-brand" id="mob-btn-book" style="flex:1">Rezervo</button>
-      <button class="icon-btn" id="mob-theme-toggle"><span data-icn="moon"></span></button>
-    </div>
-  </div>
-</div>
+<!-- The old hamburger button + #mob-drawer mobile menu were removed here:
+     the hamburger trigger was permanently display:none with no breakpoint
+     override (so the drawer was never actually reachable), and every
+     control it held (login/logout, theme toggle, primary CTA, section nav)
+     already has a working equivalent in the topbar or #section-tabs. -->
 
 <!-- LOGO BAR -->
 <div id="logo-bar" style="display:none">
@@ -713,12 +693,36 @@ window.addEventListener('scroll', () => {
   document.getElementById('topbar').classList.toggle('scrolled', window.scrollY > 4);
 }, { passive: true });
 
+/* ── TOPBAR HEIGHT SYNC ──
+   BUG FIX: #topbar is `flex-wrap:wrap` (long tenant name + type badge + nav +
+   auth buttons can wrap onto a second row on narrower viewports), but it only
+   has a `min-height:56px`, and #section-tabs below it was hardcoded to
+   `position:sticky; top:56px`. Whenever the topbar actually wrapped and grew
+   past 56px, its real (taller) height covered the top slice of the sticky
+   section-tabs strip — that's the "shirit above gets cut out" glitch, and it
+   only happened "sometimes" because it depended on tenant name length /
+   viewport width causing the wrap. Measure the topbar's real rendered height
+   and expose it as --topbar-h so #section-tabs' sticky offset always matches,
+   however many rows the topbar is currently wrapped into. */
+(function () {
+  const topbarEl = document.getElementById('topbar');
+  if (!topbarEl) return;
+  const syncTopbarHeight = () => {
+    document.documentElement.style.setProperty('--topbar-h', topbarEl.offsetHeight + 'px');
+  };
+  syncTopbarHeight();
+  if (window.ResizeObserver) {
+    new ResizeObserver(syncTopbarHeight).observe(topbarEl);
+  } else {
+    window.addEventListener('resize', syncTopbarHeight);
+  }
+})();
+
 /* ── THEME ── */
 (function () {
   const t = localStorage.getItem('bizal-theme') || 'light';
   document.documentElement.setAttribute('data-theme', t);
   document.getElementById('theme-toggle').innerHTML     = icon(t === 'dark' ? 'sun' : 'moon');
-  document.getElementById('mob-theme-toggle').innerHTML = icon(t === 'dark' ? 'sun' : 'moon');
 })();
 function toggleTheme() {
   const c = document.documentElement.getAttribute('data-theme') || 'light';
@@ -726,10 +730,8 @@ function toggleTheme() {
   document.documentElement.setAttribute('data-theme', n);
   localStorage.setItem('bizal-theme', n);
   document.getElementById('theme-toggle').innerHTML     = icon(n === 'dark' ? 'sun' : 'moon');
-  document.getElementById('mob-theme-toggle').innerHTML = icon(n === 'dark' ? 'sun' : 'moon');
 }
 document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
-document.getElementById('mob-theme-toggle').addEventListener('click', toggleTheme);
 
 /* ── TOAST ── */
 const TOAST_ICON = { tok:'check-circle', twarn:'warning', warning:'warning', error:'warning', star:'star', cart:'cart' };
@@ -743,39 +745,23 @@ function toast(msg, type = 'tok') {
   setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 260); }, 3400);
 }
 
-/* ── HAMBURGER / MOBILE DRAWER ── */
-const drawer = document.getElementById('mob-drawer');
-document.getElementById('hbg').addEventListener('click', () => {
-  const open = drawer.classList.toggle('open');
-  drawer.setAttribute('aria-hidden', String(!open));
-  document.body.style.overflow = open ? 'hidden' : '';
-});
-document.getElementById('mob-overlay').addEventListener('click', closeDrawer);
-function closeDrawer() {
-  drawer.classList.remove('open');
-  drawer.setAttribute('aria-hidden', 'true');
-  document.body.style.overflow = '';
-}
-
 /* ── SECTION ROUTER ── */
 let currentSection = 'overview';
 const sectionLoaders = {};
 const sectionLoaded  = {};
 
 function goSection(id) {
-  if (id === currentSection) { closeDrawer(); return; }
+  if (id === currentSection) return;
   const outPanel = document.getElementById('panel-' + currentSection);
   const inPanel  = document.getElementById('panel-' + id);
-  if (!inPanel) { closeDrawer(); return; }
+  if (!inPanel) return;
   if (outPanel) outPanel.classList.remove('active', 'anim');
   inPanel.classList.add('active');
   requestAnimationFrame(() => requestAnimationFrame(() => inPanel.classList.add('anim')));
   document.querySelectorAll('.tab-btn').forEach(b  => b.classList.toggle('active',  b.dataset.section === id));
   document.querySelectorAll('.tnl').forEach(l      => l.classList.toggle('active',  l.dataset.section === id));
-  document.querySelectorAll('.mob-link').forEach(l => l.classList.toggle('active',  l.dataset.section === id));
   currentSection = id;
   window.scrollTo({ top: document.getElementById('section-tabs').offsetTop - 2, behavior: 'smooth' });
-  closeDrawer();
   if (!sectionLoaded[id] && sectionLoaders[id]) { sectionLoaders[id](); sectionLoaded[id] = true; }
   try {
     fetch(`/api/analytics/track/?tenant=${slug}`, {
@@ -786,14 +772,13 @@ function goSection(id) {
   } catch (_) {}
 }
 requestAnimationFrame(() => { document.getElementById('panel-overview')?.classList.add('anim'); });
-document.querySelectorAll('.tab-btn[data-section], .tnl[data-section], .mob-link[data-section]').forEach(el => {
+document.querySelectorAll('.tab-btn[data-section], .tnl[data-section]').forEach(el => {
   el.addEventListener('click', e => { e.preventDefault(); goSection(el.dataset.section); });
 });
 document.querySelectorAll('[data-section="profile"]').forEach(el => {
   el.addEventListener('click', e => {
     e.preventDefault();
     e.stopImmediatePropagation();
-    closeDrawer();
     goSection('profile');
   });
 });
@@ -1034,6 +1019,26 @@ function canReserve() { return TENANT?.slug === ADRIATIK_SLUG; }
 // either the one table-reservation tenant, or any appointment-type
 // (isAppt) service business, which always has a working booking modal.
 function wantsBooking(bt) { return canReserve() || isAppt(bt); }
+// BUG FIX: the small "Rezervo"/"Kontaktoni" quick-action button that appears
+// in the topbar once a visitor is logged in (#btn-book-now-auth, wired in
+// updateAuthUI()) used to decide its label/action from wantsBooking(bt)
+// alone — which is false for every rental type (car/boat/property/equipment/
+// hotel) and every shop type, so a logged-in visitor on a car-rental tenant
+// saw "Kontakt" there and got sent to the contact form, same dead-end bug as
+// the masthead CTA and the per-vehicle "book" buttons. These two helpers are
+// the single source of truth for that label/action, shared between the
+// topbar auth button and the masthead CTA (renderMasthead below), so the
+// three surfaces can't drift out of sync again.
+function quickBookLabel(bt) {
+  if (isRental(bt)) return bt === 'hotel' ? 'Dhoma' : 'Flotë';
+  if (isShop(bt))   return 'Produkte';
+  return wantsBooking(bt) ? 'Rezervo' : 'Kontakt';
+}
+function quickBookAction(bt) {
+  if (isRental(bt)) return () => goSection('rentals');
+  if (isShop(bt))   return () => goSection('services');
+  return wantsBooking(bt) ? () => openBookingModal() : () => goSection('contact');
+}
 
 // Display date for the generic per-tenant Kushtet/Privatësia pages
 // (#panel-kushtet / #panel-privatesia). Bump this manually whenever that
@@ -1051,38 +1056,29 @@ let CURRENT_USER = null;
    AUTH
 ═══════════════════════════════════════ */
 function updateAuthUI() {
-  const area    = document.getElementById('nav-auth-area');
-  const mobArea = document.getElementById('mob-auth-area');
+  const area = document.getElementById('nav-auth-area');
   if (Auth.isLoggedIn()) {
     area.innerHTML = `
       <button class="user-greeting" id="user-greeting"
         style="background:none;border:none;cursor:pointer;font-size:.78rem;color:var(--muted);font-family:var(--font-b)">…</button>
-      <button class="btn-brand" id="btn-book-now-auth">${wantsBooking(TENANT?.business_type) ? 'Rezervo' : 'Kontakt'}</button>
+      <button class="btn-brand" id="btn-book-now-auth">${quickBookLabel(TENANT?.business_type)}</button>
       <button class="btn-out-sm" id="btn-logout">Dil</button>`;
-    if (mobArea) mobArea.innerHTML = `<button class="btn-out-sm" style="flex:1" id="mob-btn-logout">Dil</button>`;
     document.getElementById('user-greeting')?.addEventListener('click', () => {
-      closeDrawer();
       goSection('profile');
     });
-    document.getElementById('btn-book-now-auth')?.addEventListener('click', () => {
-      if (wantsBooking(TENANT?.business_type)) openBookingModal();
-      else goSection('contact');
-    });
+    document.getElementById('btn-book-now-auth')?.addEventListener('click', quickBookAction(TENANT?.business_type));
     const doLogout = async () => {
       try { await Auth.post('/auth/logout/', { refresh: Auth.getRefresh() }); } catch {}
       Auth.clear(); toast('U çkyçet me sukses.'); updateAuthUI();
     };
     document.getElementById('btn-logout')?.addEventListener('click', doLogout);
-    document.getElementById('mob-btn-logout')?.addEventListener('click', doLogout);
     loadMe();
-    showEl('tab-profile'); showEl('tnl-profile'); showEl('ml-profile');
+    showEl('tab-profile'); showEl('tnl-profile');
   } else {
     area.innerHTML = `
       <button class="btn-out-sm" id="btn-login">Hyr</button>`;
-    if (mobArea) mobArea.innerHTML = `<button class="btn-out-sm" style="flex:1" id="mob-btn-login">Hyr</button>`;
-    document.getElementById('btn-login')?.addEventListener('click',     () => openAuthModal('login'));
-    document.getElementById('mob-btn-login')?.addEventListener('click', () => { closeDrawer(); openAuthModal('login'); });
-    hideEl('tab-profile'); hideEl('tnl-profile'); hideEl('ml-profile');
+    document.getElementById('btn-login')?.addEventListener('click', () => openAuthModal('login'));
+    hideEl('tab-profile'); hideEl('tnl-profile');
   }
 }
 
@@ -1842,16 +1838,15 @@ function renderMasthead(t) {
     const orderBtn = document.getElementById('mh-order-btn');
     orderBtn.classList.remove('hidden');
     orderBtn.addEventListener('click', () => goSection('orders'));
-    if (canReserve()) {
-      ctaBtn.textContent = 'Rezervo Tavolinë';
-      ctaBtn.addEventListener('click', () => openBookingModal());
-    } else {
-      ctaBtn.textContent = 'Na Kontaktoni';
-      ctaBtn.addEventListener('click', () => goSection('contact'));
-    }
+    ctaBtn.textContent = canReserve() ? 'Rezervo Tavolinë' : 'Na Kontaktoni';
   } else if (isRental(bt)) {
-    ctaBtn.textContent = 'Na Kontaktoni';
-    ctaBtn.addEventListener('click', () => goSection('contact'));
+    // BUG FIX: this used to set the primary CTA to "Na Kontaktoni" and send
+    // every click straight to the Kontakt section — so trying to rent a car
+    // (or book a room/boat/property/equipment) from the masthead always
+    // dead-ended on the contact form instead of showing the actual fleet.
+    // Point it at the Flotë/Dhoma section instead, same as isShop below
+    // points at the product grid.
+    ctaBtn.innerHTML = `${icon(bt === 'hotel' ? 'bed' : 'car')} ${bt === 'hotel' ? 'Shiko Dhomat' : 'Shiko Flotën'}`;
   } else if (isShop(bt)) {
     // Previously this branch unhid mh-shop-btn ("🛍️ Shiko Produktet")
     // AND set the primary ctaBtn to "Na Kontaktoni" — which duplicated
@@ -1862,21 +1857,23 @@ function renderMasthead(t) {
     // purpose (browse products) instead, and drop the redundant ghost
     // "Shiko Produktet" button since the primary now covers it.
     ctaBtn.innerHTML = `${icon('bag')} Shiko Produktet`;
-    ctaBtn.addEventListener('click', () => goSection('services'));
   } else if (isB2B(bt)) {
     const shopBtn = document.getElementById('mh-shop-btn');
     shopBtn.innerHTML = `${icon('sparkle')} Shiko Shërbimet`;
     shopBtn.classList.remove('hidden');
     shopBtn.addEventListener('click', () => goSection('services'));
     ctaBtn.textContent = 'Na Kontaktoni';
-    ctaBtn.addEventListener('click', () => goSection('contact'));
   } else if (isAppt(bt)) {
     ctaBtn.textContent = 'Rezervo';
-    ctaBtn.addEventListener('click', () => openBookingModal());
   } else {
     ctaBtn.textContent = 'Na Kontaktoni';
-    ctaBtn.addEventListener('click', () => goSection('contact'));
   }
+  // ctaAction is now derived from the same quickBookAction() helper the
+  // topbar's logged-in quick-book button uses (see BUG FIX note above it) —
+  // one source of truth instead of three copies of this if/else that could
+  // (and did) drift out of sync with each other.
+  const ctaAction = quickBookAction(bt);
+  ctaBtn.addEventListener('click', ctaAction);
   if (t.logo) {
     const lb = document.getElementById('logo-bar');
     lb.style.display = 'flex';
@@ -1884,13 +1881,6 @@ function renderMasthead(t) {
     document.getElementById('logo-bar-name').textContent = t.name;
   }
   statObs.observe(document.getElementById('masthead-stats'));
-  const mobBtn = document.getElementById('mob-btn-book');
-  mobBtn.textContent = wantsBooking(bt) ? ctaBtn.textContent : 'Kontakt';
-  mobBtn.addEventListener('click', () => {
-    closeDrawer();
-    if (wantsBooking(bt)) openBookingModal();
-    else goSection('contact');
-  });
 }
 
 function renderTopbarMeta(t) {
@@ -1916,7 +1906,7 @@ function hasFeature(t, key) {
 
 function setupNavVisibility(t) {
   const bt = t.business_type;
-  if (hasFeature(t, 'blog')) { showEl('tab-blog'); showEl('tnl-blog'); showEl('ml-blog'); }
+  if (hasFeature(t, 'blog')) { showEl('tab-blog'); showEl('tnl-blog'); }
   const rentalsTab = document.getElementById('tab-rentals');
   if (rentalsTab) {
     if (bt === 'hotel')              rentalsTab.innerHTML = `${icon('bed')} Dhoma <span class="tab-count" id="tab-rentals-count">0</span>`;
@@ -1929,8 +1919,6 @@ function setupNavVisibility(t) {
     svcTab.innerHTML = `${icon('bag')} Produkte <span class="tab-count" id="tab-services-count">0</span>`;
     const tnlSvc = document.getElementById('tnl-services');
     if (tnlSvc) tnlSvc.textContent = 'Produkte';
-    const mlSvc = document.getElementById('ml-services');
-    if (mlSvc) mlSvc.innerHTML = `${icon('bag')} Produkte`;
   }
 }
 
@@ -2270,15 +2258,12 @@ async function loadHeroAndStorefront() {
     // Extra pages (e.g. "Kushtet & Termat", "Privatësia" …) are created by the
     // tenant in the admin's page builder — this list is not static, it can
     // contain any number of arbitrary pages. Each one gets its own real tab
-    // (topbar link + mobile drawer link + tab-btn + section-panel), built
-    // generically off `page.slug`/`page.title`/`page.body` by
-    // renderExtraPageTab() below — no hardcoded per-page markup needed, and
-    // adding/renaming/unpublishing a page in the admin is reflected on the
-    // next page load automatically.
+    // (topbar link + tab-btn + section-panel), built generically off
+    // `page.slug`/`page.title`/`page.body` by renderExtraPageTab() below —
+    // no hardcoded per-page markup needed, and adding/renaming/unpublishing
+    // a page in the admin is reflected on the next page load automatically.
     const extraNavSlot = document.getElementById('tnl-extra-pages');
-    const extraMobSlot = document.getElementById('ml-extra-pages');
     if (extraNavSlot) extraNavSlot.innerHTML = '';
-    if (extraMobSlot) extraMobSlot.innerHTML = '';
     document.querySelectorAll('.section-panel[data-extra-page]').forEach(p => p.remove());
     document.querySelectorAll('.tab-btn[data-extra-page]').forEach(b => b.remove());
     pubPages.forEach(page => renderExtraPageTab(page));
@@ -2304,11 +2289,11 @@ async function loadHeroAndStorefront() {
   }
 }
 
-// Builds one full tab (topbar link + mobile drawer link + tab-btn +
-// section-panel) for a tenant-created StorefrontPage, e.g. "Kushtet &
-// Termat", "Privatësia", or anything else added later in the admin's page
-// builder. Fully generic — nothing here is hardcoded to a specific page,
-// so any number of pages with any title/slug work the same way.
+// Builds one full tab (topbar link + tab-btn + section-panel) for a
+// tenant-created StorefrontPage, e.g. "Kushtet & Termat", "Privatësia", or
+// anything else added later in the admin's page builder. Fully generic —
+// nothing here is hardcoded to a specific page, so any number of pages with
+// any title/slug work the same way.
 function renderExtraPageTab(page) {
   const id = 'page-' + page.slug;
 
@@ -2332,15 +2317,6 @@ function renderExtraPageTab(page) {
     a.href = '#'; a.className = 'tnl'; a.dataset.section = id; a.textContent = page.title;
     a.addEventListener('click', e => { e.preventDefault(); goSection(id); });
     extraNavSlot.appendChild(a);
-  }
-
-  // Mobile drawer link
-  const extraMobSlot = document.getElementById('ml-extra-pages');
-  if (extraMobSlot) {
-    const a = document.createElement('a');
-    a.href = '#'; a.className = 'mob-link'; a.dataset.section = id; a.innerHTML = icon('newspaper','ic-xs') + ' ' + esc(page.title);
-    a.addEventListener('click', e => { e.preventDefault(); closeDrawer(); goSection(id); });
-    extraMobSlot.appendChild(a);
   }
 
   // Section panel — content is already fully known from the pages fetch,
@@ -2373,11 +2349,11 @@ function renderExtraPageTab(page) {
 }
 
 // Applies the tenant's nav_config (set in the admin's "Struktura e Faqes"
-// panel) to the three parallel nav surfaces: desktop topbar (#topbar-nav),
-// mobile drawer (#mob-panel), and the section tab bar (#section-tabs
-// .tabs-inner). Each surface holds elements with a matching data-section
-// attribute — built-ins use their plain key ("overview", "reviews", …),
-// custom pages use "page-<slug>" (nav_config stores them as "page:<slug>").
+// panel) to the two parallel nav surfaces: desktop topbar (#topbar-nav) and
+// the section tab bar (#section-tabs .tabs-inner). Each surface holds
+// elements with a matching data-section attribute — built-ins use their
+// plain key ("overview", "reviews", …), custom pages use "page-<slug>"
+// (nav_config stores them as "page:<slug>").
 //
 // With no nav_config set (new/unmigrated tenants — nav_config defaults to
 // {}), this is a no-op and the default DOM order/visibility is left exactly
@@ -2401,7 +2377,6 @@ function applyNavConfig(t) {
 
   const containers = [
     document.getElementById('topbar-nav'),
-    document.getElementById('mob-panel'),
     document.querySelector('#section-tabs .tabs-inner'),
   ].filter(Boolean);
 
@@ -2552,25 +2527,25 @@ async function loadServices() {
     renderRentals(ALL_SERVICES);
     applyPageSections('rentals', 'pslot-rentals-grid');
     sectionLoaded.rentals = true;
-    showEl('tab-rentals'); showEl('tnl-rentals'); showEl('ml-rentals');
-    hideEl('tab-services'); hideEl('tnl-services'); hideEl('ml-services');
-    hideEl('tab-menu');    hideEl('tnl-menu');    hideEl('ml-menu');
-    hideEl('tab-orders');  hideEl('tnl-orders');  hideEl('ml-orders');
+    showEl('tab-rentals'); showEl('tnl-rentals');
+    hideEl('tab-services'); hideEl('tnl-services');
+    hideEl('tab-menu');    hideEl('tnl-menu');
+    hideEl('tab-orders');  hideEl('tnl-orders');
   } else if (isFood(bt)) {
     applyPageSections('menu', 'pslot-menu-grid');
     sectionLoaded.menu = true;
-    showEl('tab-menu');   showEl('tnl-menu');   showEl('ml-menu');
-    showEl('tab-orders'); showEl('tnl-orders'); showEl('ml-orders');
-    hideEl('tab-services'); hideEl('tnl-services'); hideEl('ml-services');
-    hideEl('tab-rentals');  hideEl('tnl-rentals');  hideEl('ml-rentals');
+    showEl('tab-menu');   showEl('tnl-menu');
+    showEl('tab-orders'); showEl('tnl-orders');
+    hideEl('tab-services'); hideEl('tnl-services');
+    hideEl('tab-rentals');  hideEl('tnl-rentals');
   } else {
     renderServices(ALL_SERVICES);
     applyPageSections('services', 'pslot-services-grid');
     sectionLoaded.services = true;
-    showEl('tab-services'); showEl('tnl-services'); showEl('ml-services');
-    hideEl('tab-rentals');  hideEl('tnl-rentals');  hideEl('ml-rentals');
-    hideEl('tab-menu');     hideEl('tnl-menu');     hideEl('ml-menu');
-    hideEl('tab-orders');   hideEl('tnl-orders');   hideEl('ml-orders');
+    showEl('tab-services'); showEl('tnl-services');
+    hideEl('tab-rentals');  hideEl('tnl-rentals');
+    hideEl('tab-menu');     hideEl('tnl-menu');
+    hideEl('tab-orders');   hideEl('tnl-orders');
   }
 }
 
@@ -2859,7 +2834,13 @@ function renderRentals(items) {
   }
   const RENTAL_ICONS = { car:'car', van:'van', suv:'car', truck:'truck', motorcycle:'motorcycle', boat:'boat', room:'bed', apartment:'house', equipment:'wrench' };
   const priceLabel = bt === 'hotel' ? '/ natë' : bt === 'property_rental' ? '/ muaj' : '/ ditë';
-  const btnLabel   = 'Kontaktoni';
+  // BUG FIX: label used to read "Kontaktoni" and the click handler below sent
+  // every rental card straight to the Kontakt section — even though each
+  // button already carries data-svc-id/-name/-price/-resource-type, the same
+  // data the services grid (line ~2673) uses to open the real booking modal.
+  // That's why "renting a car" (or a boat/room/property/piece of equipment)
+  // always dead-ended on the contact form instead of actually booking it.
+  const btnLabel   = 'Rezervo';
   grid.innerHTML = items.map(item => {
     const specs   = item.specs || {};
     const rIcon   = RENTAL_ICONS[item.rental_type] || (bt === 'hotel' ? 'bed' : bt === 'boat_rental' ? 'boat' : 'wrench');
@@ -2891,7 +2872,12 @@ function renderRentals(items) {
       </div>`;
   }).join('');
   grid.querySelectorAll('.btn-book[data-svc-name]').forEach(btn => {
-    btn.addEventListener('click', () => goSection('contact'));
+    btn.addEventListener('click', () => openBookingModal(
+      btn.dataset.svcName,
+      Number(btn.dataset.svcPrice) || 0,
+      btn.dataset.svcId,
+      btn.dataset.resourceType,
+    ));
   });
   observeReveals(grid);
 }
@@ -3110,7 +3096,7 @@ async function loadBlog() {
   } catch {
     posts = [];
   }
-  showEl('tab-blog'); showEl('tnl-blog'); showEl('ml-blog');
+  showEl('tab-blog'); showEl('tnl-blog');
   renderBlog(posts);
   // BUG FIX: tags created in django-admin (blog.BlogTag) had no consumer
   // anywhere in the storefront — there was no fetch of /api/blog/tags/ and
