@@ -42,6 +42,26 @@
       --stub-line: rgba(31,26,20,.16);
     }
 
+    /* --tenant-surface has no per-tenant JS override (applyBrand() only
+       ever sets --tenant-bg/--tenant-text, never --tenant-surface — see
+       applyBrand() in index.html), so without this block every card on
+       this page (.rev-summary-card, .rev-form, .contact-info-panel,
+       .bc, .svc-card, .blog-card, .rental-card, .menu-card, etc. — all
+       of them read background:var(--surface)) stays pinned to the light
+       "counter ticket" cream regardless of dark mode: this :root block
+       loads after brand.css's [data-theme="dark"] surface override with
+       identical specificity, so it always wins the cascade. Redeclaring
+       --tenant-surface here, scoped to [data-theme="dark"], lets --surface
+       (index.css line ~51: var(--tenant-surface, #FFFFFF)) resolve dark
+       again without touching every individual card rule.
+       --stub-line (the dashed ticket-stub divider) gets the same
+       treatment — its light-mode ink rgba is nearly invisible against a
+       dark card background otherwise. */
+    [data-theme="dark"] {
+      --tenant-surface: #1C1B17;
+      --stub-line: rgba(240,239,236,.14);
+    }
+
     /* Tenant-aware aliases so existing JS vars keep working */
     :root {
       --brand:        var(--tenant-primary, #111);
