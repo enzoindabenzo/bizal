@@ -23,8 +23,22 @@ class RoomTypeListView(generics.ListAPIView):
 
 
 class RoomListView(generics.ListAPIView):
+    """
+    GET /api/hotels/rooms/ — flat list of every room across all room types.
+
+    BUG FIX: this was IsTenantOwner-only, inconsistent with every other GET
+    in this file (RoomTypeListView, and the GET branches of RoomsByTypeView/
+    RoomDetailView) which all serve the same underlying Room data as
+    AllowAny. The tenant admin UI's vRooms() calls this endpoint to build
+    its per-type room table for ANY staff member viewing the Rooms tab, not
+    just owners/managers — a receptionist or generic staff member hit a
+    403 here that silently fell through to an empty room list with no
+    explanation, even though room-level edit/delete controls are correctly
+    gated to owner/manager separately. Matching the sibling endpoints here
+    restores read access without loosening anything write-related.
+    """
     serializer_class = RoomSerializer
-    permission_classes = [IsTenantOwner]
+    permission_classes = [AllowAny]
 
     def get_queryset(self):
         return Room.objects.filter(tenant=self.request.tenant).select_related('room_type')

@@ -1018,16 +1018,22 @@ function isB2B(bt)    { return B2B_TYPES.includes(bt); }
 function esc(s)     { return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function escHtml(s) { return esc(s); }
 
-// Table-reservation bookings only make sense for the one tenant that
-// actually offers them — every other food tenant gets a "Kontaktoni" CTA
-// instead of a booking modal that has nothing to book. This flag is scoped
-// to that one case; it must NOT be used to gate appointment-type (isAppt)
-// service bookings, which have a real, working time-slot booking modal for
-// every tenant and should always say/do "Rezervo", not "Kontaktoni".
-const ADRIATIK_SLUG = 'restorant-adriatiku';
-function canReserve() { return TENANT?.slug === ADRIATIK_SLUG; }
+// Table-reservation bookings only make sense for food tenants that actually
+// take table bookings — every other food tenant (bakery, delivery kitchen,
+// catering, etc.) gets a "Kontaktoni" CTA instead of a booking modal that
+// has nothing to book. This mirrors tenant_admin.html's isTableReservation
+// and backend/bookings/serializers.py's TYPE_MAP, which both treat
+// restaurant/bar as the table-reservation food types.
+// BUG FIX: this used to be hardcoded to a single demo tenant slug
+// ('restorant-adriatiku'), so every other restaurant/bar tenant showed
+// "Na Kontaktoni" and the CTA click just scrolled to the contact section —
+// the booking modal (which is fully generic and business-type-driven, see
+// openBookingModal()) never opened for them. Scoped by business type now,
+// so it works for every restaurant/bar tenant, not just one.
+const TABLE_RESERVATION_TYPES = ['restaurant', 'bar'];
+function canReserve() { return TABLE_RESERVATION_TYPES.includes(TENANT?.business_type); }
 // Union used anywhere a CTA needs to decide "Rezervo" vs "Kontaktoni":
-// either the one table-reservation tenant, or any appointment-type
+// either a table-reservation food business, or any appointment-type
 // (isAppt) service business, which always has a working booking modal.
 function wantsBooking(bt) { return canReserve() || isAppt(bt); }
 // BUG FIX: the small "Rezervo"/"Kontaktoni" quick-action button that appears

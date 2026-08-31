@@ -69,16 +69,16 @@
       <button class="nav-item" data-view="customers"><span class="ni">👥</span> Klientët</button>
       <button class="nav-item hidden" data-view="crm" id="nav-crm"><span class="ni">🎯</span> CRM / Leads</button>
       <button class="nav-item hidden" data-view="reviews" id="nav-reviews"><span class="ni">⭐</span> Vlerësimet</button>
-      <button class="nav-item" data-view="messages" id="nav-messages"><span class="ni">✉️</span> Mesazhet <span class="nav-badge hidden" id="msg-badge">0</span></button>
+      <button class="nav-item hidden" data-view="messages" id="nav-messages"><span class="ni">✉️</span> Mesazhet <span class="nav-badge hidden" id="msg-badge">0</span></button>
       <button class="nav-item hidden" data-view="blog" id="nav-blog"><span class="ni">📰</span> Blog</button>
 
       <div class="sidebar-section">Financiare</div>
-      <button class="nav-item" data-view="billing"><span class="ni">🧾</span> Faturat</button>
+      <button class="nav-item hidden" data-view="billing" id="nav-billing"><span class="ni">🧾</span> Faturat</button>
       <button class="nav-item hidden" data-view="subscriptions" id="nav-subscriptions"><span class="ni">🔄</span> Abonimet</button>
 
       <div class="sidebar-section">Cilësimet</div>
       <button class="nav-item hidden" data-view="storefront" id="nav-storefront"><span class="ni">🌐</span> Vitrina</button>
-      <button class="nav-item" data-view="staff" id="nav-staff"><span class="ni">👤</span> Stafi</button>
+      <button class="nav-item hidden" data-view="staff" id="nav-staff"><span class="ni">👤</span> Stafi</button>
       <button class="nav-item hidden" data-view="locations" id="nav-locations"><span class="ni">📍</span> Degët</button>
       <button class="nav-item hidden" data-view="referrals" id="nav-referrals"><span class="ni">🎁</span> Referime</button>
       <button class="nav-item" data-view="settings"><span class="ni">⚙️</span> Cilësimet</button>
@@ -197,6 +197,14 @@ const VALID_ADMIN_VIEWS = ['dashboard','analytics','notifications','bookings','o
 // Helper: check a feature flag from the tenant's features array (global — used by
 // buildSidebar() and by view renderers like vSettings, which run in a separate scope)
 const hasFeature = key => (TENANT?.features||[]).some(f=>f.key===key && ['true','1','yes'].includes((f.value||'').toLowerCase()));
+// Helper: mirrors backend HasTenantRole(*roles) — owner/manager always pass
+// (management tier), plus whichever granular staff_role values are listed.
+// USER.role is only ever owner/manager/staff/customer/superadmin; the
+// granular sub-role (receptionist/accountant/etc.) lives in USER.staff_role.
+// Centralizing this avoids re-deriving the same owner/manager-always-pass
+// logic (and the role vs. staff_role field mixup) at every call site.
+const hasTenantRole = (...roles) =>
+  ['owner','manager'].includes(USER.role) || roles.includes(USER.staff_role);
 let currentView = 'dashboard';
 let confirmCb = null;
 
@@ -451,7 +459,9 @@ async function doLogin() {
     document.getElementById('app').classList.remove('hidden');
     buildSidebar();
     pollNotifications();
-    pollMessagesBadge();
+    // /contact/admin/messages/ requires HasTenantRole('receptionist') —
+    // don't poll it (and spam 403s every 60s) for roles that can't see it.
+    if (hasTenantRole('receptionist')) pollMessagesBadge();
     if (typeof window.__initStaffReply === 'function') window.__initStaffReply();
     const hash = window.location.hash.slice(1);
     loadView(VALID_ADMIN_VIEWS.includes(hash) ? hash : 'dashboard');
@@ -582,14 +592,57 @@ function buildSidebar() {
 
   if (hasFeature('blog'))             document.getElementById('nav-blog')?.classList.remove('hidden');
   if (hasFeature('reviews'))          document.getElementById('nav-reviews')?.classList.remove('hidden');
-  if (hasFeature('analytics'))        document.getElementById('nav-analytics')?.classList.remove('hidden');
-  if (hasFeature('crm'))              document.getElementById('nav-crm')?.classList.remove('hidden');
-  if (['owner','manager'].includes(USER.role)) document.getElementById('nav-staff')?.classList.remove('hidden');
+  // BUG FIX: nav-analytics and nav-crm were gated only by feature flag,
+  // never by role — even though the backends require specific roles
+  // (analytics/views.py: IsTenantOwner; crm/views.py:
+  // HasTenantRole('receptionist','accountant')). A receptionist or generic
+  // staff member with the feature enabled would see these tabs and hit a
+  // silent/confusing 403. Mirror the backend role check the same way
+  // nav-staff already does.
+  if (hasFeature('analytics') && hasTenantRole())                    document.getElementById('nav-analytics')?.classList.remove('hidden');
+  if (hasFeature('crm') && hasTenantRole('receptionist','accountant')) document.getElementById('nav-crm')?.classList.remove('hidden');
+  // BUG FIX: nav-messages had NO gating at all — always visible regardless
+  // of role — even though every endpoint underneath it (contact/views.py:
+  // ContactMessageListView/DetailView/ReplyView) requires
+  // HasTenantRole('receptionist'). A generic staff member or accountant
+  // would see the tab (with a live unread badge) and hit a 403 on open.
+  if (hasTenantRole('receptionist')) document.getElementById('nav-messages')?.classList.remove('hidden');
+  // BUG FIX: "Faturat" was shown to every tenant regardless of the
+  // 'invoicing' feature flag, even though billing/views.py requires
+  // HasTenantFeature('invoicing') on every endpoint underneath it
+  // (invoicing is off by default on Trial/Starter/Pro and most business
+  // types — see BUSINESS_TYPE_PRESETS in tenants/models.py). Tenants
+  // without it got a nav tab that silently rendered an empty "0
+  // invoices" page with no explanation, same class as the other silent
+  // 403-as-empty-list bugs we've fixed. Gate it like every other
+  // feature-flagged tab.
+  // Same role gap as analytics/crm above: billing/views.py requires
+  // HasTenantRole('accountant') on every endpoint. A receptionist or
+  // generic staff member on a plan with invoicing enabled would otherwise
+  // see the tab and hit a 403.
+  if (hasFeature('invoicing') && hasTenantRole('accountant')) document.getElementById('nav-billing')?.classList.remove('hidden');
+  // BUG FIX: nav-staff only checked role (owner/manager), never the
+  // 'staff_accounts' feature flag that staff/views.py actually requires
+  // (HasTenantFeature('staff_accounts') — off by default on the Starter
+  // plan, on for Trial/Pro/Enterprise, no business-type override). Every
+  // Starter-plan owner saw "Stafi" in the sidebar, got a 403 from
+  // GET /staff/, and silently landed on an empty "Stafi (0)" panel with a
+  // working-looking "+ Shto Anëtar" button that would also fail. Same
+  // class as the Faturat/invoicing gap fixed earlier.
+  if (['owner','manager'].includes(USER.role) && hasFeature('staff_accounts')) document.getElementById('nav-staff')?.classList.remove('hidden');
   // B2B businesses always get inventory shown as "Products/Catalog"
   if (isB2B) document.getElementById('nav-inventory')?.classList.remove('hidden');
-  if (['enterprise'].includes(plan)) document.getElementById('nav-locations')?.classList.remove('hidden');
+  // BUG FIX: nav-locations was plan-gated only, no role check — but
+  // TenantLocationListView/DetailView (tenants/views.py) both require
+  // IsTenantOwner. A receptionist/staff/accountant on an Enterprise plan
+  // would see "Degët" and hit a 403. nav-referrals needs no role gate:
+  // my_referrals (tenants/views.py) is IsAuthenticated only, so every
+  // staff role can already see it — plan gate alone is correct there.
+  if (['enterprise'].includes(plan) && hasTenantRole()) document.getElementById('nav-locations')?.classList.remove('hidden');
   if (['pro','enterprise'].includes(plan)) document.getElementById('nav-referrals')?.classList.remove('hidden');
-  if (hasFeature('subscriptions') || ['pro','enterprise'].includes(plan)) document.getElementById('nav-subscriptions')?.classList.remove('hidden');
+  // subscriptions/views.py also requires HasTenantRole('accountant') —
+  // same fix as nav-billing just above.
+  if ((hasFeature('subscriptions') || ['pro','enterprise'].includes(plan)) && hasTenantRole('accountant')) document.getElementById('nav-subscriptions')?.classList.remove('hidden');
   // Storefront page/hero editing requires custom_branding (Starter plan doesn't
   // have it) AND owner/manager role (StorefrontPage*View permission_classes
   // are [IsTenantOwner, HasTenantFeature('custom_branding')] on the backend) —
@@ -946,8 +999,8 @@ function renderBkTable(rows, actions=true) {
       <td><span class="badge badge-${b.status} bk-status-badge">${esc(b.status)}</span></td>
       ${actions?`<td><div style="display:flex;gap:5px;flex-wrap:wrap">
         <button class="btn btn-xs btn-outline bk-view-btn" data-id="${b.id}">👁</button>
-        ${b.status==='pending'?`<button class="btn btn-xs btn-success bk-confirm-btn" data-id="${b.id}">✓ Konfirmo</button>`:''}
-        ${b.status==='pending'?`<button class="btn btn-xs btn-danger bk-cancel-btn" data-id="${b.id}">✕ Anullo</button>`:''}
+        ${b.status==='pending' && hasTenantRole('receptionist','staff')?`<button class="btn btn-xs btn-success bk-confirm-btn" data-id="${b.id}">✓ Konfirmo</button>`:''}
+        ${b.status==='pending' && hasTenantRole('receptionist','staff')?`<button class="btn btn-xs btn-danger bk-cancel-btn" data-id="${b.id}">✕ Anullo</button>`:''}
       </div></td>`:''}
     </tr>`).join('')}
     </tbody></table>`;
@@ -969,7 +1022,7 @@ async function vBookings(el) {
           <div class="u-flex-g8-wrap">
             ${['all','pending','confirmed','completed','cancelled'].map(s=>`
               <button class="btn btn-sm ${filter===s?'btn-primary':'btn-ghost'} bk-filter" data-s="${s}">${s==='all'?'Të gjitha':s}</button>`).join('')}
-            <button class="btn btn-sm btn-outline" id="bk-export-btn">⬇ Eksporto CSV</button>
+            ${hasTenantRole() && hasFeature('csv_export') ? '<button class="btn btn-sm btn-outline" id="bk-export-btn">⬇ Eksporto CSV</button>' : ''}
             <button class="btn btn-sm btn-primary" id="bk-new-btn">+ Rezervim i ri</button>
           </div>
         </div>
@@ -980,6 +1033,9 @@ async function vBookings(el) {
       </div>`;
     el.querySelectorAll('.bk-filter').forEach(b=>b.addEventListener('click',()=>{filter=b.dataset.s;bkPage=1;render();}));
     el.querySelector('#bk-new-btn')?.addEventListener('click', ()=>openBkModal(null));
+    // export/bookings/ requires IsTenantOwner + HasTenantFeature('csv_export')
+    // (analytics/views.py) — button is only rendered for owner/manager with
+    // the feature above, but guard the listener too in case of stale DOM.
     el.querySelector('#bk-export-btn')?.addEventListener('click', ()=>downloadFile('/analytics/export/bookings/', 'bookings.csv'));
     bindBkActions(el);
     bindPager(el, p=>{bkPage=p;render();});
@@ -1034,9 +1090,11 @@ async function openBkModal(id, viewOnly=false) {
       </div>
       ${b.notes?`<div class="form-group"><div class="form-label">Shënime</div><div class="u-muted">${esc(b.notes)}</div></div>`:''}
       <div style="display:flex;gap:8px;margin-top:16px">
+        ${hasTenantRole('receptionist','staff') ? `
         ${b.status==='pending'?`<button class="btn btn-success" data-action="booking-set-status" data-id="${id}" data-status="confirmed" data-label="Konfirmuar ✓">✓ Konfirmo</button>`:''}
         ${b.status==='pending'?`<button class="btn btn-danger" data-action="booking-set-status" data-id="${id}" data-status="cancelled" data-label="Anuluar">✕ Anullo</button>`:''}
         ${b.status==='confirmed'?`<button class="btn btn-primary" data-action="booking-set-status" data-id="${id}" data-status="completed" data-label="Shënuar si i përfunduar ✓">✔ Përfundo</button>`:''}
+        ` : ''}
       </div>`;
     return;
   }
@@ -1107,7 +1165,11 @@ async function applyOrderStatus(id, status, onSuccess) {
     loadView('orders'); // re-render so the dropdown snaps back to the real current status
   }
 }
-function renderOrdTable(rows, actions=true) {
+// canEdit gates the status <select> — /orders/{id}/admin-update/ requires
+// HasTenantRole('staff','receptionist') (orders/views.py). A viewer without
+// that role (e.g. an accountant who can see orders but not change them)
+// gets a read-only badge instead of a dropdown that would just 403.
+function renderOrdTable(rows, actions=true, canEdit=true) {
   if (!rows.length) return `<table><tr class="empty-row"><td colspan="5">Nuk ka porosi.</td></tr></table>`;
   return `<table>
     <thead><tr><th>#</th><th>Tavolina/Klienti</th><th>Data</th><th>Total</th><th>Status</th>${actions?'<th>Veprime</th>':''}</tr></thead>
@@ -1119,9 +1181,9 @@ function renderOrdTable(rows, actions=true) {
       <td><span class="badge badge-${o.status} ord-status-badge">${esc(o.status)}</span></td>
       ${actions?`<td><div class="u-flex-g5">
         <button class="btn btn-xs btn-outline ord-view-btn" data-id="${o.id}">👁</button>
-        <select class="ord-status-sel" data-id="${o.id}">
+        ${canEdit ? `<select class="ord-status-sel" data-id="${o.id}">
           ${ordStatusOptions(o.status).map(s=>`<option ${o.status===s?'selected':''} value="${s}">${s}</option>`).join('')}
-        </select>
+        </select>` : ''}
       </div></td>`:''}
     </tr>`).join('')}</tbody></table>`;
 }
@@ -1142,16 +1204,18 @@ async function vOrders(el) {
           <div class="u-flex-g8-wrap">
             ${['all','pending','confirmed','preparing','ready','delivered'].map(s=>`
               <button class="btn btn-sm ${filter===s?'btn-primary':'btn-ghost'} ord-filter" data-s="${s}">${s==='all'?'Të gjitha':s}</button>`).join('')}
-            <button class="btn btn-sm btn-outline" id="ord-export-btn">⬇ Eksporto CSV</button>
+            ${hasTenantRole() && hasFeature('csv_export') ? '<button class="btn btn-sm btn-outline" id="ord-export-btn">⬇ Eksporto CSV</button>' : ''}
           </div>
         </div>
         <div class="panel-body u-p0">
-          <div class="table-wrap">${renderOrdTable(pg.items)}</div>
+          <div class="table-wrap">${renderOrdTable(pg.items, true, hasTenantRole('staff','receptionist'))}</div>
           ${renderPager(pg.pages, pg.page)}
         </div>
       </div>`;
     el.querySelectorAll('.ord-filter').forEach(b=>b.addEventListener('click',()=>{filter=b.dataset.s;ordPage=1;render();}));
     el.querySelectorAll('.ord-view-btn').forEach(b=>b.addEventListener('click',()=>openOrdModal(b.dataset.id)));
+    // export/orders/ requires IsTenantOwner + HasTenantFeature('csv_export')
+    // (analytics/views.py) — mirrors the bookings export gate above.
     el.querySelector('#ord-export-btn')?.addEventListener('click', ()=>downloadFile('/analytics/export/orders/', 'orders.csv'));
     bindPager(el, p=>{ordPage=p;render();});
     el.querySelectorAll('.ord-status-sel').forEach(sel=>sel.addEventListener('change',()=>{
@@ -1172,9 +1236,9 @@ async function openOrdModal(id) {
   body.innerHTML = `
     <div class="form-grid u-mb14">
       <div><div class="form-label">Klienti/Tavolina</div><div class="u-fw600">${o.table_number?`Tavolina ${esc(o.table_number)}`:esc(o.client_name||'—')}</div></div>
-      <div><div class="form-label">Status</div><select class="ord-status-sel" id="ord-status-inline" style="width:auto">
+      <div><div class="form-label">Status</div>${hasTenantRole('staff','receptionist') ? `<select class="ord-status-sel" id="ord-status-inline" style="width:auto">
         ${ordStatusOptions(o.status).map(s=>`<option ${o.status===s?'selected':''} value="${s}">${s}</option>`).join('')}
-      </select></div>
+      </select>` : `<span class="badge badge-${o.status}">${esc(o.status)}</span>`}</div>
       <div><div class="form-label">Data</div><div>${fmtDate(o.created_at)}</div></div>
       <div><div class="form-label">Total</div><div style="font-weight:700;color:var(--primary)">${fmtPrice(o.total_price)}</div></div>
     </div>
@@ -1188,8 +1252,8 @@ async function openOrdModal(id) {
         <span class="order-item-price">${fmtPrice((i.unit_price||0)*(i.quantity||1))}</span>
       </div>`).join('')}
     </div>` : ''}
-    <button class="btn btn-primary u-mt14" id="ord-status-save">Ruaj Statusin</button>`;
-  body.querySelector('#ord-status-save').addEventListener('click',()=>{
+    ${hasTenantRole('staff','receptionist') ? `<button class="btn btn-primary u-mt14" id="ord-status-save">Ruaj Statusin</button>` : ''}`;
+  body.querySelector('#ord-status-save')?.addEventListener('click',()=>{
     const s=body.querySelector('#ord-status-inline').value;
     applyOrderStatus(id, s, ()=>{modal.classList.add('hidden');loadView('orders');});
   });
@@ -1330,29 +1394,36 @@ async function vFleet(el) {
   const cfg = FLEET_CONFIG[rentalType];
   const r = await get('/rentals/');
   let items = r?.ok ? await r.json().then(d=>Array.isArray(d)?d:d.results||[]) : [];
+  // BUG FIX: same class of bug as vInventory/vMenu/vServices/vRooms — GET
+  // /rentals/ is public, but POST/PATCH/DELETE all require IsTenantOwner
+  // (rentals/views.py: RentalItemListView/RentalItemDetailView). Staff
+  // who aren't owner/manager previously saw a fully-working-looking add
+  // button plus edit/delete on every row that would always 403 on click.
+  // Only render mutate controls for owner/manager.
+  const canManage = hasTenantRole();
 
   function render() {
     const pg = paginate(items, flPage);
-    const colCount = cfg.columns.length + 2; // + status + actions
+    const colCount = cfg.columns.length + (canManage ? 2 : 1); // + status (+ actions)
     el.innerHTML = `
       <div class="panel">
         <div class="panel-header">
           <span class="panel-title">${cfg.icon} ${cfg.navLabel}</span>
-          <button class="btn btn-sm btn-primary" id="fleet-new">${cfg.addBtn}</button>
+          ${canManage?`<button class="btn btn-sm btn-primary" id="fleet-new">${cfg.addBtn}</button>`:''}
         </div>
         <div class="panel-body u-p0">
           <div class="table-wrap">
             <table>
-              <thead><tr>${cfg.columns.map(c=>`<th>${c.header}</th>`).join('')}<th>Status</th><th>Veprime</th></tr></thead>
+              <thead><tr>${cfg.columns.map(c=>`<th>${c.header}</th>`).join('')}<th>Status</th>${canManage?'<th>Veprime</th>':''}</tr></thead>
               <tbody>
               ${pg.items.length ? pg.items.map(v=>{
                 return `<tr>
                 ${cfg.columns.map(c=>`<td>${c.render(v)}</td>`).join('')}
                 <td><span class="badge badge-${v.status==='available'?'available':'unavailable'}">${v.status==='available'?'Disponueshëm':'Zënë'}</span></td>
-                <td><div class="u-flex-g5">
+                ${canManage?`<td><div class="u-flex-g5">
                   <button class="btn btn-xs btn-outline fleet-edit" data-id="${v.id}">✏️</button>
                   <button class="btn btn-xs btn-danger fleet-del" data-id="${v.id}">🗑</button>
-                </div></td>
+                </div></td>`:''}
               </tr>`;}).join('') : `<tr class="empty-row"><td colspan="${colCount}">${cfg.emptyMsg}</td></tr>`}
               </tbody>
             </table>
@@ -1360,6 +1431,7 @@ async function vFleet(el) {
         </div>
       </div>`;
     bindPager(el, p=>{flPage=p;render();});
+    if (!canManage) return;
     el.querySelector('#fleet-new').addEventListener('click',()=>openFleetModal(null));
     el.querySelectorAll('.fleet-edit').forEach(b=>b.addEventListener('click',()=>openFleetModal(b.dataset.id,items.find(v=>String(v.id)===b.dataset.id))));
     el.querySelectorAll('.fleet-del').forEach(b=>b.addEventListener('click',()=>showConfirm(`Fshi ${cfg.navLabel.slice(0,-1)}n`,'Jeni i sigurt?',async()=>{
@@ -1441,6 +1513,14 @@ async function vRooms(el) {
   let calStart  = (() => { const d = new Date(); d.setHours(0,0,0,0); return d; })();
   let calData   = null;   // cached /hotels/rooms/calendar/ response
   let calLoading = false;
+  // BUG FIX: same class of bug as vInventory/vMenu/vServices — room type
+  // and room create/update/delete, plus seasonal pricing, all require
+  // IsTenantOwner (hotels/views.py: RoomTypeCreateUpdateView/
+  // RoomTypeDetailView/RoomsByTypeView/RoomDetailView/SeasonalPriceView).
+  // Staff who aren't owner/manager previously saw fully-working-looking
+  // "+ Shto Tip", "+ Dhomë", edit/delete, and seasonal-price controls that
+  // would always 403 on click. Only render them for owner/manager.
+  const canManage = hasTenantRole();
 
   async function loadData() {
     const [rtResp, rResp] = await Promise.all([
@@ -1576,7 +1656,7 @@ async function vRooms(el) {
               <button class="btn btn-sm btn-primary" id="rooms-tab-list">📋 Lista</button>
               <button class="btn btn-sm btn-outline" id="rooms-tab-cal">📅 Kalendari</button>
             </div>
-            <button class="btn btn-sm btn-primary" id="rt-new">+ Shto Tip</button>
+            ${canManage?`<button class="btn btn-sm btn-primary" id="rt-new">+ Shto Tip</button>`:''}
           </div>
         </div>
         <div class="panel-body u-p0">
@@ -1596,22 +1676,22 @@ async function vRooms(el) {
                       </div>
                       ${amenitiesArr.length ? `<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px">${amenitiesArr.map(a=>`<span class="badge" style="background:var(--surface-2);color:var(--text-muted);font-size:10px">${esc(a)}</span>`).join('')}</div>` : ''}
                     </div>
-                    <div style="display:flex;gap:6px;flex-shrink:0">
+                    ${canManage?`<div style="display:flex;gap:6px;flex-shrink:0">
                       <button class="btn btn-xs btn-outline rt-season" data-id="${rt.id}" title="Çmimet sezonale">📅</button>
                       <button class="btn btn-xs btn-outline rt-edit" data-id="${rt.id}">✏️</button>
                       <button class="btn btn-xs btn-danger rt-del" data-id="${rt.id}">🗑</button>
-                    </div>
+                    </div>`:''}
                   </div>
                   <!-- Rooms sub-table -->
                   <div style="margin-top:12px">
                     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
                       <span style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Dhomat (${rooms.length})</span>
-                      <button class="btn btn-xs btn-outline room-new" data-rtid="${rt.id}">+ Dhomë</button>
+                      ${canManage?`<button class="btn btn-xs btn-outline room-new" data-rtid="${rt.id}">+ Dhomë</button>`:''}
                     </div>
                     ${rooms.length === 0
                       ? `<div style="font-size:12px;color:var(--text-muted);padding:8px 0">Nuk ka dhoma.</div>`
                       : `<div class="table-wrap" style="margin:0"><table style="font-size:13px">
-                          <thead><tr><th>Nr.</th><th>Kati</th><th>Tipi</th><th>Status</th><th>Shënime</th><th>Veprime</th></tr></thead>
+                          <thead><tr><th>Nr.</th><th>Kati</th><th>Tipi</th><th>Status</th><th>Shënime</th>${canManage?'<th>Veprime</th>':''}</tr></thead>
                           <tbody>
                             ${rooms.map(room=>`<tr>
                               <td><strong>${esc(room.room_number)}</strong></td>
@@ -1619,10 +1699,10 @@ async function vRooms(el) {
                               <td class="u-muted">${esc(room.room_type_name||'')}</td>
                               <td><span class="badge badge-${ROOM_STATUS_BADGE[room.status]||'unavailable'}">${ROOM_STATUS_LABEL[room.status]||room.status}</span></td>
                               <td style="color:var(--text-muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(room.notes||'—')}</td>
-                              <td><div class="u-flex-g5">
+                              ${canManage?`<td><div class="u-flex-g5">
                                 <button class="btn btn-xs btn-outline room-edit" data-id="${room.id}" data-rtid="${rt.id}">✏️</button>
                                 <button class="btn btn-xs btn-danger room-del" data-id="${room.id}">🗑</button>
-                              </div></td>
+                              </div></td>`:''}
                             </tr>`).join('')}
                           </tbody>
                         </table></div>`
@@ -1640,6 +1720,7 @@ async function vRooms(el) {
       roomsTab = 'calendar'; render();
       if (!calData) { await loadCalendar(); render(); }
     });
+    if (!canManage) return;
     el.querySelector('#rt-new').addEventListener('click', () => openRoomTypeModal(null));
     el.querySelectorAll('.rt-edit').forEach(b => b.addEventListener('click', () => {
       openRoomTypeModal(b.dataset.id, roomTypes.find(rt => String(rt.id) === b.dataset.id));
@@ -1843,6 +1924,14 @@ async function vServices(el) {
   let items = sr?.ok ? await sr.json().then(d=>Array.isArray(d)?d:d.results||[]) : [];
   let providers = pr?.ok ? await pr.json().then(d=>Array.isArray(d)?d:d.results||[]) : [];
   _svcProviders = providers;
+  // BUG FIX: same class of bug as vInventory/vMenu — GET endpoints here are
+  // staff-readable, but every service/provider create/update/delete
+  // endpoint requires IsTenantOwner (appointments/views.py:
+  // ServiceManageView/ServiceDetailView/ProviderManageView/
+  // ProviderDetailView). Staff who aren't owner/manager previously saw
+  // fully-working-looking add/edit/delete controls that would always 403
+  // on click. Only render them for owner/manager.
+  const canManage = hasTenantRole();
 
   function providerName(pid) {
     const p = providers.find(p=>String(p.id)===String(pid));
@@ -1854,12 +1943,12 @@ async function vServices(el) {
       <div class="panel" style="margin-bottom:18px">
         <div class="panel-header">
           <span class="panel-title">✨ Shërbimet</span>
-          <button class="btn btn-sm btn-primary" id="svc-new">+ Shto Shërbim</button>
+          ${canManage?`<button class="btn btn-sm btn-primary" id="svc-new">+ Shto Shërbim</button>`:''}
         </div>
         <div class="panel-body u-p0">
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Emri</th><th>Kohëzgjatja</th><th>Çmimi</th><th>Ofruesit</th><th>Status</th><th>Veprime</th></tr></thead>
+              <thead><tr><th>Emri</th><th>Kohëzgjatja</th><th>Çmimi</th><th>Ofruesit</th><th>Status</th>${canManage?'<th>Veprime</th>':''}</tr></thead>
               <tbody>
               ${items.length ? items.map(s=>`<tr>
                 <td><div class="u-fw600">${esc(s.name)}</div><div class="u-fs11-muted">${esc(s.description||'').slice(0,50)}</div></td>
@@ -1867,23 +1956,25 @@ async function vServices(el) {
                 <td>${fmtPrice(s.price)}</td>
                 <td style="font-size:12px">${(s.providers||[]).map(providerName).filter(Boolean).join(', ')||'—'}</td>
                 <td><span class="badge badge-${s.is_active?'active':'inactive'}">${s.is_active?'Aktiv':'Joaktiv'}</span></td>
-                <td><div class="u-flex-g5">
+                ${canManage?`<td><div class="u-flex-g5">
                   <button class="btn btn-xs btn-outline svc-edit" data-id="${s.id}">✏️</button>
                   <button class="btn btn-xs btn-danger svc-del" data-id="${s.id}">🗑</button>
-                </div></td>
-              </tr>`).join('') : `<tr class="empty-row"><td colspan="6">Nuk ka shërbime.</td></tr>`}
+                </div></td>`:''}
+              </tr>`).join('') : `<tr class="empty-row"><td colspan="${canManage?6:5}">Nuk ka shërbime.</td></tr>`}
               </tbody>
             </table>
           </div>
         </div>
       </div>
       <div class="panel" id="providers-panel"></div>`;
-    el.querySelector('#svc-new').addEventListener('click',()=>openSvcModal(null));
-    el.querySelectorAll('.svc-edit').forEach(b=>b.addEventListener('click',()=>openSvcModal(b.dataset.id, items.find(s=>String(s.id)===b.dataset.id))));
-    el.querySelectorAll('.svc-del').forEach(b=>b.addEventListener('click',()=>showConfirm('Fshi Shërbimin','Jeni i sigurt?',async()=>{
-      const dr=await del(`/appointments/services/${b.dataset.id}/`);
-      if(dr.ok){toast('Shërbimi u fshi');items=items.filter(s=>String(s.id)!==b.dataset.id);render();}
-    })));
+    if (canManage) {
+      el.querySelector('#svc-new').addEventListener('click',()=>openSvcModal(null));
+      el.querySelectorAll('.svc-edit').forEach(b=>b.addEventListener('click',()=>openSvcModal(b.dataset.id, items.find(s=>String(s.id)===b.dataset.id))));
+      el.querySelectorAll('.svc-del').forEach(b=>b.addEventListener('click',()=>showConfirm('Fshi Shërbimin','Jeni i sigurt?',async()=>{
+        const dr=await del(`/appointments/services/${b.dataset.id}/`);
+        if(dr.ok){toast('Shërbimi u fshi');items=items.filter(s=>String(s.id)!==b.dataset.id);render();}
+      })));
+    }
     renderProviders();
   }
 
@@ -1892,27 +1983,28 @@ async function vServices(el) {
     pel.innerHTML = `
       <div class="panel-header">
         <span class="panel-title">🧑‍⚕️ Ofruesit e Shërbimit</span>
-        <button class="btn btn-sm btn-primary" id="prov-new">+ Shto Ofrues</button>
+        ${canManage?`<button class="btn btn-sm btn-primary" id="prov-new">+ Shto Ofrues</button>`:''}
       </div>
       <div class="panel-body u-p0">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Emri</th><th>Titulli</th><th>Specialitete</th><th>Status</th><th>Veprime</th></tr></thead>
+            <thead><tr><th>Emri</th><th>Titulli</th><th>Specialitete</th><th>Status</th>${canManage?'<th>Veprime</th>':''}</tr></thead>
             <tbody>
             ${providers.length ? providers.map(p=>`<tr>
               <td class="u-fw600">${esc(p.name)}</td>
               <td>${esc(p.title||'—')}</td>
               <td style="font-size:12px">${esc(p.specialties||'—')}</td>
               <td><span class="badge badge-${p.is_active?'active':'inactive'}">${p.is_active?'Aktiv':'Joaktiv'}</span></td>
-              <td><div class="u-flex-g5">
+              ${canManage?`<td><div class="u-flex-g5">
                 <button class="btn btn-xs btn-outline prov-edit" data-id="${p.id}">✏️</button>
                 <button class="btn btn-xs btn-danger prov-del" data-id="${p.id}">🗑</button>
-              </div></td>
-            </tr>`).join('') : `<tr class="empty-row"><td colspan="5">Nuk ka ofrues të regjistruar.</td></tr>`}
+              </div></td>`:''}
+            </tr>`).join('') : `<tr class="empty-row"><td colspan="${canManage?5:4}">Nuk ka ofrues të regjistruar.</td></tr>`}
             </tbody>
           </table>
         </div>
       </div>`;
+    if (!canManage) return;
     pel.querySelector('#prov-new').addEventListener('click',()=>openProviderModal(null));
     pel.querySelectorAll('.prov-edit').forEach(b=>b.addEventListener('click',()=>openProviderModal(b.dataset.id, providers.find(p=>String(p.id)===b.dataset.id))));
     pel.querySelectorAll('.prov-del').forEach(b=>b.addEventListener('click',()=>showConfirm('Fshi Ofruesin','Jeni i sigurt? Shërbimet e lidhura do të mbeten, por pa këtë ofrues.',async()=>{
@@ -1997,6 +2089,12 @@ async function vMenu(el) {
   let cats = rawCats.map(c=>({id:c.id, name:c.name}));
   let items = rawCats.flatMap(c=>(c.items||[]).map(i=>({...i, category:c.id, category_name:c.name})));
   let selCat = null, menuPage = 1;
+  // BUG FIX: same class of bug as vInventory — GET /menu/ is public, but
+  // every category/item create/update/delete endpoint requires
+  // IsTenantOwner (menu/views.py). Staff who aren't owner/manager
+  // previously saw fully-working-looking add/edit/delete controls that
+  // would always 403 on click. Only render them for owner/manager.
+  const canManage = hasTenantRole();
 
   function render() {
     const filtered = selCat ? items.filter(i=>String(i.category)===String(selCat)||i.category_name===cats.find(c=>String(c.id)===String(selCat))?.name) : items;
@@ -2006,14 +2104,14 @@ async function vMenu(el) {
         <div class="panel menu-cat-panel">
           <div class="panel-header" style="padding:14px 16px">
             <span class="panel-title" style="font-size:.85rem">Kategoritë</span>
-            <button class="btn btn-xs btn-primary" id="cat-new">+</button>
+            ${canManage?`<button class="btn btn-xs btn-primary" id="cat-new">+</button>`:''}
           </div>
           <div style="padding:8px">
             <button class="btn btn-sm btn-block ${!selCat?'btn-primary':'btn-ghost'}" style="margin-bottom:4px;justify-content:flex-start" id="cat-all">Të gjitha</button>
             ${cats.map(c=>`
               <div style="display:flex;align-items:center;gap:4px;margin-bottom:2px">
                 <button class="btn btn-sm ${String(selCat)===String(c.id)?'btn-primary':'btn-ghost'} cat-item" style="flex:1;justify-content:flex-start;font-size:12px" data-id="${c.id}">${esc(c.name)}</button>
-                <button class="btn btn-xs btn-ghost cat-del" data-id="${c.id}" title="Fshi">🗑</button>
+                ${canManage?`<button class="btn btn-xs btn-ghost cat-del" data-id="${c.id}" title="Fshi">🗑</button>`:''}
               </div>`).join('')}
           </div>
         </div>
@@ -2021,23 +2119,23 @@ async function vMenu(el) {
           <div class="panel">
             <div class="panel-header">
               <span class="panel-title">🍽️ Artikujt ${selCat?`— ${cats.find(c=>String(c.id)===String(selCat))?.name||''}`:''}</span>
-              <button class="btn btn-sm btn-primary" id="item-new">+ Shto Artikull</button>
+              ${canManage?`<button class="btn btn-sm btn-primary" id="item-new">+ Shto Artikull</button>`:''}
             </div>
             <div class="panel-body u-p0">
               <div class="table-wrap">
                 <table>
-                  <thead><tr><th>Emri</th><th>Kategoria</th><th>Çmimi</th><th>Status</th><th>Veprime</th></tr></thead>
+                  <thead><tr><th>Emri</th><th>Kategoria</th><th>Çmimi</th><th>Status</th>${canManage?'<th>Veprime</th>':''}</tr></thead>
                   <tbody>
                   ${pg.items.length ? pg.items.map(i=>`<tr>
                     <td><div class="u-fw600">${esc(i.name)}</div><div class="u-fs11-muted">${esc((i.description||'').slice(0,40))}</div></td>
                     <td>${esc(i.category_name||cats.find(c=>String(c.id)===String(i.category))?.name||'—')}</td>
                     <td>${fmtPrice(i.price)}</td>
                     <td><span class="badge badge-${i.is_available?'available':'unavailable'}">${i.is_available?'Disponueshëm':'Nuk disponohet'}</span></td>
-                    <td><div class="u-flex-g5">
+                    ${canManage?`<td><div class="u-flex-g5">
                       <button class="btn btn-xs btn-outline menu-edit" data-id="${i.id}">✏️</button>
                       <button class="btn btn-xs btn-danger menu-del" data-id="${i.id}">🗑</button>
-                    </div></td>
-                  </tr>`).join('') : `<tr class="empty-row"><td colspan="5">Nuk ka artikuj.</td></tr>`}
+                    </div></td>`:''}
+                  </tr>`).join('') : `<tr class="empty-row"><td colspan="${canManage?5:4}">Nuk ka artikuj.</td></tr>`}
                   </tbody>
                 </table>
               </div>
@@ -2048,6 +2146,8 @@ async function vMenu(el) {
 
     el.querySelector('#cat-all').addEventListener('click',()=>{selCat=null;render();});
     el.querySelectorAll('.cat-item').forEach(b=>b.addEventListener('click',()=>{selCat=b.dataset.id;render();}));
+    bindPager(el, p=>{menuPage=p;render();});
+    if (!canManage) return;
     el.querySelector('#cat-new').addEventListener('click',()=>openCatModal());
     el.querySelectorAll('.cat-del').forEach(b=>b.addEventListener('click',()=>showConfirm('Fshi Kategorinë','Kjo do të fshijë kategorinë. Artikujt mbeten.',async()=>{
       const dr=await del(`/menu/categories/${b.dataset.id}/`);
@@ -2059,7 +2159,6 @@ async function vMenu(el) {
       const dr=await del(`/menu/items/${b.dataset.id}/`);
       if(dr.ok){toast('Artikulli u fshi');items=items.filter(i=>String(i.id)!==b.dataset.id);render();}
     })));
-    bindPager(el, p=>{menuPage=p;render();});
   }
   render();
 }
@@ -2120,18 +2219,26 @@ async function vInventory(el) {
   const [invR, catR] = await Promise.all([get('/inventory/'), get('/inventory/categories/')]);
   let items = invR?.ok ? await invR.json().then(d=>Array.isArray(d)?d:d.results||[]) : [];
   let cats  = catR?.ok ? await catR.json().then(d=>Array.isArray(d)?d:d.results||[]) : [];
+  // BUG FIX: GET /inventory/ is public, but POST/PATCH/DELETE and the
+  // /stock/ adjust endpoint all require IsTenantOwner (inventory/views.py).
+  // Every staff member who could view this tab (receptionist, accountant,
+  // generic staff) previously saw fully-working-looking "+ Shto Produkt",
+  // ✏️/🗑, and +/− stock controls that would always fail with a 403 on
+  // click. Only render mutate controls for owner/manager, matching the
+  // backend exactly.
+  const canManage = hasTenantRole();
 
   function render() {
     el.innerHTML = `
       <div class="panel">
         <div class="panel-header">
           <span class="panel-title">📦 Inventari</span>
-          <button class="btn btn-sm btn-primary" id="inv-new">+ Shto Produkt</button>
+          ${canManage ? `<button class="btn btn-sm btn-primary" id="inv-new">+ Shto Produkt</button>` : ''}
         </div>
         <div class="panel-body u-p0">
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Produkti</th><th>SKU</th><th>Stoku</th><th>Çmimi</th><th>Kategoria</th><th>Veprime</th></tr></thead>
+              <thead><tr><th>Produkti</th><th>SKU</th><th>Stoku</th><th>Çmimi</th><th>Kategoria</th>${canManage?'<th>Veprime</th>':''}</tr></thead>
               <tbody>
               ${items.length ? items.map(i=>{
                 const low = (i.stock||0) > 0 && (i.stock||0) <= (i.low_stock_threshold ?? 5);
@@ -2141,26 +2248,27 @@ async function vInventory(el) {
                 <td><code class="u-fs11">${esc(i.sku||'—')}</code></td>
                 <td>
                   <div style="display:flex;align-items:center;gap:6px">
-                    <button class="btn btn-xs btn-outline inv-adj" data-id="${i.id}" data-delta="-1" title="Zbrit 1">−</button>
+                    ${canManage?`<button class="btn btn-xs btn-outline inv-adj" data-id="${i.id}" data-delta="-1" title="Zbrit 1">−</button>`:''}
                     <span style="font-weight:700;min-width:22px;text-align:center;color:${out?'var(--danger)':low?'var(--warning,#b8860b)':'var(--text)'}">${i.stock||0}</span>
-                    <button class="btn btn-xs btn-outline inv-adj" data-id="${i.id}" data-delta="1" title="Shto 1">+</button>
+                    ${canManage?`<button class="btn btn-xs btn-outline inv-adj" data-id="${i.id}" data-delta="1" title="Shto 1">+</button>`:''}
                   </div>
                   ${out?'<span class="badge badge-pending" style="margin-top:4px;display:inline-block">Pa stok</span>'
                        :low?'<span class="badge badge-pending" style="margin-top:4px;display:inline-block">Stok i ulët</span>':''}
                 </td>
                 <td>${fmtPrice(i.price)}</td>
                 <td>${esc(i.category_name||'—')}</td>
-                <td><div class="u-flex-g5">
+                ${canManage?`<td><div class="u-flex-g5">
                   <button class="btn btn-xs btn-outline inv-edit" data-id="${i.id}">✏️</button>
                   <button class="btn btn-xs btn-danger inv-del" data-id="${i.id}">🗑</button>
-                </div></td>
+                </div></td>`:''}
               </tr>`;
-              }).join('') : `<tr class="empty-row"><td colspan="6">Nuk ka produkte.</td></tr>`}
+              }).join('') : `<tr class="empty-row"><td colspan="${canManage?6:5}">Nuk ka produkte.</td></tr>`}
               </tbody>
             </table>
           </div>
         </div>
       </div>`;
+    if (!canManage) return;
     el.querySelector('#inv-new').addEventListener('click',()=>openInvModal(null, {}, cats));
     el.querySelectorAll('.inv-edit').forEach(b=>b.addEventListener('click',()=>openInvModal(b.dataset.id, items.find(i=>String(i.id)===b.dataset.id)||{}, cats)));
     el.querySelectorAll('.inv-del').forEach(b=>b.addEventListener('click',()=>showConfirm('Fshi Produktin','Jeni i sigurt?',async()=>{
@@ -2249,6 +2357,21 @@ async function vCustomers(el) {
   }
   const customers = Object.values(byEmail).sort((a,b)=>b.spent-a.spent);
 
+  // BUG FIX: the "🎯 Shto si Lead" button was rendered for every customer
+  // regardless of the 'crm' feature flag (off by default on Trial/Starter/
+  // Pro and most business types — see BUSINESS_TYPE_PRESETS in
+  // tenants/models.py), even though POST /crm/leads/ requires
+  // HasTenantFeature('crm'). Unlike the Faturat bug, the save() handler
+  // does surface the failed request (openLeadModal's ld-save handler shows
+  // response body text on !r.ok) — but that's a raw, English, un-localized
+  // DRF permission error dropped into an otherwise all-Albanian UI, for a
+  // button that was never going to work. Hide it the same way nav-crm is
+  // gated instead. Also missing the HasTenantRole('receptionist','accountant')
+  // half of the same check (crm/views.py applies both) — a generic staff
+  // member with the feature on would still hit a 403.
+  // cust-export-btn: /analytics/export/customers/ requires IsTenantOwner +
+  // HasTenantFeature('csv_export') + HasTenantFeature('analytics') — was
+  // previously unconditional.
   let custPage = 1, custQ = '';
   function renderCust() {
     const filtered = customers.filter(c =>
@@ -2260,7 +2383,7 @@ async function vCustomers(el) {
         <div class="panel-header">
           <span class="panel-title">👥 Klientët <span class="u-fw400-fs13-muted">(${filtered.length})</span></span>
           <div class="u-flex-g8-center">
-            <button class="btn btn-sm btn-outline" id="cust-export-btn">⬇ Eksporto CSV</button>
+            ${hasTenantRole() && hasFeature('csv_export') && hasFeature('analytics') ? '<button class="btn btn-sm btn-outline" id="cust-export-btn">⬇ Eksporto CSV</button>' : ''}
             <input class="search-input" id="cust-search" placeholder="Kërko emër / email..." style="width:220px" value="${esc(custQ)}"/>
           </div>
         </div>
@@ -2277,7 +2400,7 @@ async function vCustomers(el) {
                 <td><div class="u-flex-g5">
                   ${c.email&&!c.email.startsWith('#')?`<a href="mailto:${esc(c.email)}" class="btn btn-xs btn-outline" title="Dërgo Email">✉️</a>`:''}
                   ${c.email&&!c.email.startsWith('#')?`<button class="btn btn-xs btn-ghost cust-bk-btn" data-email="${esc(c.email)}" data-name="${esc(c.name)}" title="Shiko Rezervimet">📅</button>`:''}
-                  ${c.email&&!c.email.startsWith('#')?`<button class="btn btn-xs btn-primary cust-lead-btn" data-email="${esc(c.email)}" data-name="${esc(c.name)}" title="Shto si Lead">🎯</button>`:''}
+                  ${c.email&&!c.email.startsWith('#')&&hasFeature('crm')&&hasTenantRole('receptionist','accountant')?`<button class="btn btn-xs btn-primary cust-lead-btn" data-email="${esc(c.email)}" data-name="${esc(c.name)}" title="Shto si Lead">🎯</button>`:''}
                 </div></td>
               </tr>`).join('') : `<tr class="empty-row"><td colspan="5">Nuk ka klientë.</td></tr>`}
               </tbody>
@@ -2313,6 +2436,20 @@ async function vCustomers(el) {
 // ── CRM / LEADS ──────────────────────────────────────────────
 async function vCrm(el) {
   const r = await get('/crm/leads/');
+  // BUG FIX: same silent-403-into-empty-array pattern as the staff tab —
+  // crm/views.py requires HasTenantRole('receptionist','accountant'), but a
+  // 403 here previously fell through to an empty `leads` array with no
+  // explanation, rendering a normal-looking "CRM — Leads (0)" kanban board
+  // with a "+ Shto Lead" button that would also silently fail. This had no
+  // 403 handling at all, unlike vReviews()/vBilling() above.
+  if (r?.status === 403) {
+    el.innerHTML = `<div class="panel"><div class="panel-body u-empty-state">
+      <div class="u-icon-2rem">🔒</div>
+      <p class="u-fw600-mb6">Nuk keni akses në këtë seksion.</p>
+      <p style="font-size:.87rem">CRM / Leads është i disponueshëm vetëm për pronarët, menaxherët, recepsionistët dhe kontabilistët.</p>
+    </div></div>`;
+    return;
+  }
   let leads = r?.ok ? await r.json().then(d=>Array.isArray(d)?d:d.results||[]) : [];
 
   const statuses = ['new','contacted','qualified','proposal','won','lost'];
@@ -2714,6 +2851,19 @@ function openBlogModal(id, data={}) {
 // ── SUBSCRIPTIONS ─────────────────────────────────────────────────────────────
 async function vSubscriptions(el) {
   const r = await get('/subscriptions/');
+  // BUG FIX: same silent-403-into-empty-array pattern as vCrm above —
+  // subscriptions/views.py requires HasTenantRole('accountant'), but this
+  // had no 403 handling at all, so a receptionist or generic staff member
+  // would just see "Nuk ka abonime ende." with a "+ Abonim i Ri" button
+  // that would silently fail on click.
+  if (r?.status === 403) {
+    el.innerHTML = `<div class="panel"><div class="panel-body u-empty-state">
+      <div class="u-icon-2rem">🔒</div>
+      <p class="u-fw600-mb6">Nuk keni akses në këtë seksion.</p>
+      <p style="font-size:.87rem">Abonimet janë të disponueshme vetëm për pronarët, menaxherët dhe kontabilistët.</p>
+    </div></div>`;
+    return;
+  }
   const subs = r?.ok ? await r.json().then(d => Array.isArray(d) ? d : d.results || []) : [];
   let page = 1;
   function render() {
@@ -2805,6 +2955,22 @@ function openSubModal(id, data = {}) {
 // ── BILLING ──────────────────────────────────────────────────
 async function vBilling(el) {
   const r = await get('/billing/invoices/');
+  // BUG FIX: previously a 403 fell through silently to an empty invoices
+  // array, showing "0 Paguar / 0 Detyrime" with no explanation. The
+  // fallback message was also plan-specific only — but billing/views.py
+  // requires HasTenantRole('accountant'), so a receptionist or generic
+  // staff member on a plan that DOES have invoicing would hit this same
+  // 403 for a role reason, and the old message ("upgrade to Enterprise")
+  // would be actively misleading for them. Distinguish the two causes.
+  if (r?.status === 403) {
+    const roleIssue = !hasTenantRole('accountant');
+    el.innerHTML = `<div class="panel"><div class="panel-body u-empty-state">
+      <div class="u-icon-2rem">🔒</div>
+      <p class="u-fw600-mb6">${roleIssue ? 'Nuk keni akses në këtë seksion.' : 'Faturat nuk janë të disponueshme në planin tuaj.'}</p>
+      <p style="font-size:.87rem">${roleIssue ? 'Menaxhimi i faturave është i disponueshëm vetëm për pronarët, menaxherët dhe kontabilistët.' : 'Kaloni në planin Enterprise për të aktivizuar faturimin.'}</p>
+    </div></div>`;
+    return;
+  }
   let invoices = r?.ok ? await r.json().then(d=>Array.isArray(d)?d:d.results||[]) : [];
   let filter = 'all', invPage = 1;
 
@@ -3624,6 +3790,17 @@ function openSfPageModal(id, data={}) {
 async function vStaff(el) {
   let stPage = 1;
   const r = await get('/staff/');
+  // BUG FIX: mirrors vBlog()/vBilling()'s 403 handling — previously fell
+  // through silently to an empty member list on a Starter plan (see the
+  // nav-staff gating fix above) instead of explaining why.
+  if (r?.status === 403) {
+    el.innerHTML = `<div class="panel"><div class="panel-body u-empty-state">
+      <div class="u-icon-2rem">🔒</div>
+      <p class="u-fw600-mb6">Menaxhimi i stafit nuk është i disponueshëm në planin tuaj.</p>
+      <p style="font-size:.87rem">Kaloni në planin Pro ose Enterprise për të shtuar anëtarë stafi.</p>
+    </div></div>`;
+    return;
+  }
   let members = r?.ok ? await r.json().then(d=>Array.isArray(d)?d:d.results||[]) : [];
 
   const isOwner = USER.role === 'owner';
@@ -4039,7 +4216,10 @@ async function vSettings(el) {
           <div class="form-group"><label class="form-label" for="ts-color">Ngjyra Primare</label><input id="ts-color" type="color" class="form-input u-select-42" value="${t.primary_color||'#111111'}"/></div>
           <div class="form-group"><label class="form-label" for="ts-wa">WhatsApp</label><input id="ts-wa" class="form-input" value="${esc(t.whatsapp||'')}"/></div>
         </div>
-        <div class="form-group"><label class="form-label" for="ts-desc">Përshkrim i Shkurtër</label><textarea id="ts-desc" class="form-textarea">${esc(t.description||t.short_description||'')}</textarea></div>
+        <div class="form-group"><label class="form-label" for="ts-desc">Përshkrim i Shkurtër</label><textarea id="ts-desc" class="form-textarea" maxlength="300">${esc(t.tagline||'')}</textarea></div>
+        <div class="form-group"><label class="form-label" for="ts-story">Rreth Nesh (Për Faqen Publike)</label><textarea id="ts-story" class="form-textarea" style="min-height:110px">${esc(t.story||'')}</textarea>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px">Shfaqet si seksioni "Rreth Nesh" në faqen tuaj publike.</div>
+        </div>
         <div class="form-group">
           <label class="form-label" for="ts-logo-file">Logo</label>
           ${t.logo_url ? `<div style="margin-bottom:8px"><img src="${esc(t.logo_url)}" alt="Logo" style="height:48px;object-fit:contain;border-radius:6px;border:1px solid var(--border);background:var(--surface-2);padding:4px"/></div>` : ''}
@@ -4178,7 +4358,8 @@ async function vSettings(el) {
       city:                    document.getElementById('ts-city').value.trim(),
       primary_color:           document.getElementById('ts-color').value,
       whatsapp:                document.getElementById('ts-wa').value.trim(),
-      description:             document.getElementById('ts-desc').value.trim(),
+      tagline:                 document.getElementById('ts-desc').value.trim(),
+      story:                   document.getElementById('ts-story')?.value.trim() || '',
       listed_on_marketplace:   document.getElementById('ts-marketplace')?.checked ?? false,
       marketplace_description: document.getElementById('ts-mkt-desc')?.value.trim() || '',
     };
@@ -4381,7 +4562,15 @@ document.getElementById('item-modal').querySelector('.modal-backdrop').addEventL
   function initStaffReply() {
     if (typeof TENANT === "undefined" || !TENANT.slug) return;
     if (typeof USER === "undefined") return;
-    if (!["owner","manager","receptionist"].includes(USER.role)) return;
+    // BUG FIX: dead-code role check. USER.role can only ever be
+    // owner/manager/staff/customer/superadmin — the granular sub-role
+    // (receptionist/accountant/etc.) lives in USER.staff_role, so
+    // 'receptionist' here could never match and this behaved identically
+    // to checking only owner/manager. The backend's actual allow-list for
+    // this feature (chatbot/views.py staff_reply()) is
+    // owner/manager/staff/receptionist/accountant. Check the real
+    // effective role — staff_role when set, else the top-level role.
+    if (!["owner","manager","staff","receptionist","accountant"].includes(USER.staff_role || USER.role)) return;
     if (TENANT.plan !== "enterprise") return;
     _srTenantSlug = TENANT.slug;
     _srTimer = setInterval(checkHandoffNotifs, 8000);
