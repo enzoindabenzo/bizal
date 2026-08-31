@@ -1,3 +1,4 @@
+import datetime
 from decimal import Decimal
 from django.db import transaction
 from django.utils import timezone
@@ -255,6 +256,80 @@ class BookingSerializer(serializers.ModelSerializer):
                     raise serializers.ValidationError(
                         {'start_time': 'Ora e zgjedhur është jashtë orarit të punës së biznesit për këtë ditë.'}
                     )
+
+        # FIX: overlap check for appointment bookings — mirrors the
+        # room_booking/rental checks above. There was previously NO overlap
+        # detection at all for booking_type == 'appointment': two guests could
+        # book the identical service/date/time slot and both be accepted.
+        # (A separate, fully-built provider-schedule + overlap system already
+        # exists in appointments.AppointmentSerializer, but the storefront's
+        # booking modal posts everything — including appointment-type
+        # tenants — through this generic Booking endpoint instead, so that
+        # system was never actually reached by a real booking.)
+        #
+        # The check here is keyed to the service itself (resource_id/
+        # resource_type), the same unit the client actually books against —
+        # Booking has no provider field and the modal never presents a
+        # provider choice, so this can't be made provider-specific without a
+        # larger change (adding a provider field + picker). It still closes
+        # the real gap: the same service can no longer be double-booked for
+        # an overlapping time on the same day.
+        if booking_type == 'appointment' and resource_type == 'service' and resource_id and start_date and start_time:
+            from appointments.models import Service
+            try:
+                # select_for_update() closes the same TOCTOU race the room/
+                # rental checks close: two concurrent requests for the same
+                # service+slot both reach this point, but the lock (held for
+                # the full transaction — see BookingListCreateView.create()/
+                # BookingDetailView.partial_update()) means only one proceeds
+                # at a time.
+                service = Service.objects.select_for_update().get(
+                    pk=resource_id, tenant=self.context['request'].tenant
+                )
+            except Service.DoesNotExist:
+                raise serializers.ValidationError({'resource_id': 'Service not found.'})
+
+            end_dt = datetime.datetime.combine(start_date, start_time) + datetime.timedelta(
+                minutes=service.duration_minutes
+            )
+            # Guard midnight rollover, mirroring AppointmentSerializer.validate().
+            # Storing only end_dt.time() when it crosses midnight would produce
+            # an end_time numerically less than start_time, which would
+            # silently disable the overlap query below (start_time__lt=end_time
+            # can never match when end_time < start_time).
+            if end_dt.date() != start_date:
+                raise serializers.ValidationError(
+                    {'start_time': (
+                        'This appointment extends past midnight. '
+                        'Please choose an earlier start time or a shorter service.'
+                    )}
+                )
+            data['end_time'] = end_dt.time()
+
+            instance = self.instance
+            exclude_id = instance.pk if instance else None
+            # NOTE: end_time__gt=start_time excludes existing rows where
+            # end_time is NULL — i.e. legacy appointment bookings created
+            # before this fix, which never had end_time computed. Those rows
+            # predate this check entirely and can't retroactively be
+            # protected; every booking created from this point on has
+            # end_time set above and is covered going forward.
+            qs = Booking.objects.filter(
+                tenant=self.context['request'].tenant,
+                booking_type='appointment',
+                resource_type='service',
+                resource_id=str(resource_id),
+                start_date=start_date,
+                status__in=('pending', 'confirmed', 'active'),
+                start_time__lt=data['end_time'],
+                end_time__gt=start_time,
+            )
+            if exclude_id:
+                qs = qs.exclude(pk=exclude_id)
+            if qs.exists():
+                raise serializers.ValidationError(
+                    {'non_field_errors': 'This time slot is no longer available. Please choose another time.'}
+                )
 
         return data
 

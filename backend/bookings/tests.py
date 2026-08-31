@@ -639,6 +639,67 @@ class RentalOverlapGapsTests(TestCase):
         self.assertEqual(Decimal(str(resp.data['total_price'])), Decimal('25200.00'))
 
 
+class AppointmentOverlapTests(TestCase):
+    """BookingSerializer.validate(): appointment overlap / Service.DoesNotExist.
+
+    Mirrors RentalOverlapTests above — the storefront's booking modal posts
+    appointment-type tenants (clinic, barbershop, spa, etc.) through this
+    same generic /api/bookings/ endpoint with resource_type='service', so
+    that's the resource key the overlap check has to use.
+    """
+
+    def setUp(self):
+        from appointments.models import Service
+        self.client = APIClient()
+        self.tenant = make_tenant('appointmentoverlapbiz')
+        self.tenant.business_type = 'barbershop'
+        self.tenant.save()
+        self.client.defaults['HTTP_HOST'] = 'appointmentoverlapbiz.bizal.al'
+        self.service = Service.objects.create(
+            tenant=self.tenant, name='Haircut', duration_minutes=60,
+            price=Decimal('1500.00'), is_active=True,
+        )
+
+    def _post(self, resource_id, date, time):
+        return self.client.post('/api/bookings/', {
+            'booking_type': 'appointment',
+            'resource_type': 'service',
+            'resource_id': str(resource_id),
+            'start_date': date,
+            'start_time': time,
+            'guest_name': 'Guest',
+            'guest_email': 'guest@test.com',
+        })
+
+    def test_service_not_found_rejected(self):
+        import uuid
+        resp = self._post(uuid.uuid4(), '2026-09-10', '10:00')
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('resource_id', resp.data)
+
+    def test_overlapping_appointment_rejected(self):
+        # 60-minute service starting 10:00 occupies 10:00-11:00.
+        resp1 = self._post(self.service.pk, '2026-09-10', '10:00')
+        self.assertEqual(resp1.status_code, status.HTTP_201_CREATED)
+        # 10:30 start overlaps the first booking's 10:00-11:00 window.
+        resp2 = self._post(self.service.pk, '2026-09-10', '10:30')
+        self.assertEqual(resp2.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('no longer available', str(resp2.data))
+
+    def test_back_to_back_appointments_allowed(self):
+        # 10:00-11:00 then 11:00-12:00 — adjacent, not overlapping.
+        resp1 = self._post(self.service.pk, '2026-09-10', '10:00')
+        self.assertEqual(resp1.status_code, status.HTTP_201_CREATED)
+        resp2 = self._post(self.service.pk, '2026-09-10', '11:00')
+        self.assertEqual(resp2.status_code, status.HTTP_201_CREATED)
+
+    def test_same_slot_different_day_allowed(self):
+        resp1 = self._post(self.service.pk, '2026-09-10', '10:00')
+        self.assertEqual(resp1.status_code, status.HTTP_201_CREATED)
+        resp2 = self._post(self.service.pk, '2026-09-11', '10:00')
+        self.assertEqual(resp2.status_code, status.HTTP_201_CREATED)
+
+
 class ResourceIdUuidGapsTests(TestCase):
     """BookingSerializer.validate(): resource_id must be a valid UUID for
     non room_booking/rental booking types."""

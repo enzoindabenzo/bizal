@@ -80,11 +80,22 @@ class AppointmentSerializer(serializers.ModelSerializer):
     def validate(self, data):
         service = data.get('service') or (self.instance.service if self.instance else None)
         start_time = data.get('start_time') or (self.instance.start_time if self.instance else None)
+        # Resolved once, up front, so both the end-time computation below and
+        # the business-hours/schedule checks further down use the appointment's
+        # actual date — not today's date.
+        appt_date = data.get('date') or (self.instance.date if self.instance else None)
         if service and start_time:
-            # Datetime.date.today() uses the OS-level timezone.
-            # timezone.localdate() respects settings.TIME_ZONE regardless of
-            # the container OS timezone — defence-in-depth across all deployments.
-            start_dt = datetime.datetime.combine(_tz.localdate(), start_time)
+            # BUG FIX: this used to combine start_time with _tz.localdate()
+            # (today) instead of the appointment's actual `date`. The time-of-
+            # day arithmetic below happens to come out the same regardless of
+            # which date is used — but relying on that is fragile (e.g. it
+            # would silently break if DST-aware logic were ever added here),
+            # and the midnight-rollover check just below was comparing against
+            # the wrong reference date entirely. Fall back to today only when
+            # no date has been submitted yet (kept for parity with the rest of
+            # this method, which uses the same fallback for appt_date).
+            base_date = appt_date or _tz.localdate()
+            start_dt = datetime.datetime.combine(base_date, start_time)
             end_dt = start_dt + datetime.timedelta(minutes=service.duration_minutes)
 
             # Guard midnight rollover. If the appointment duration pushes
@@ -112,7 +123,6 @@ class AppointmentSerializer(serializers.ModelSerializer):
         # Sunday can be entirely absent, i.e. closed), so hours are resolved
         # for the specific weekday of the appointment's `date`, not merged
         # across all days.
-        appt_date = data.get('date') or (self.instance.date if self.instance else None)
         if start_time and appt_date:
             tenant = getattr(self.context.get('request'), 'tenant', None)
             business_hours = getattr(tenant, 'business_hours', None) if tenant else None
