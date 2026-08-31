@@ -1891,11 +1891,16 @@ function renderMasthead(t) {
   // (and did) drift out of sync with each other.
   const ctaAction = quickBookAction(bt);
   ctaBtn.addEventListener('click', ctaAction);
-  if (t.logo) {
-    const lb = document.getElementById('logo-bar');
-    lb.style.display = 'flex';
-    document.getElementById('logo-bar-img').src          = t.logo;
+  if (t.logo_url) {
+    const lb  = document.getElementById('logo-bar');
+    const img = document.getElementById('logo-bar-img');
+    // If the file 404s (e.g. a storage misconfig), don't leave a broken-image
+    // glyph sitting in the masthead — just hide the bar; the tenant name
+    // already appears in the H1 right below it, so nothing is lost.
+    img.onerror = () => { lb.style.display = 'none'; };
+    img.src = t.logo_url;
     document.getElementById('logo-bar-name').textContent = t.name;
+    lb.style.display = 'flex';
   }
   statObs.observe(document.getElementById('masthead-stats'));
 }
@@ -1906,9 +1911,14 @@ function renderTopbarMeta(t) {
   badge.textContent = typeLabel(t.business_type);
   badge.classList.remove('hidden');
   if (t.logo_url) {
-    document.getElementById('topbar-bizal-text').style.display = 'none';
+    const bizalText = document.getElementById('topbar-bizal-text');
     const li = document.getElementById('topbar-logo-img');
+    // If the logo file 404s, fall back to the "BizAL" wordmark instead of
+    // showing the browser's broken-image icon — never leave the topbar
+    // looking broken, even if a tenant's storage upload has an issue.
+    li.onerror = () => { li.style.display = 'none'; bizalText.style.display = ''; };
     li.src = t.logo_url;
+    bizalText.style.display = 'none';
     li.style.display = 'inline-block';
   }
 }
