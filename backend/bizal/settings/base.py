@@ -506,8 +506,20 @@ EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 # (or a Celery task without its own retry/backoff bound) inherits that hang.
 # 10s is generous for a normal SMTP handshake and fails fast otherwise.
 EMAIL_TIMEOUT = _env_int('EMAIL_TIMEOUT', 10)
-DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@bizal.al')
-ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL', 'admin@bizal.al')
+# BUG FIX: same footgun documented in settings/test.py for SECRET_KEY.
+# .env.example (and the .env copied from it for local dev) ships
+# DEFAULT_FROM_EMAIL / ADMIN_EMAIL blank for the operator to fill in before
+# deploying. python-dotenv sets those as an empty *but present* env var, so
+# os.environ.get(key, default) never applies its fallback — the key exists,
+# it's just ''. That silently sent every admin-notification send_mail() call
+# (e.g. contact.views.PlatformContactCreateView) with recipient_list=[''],
+# which Django's mail backends drop without error: 0 messages sent, no
+# exception, nothing in mail.outbox or the console backend's output. Using
+# `or` instead of the dict-style default falls back on blank too, not just
+# on the key being fully unset — same fix as SECRET_KEY, applied where the
+# fallback needs to survive a blank-but-present env var.
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL') or 'noreply@bizal.al'
+ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL') or 'admin@bizal.al'
 
 FRONTEND_BASE_URL = os.environ.get('FRONTEND_BASE_URL', 'http://localhost:8000')
 

@@ -449,6 +449,81 @@ class AdminSetTotalPriceTest(TestCase):
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
 
 
+class StaffCreateTotalPriceTest(TestCase):
+    """
+    BookingListCreateView.perform_create(): total_price is read-only on
+    BookingSerializer (anti-fraud — see the SECURITY FIX comment on its
+    Meta), so a booking with no priced resource_id used to always save at
+    0 regardless of what was posted — including from the tenant admin
+    panel's own "Add Booking" form, which has a Total Price field precisely
+    for this case (a manual walk-in booking with no resource_id to compute
+    a price from). Staff/owner can now set it at creation time, the same
+    way admin_update_booking already lets them set it afterwards — but an
+    anonymous or customer POST still can't, same as before this fix.
+    """
+    def setUp(self):
+        self.client = APIClient()
+        self.tenant = make_tenant('staffcreatepricebiz')
+        self.owner = make_user('owner@staffcreatepricebiz.com', self.tenant, 'owner')
+        self.customer = make_user('cust@staffcreatepricebiz.com', self.tenant, 'customer')
+        self.client.defaults['HTTP_HOST'] = 'staffcreatepricebiz.bizal.al'
+
+    def _post(self, price):
+        return self.client.post('/api/bookings/', {
+            'guest_name': 'Walk-in Guest',
+            'start_date': '2026-09-15',
+            'end_date': '2026-09-15',
+            'guest_count': 4,
+            'total_price': price,
+        })
+
+    def test_owner_supplied_price_is_saved(self):
+        self.client.force_authenticate(user=self.owner)
+        resp = self._post(5000)
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Decimal(str(resp.data['total_price'])), Decimal('5000.00'))
+
+    def test_customer_supplied_price_still_ignored(self):
+        self.client.force_authenticate(user=self.customer)
+        resp = self._post(999999)
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Decimal(str(resp.data['total_price'])), Decimal('0.00'))
+
+    def test_anonymous_supplied_price_still_ignored(self):
+        resp = self._post(12345)
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Decimal(str(resp.data['total_price'])), Decimal('0.00'))
+
+    def test_invalid_price_from_owner_does_not_crash(self):
+        self.client.force_authenticate(user=self.owner)
+        resp = self._post('not-a-number')
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Decimal(str(resp.data['total_price'])), Decimal('0.00'))
+
+    def test_resource_computed_price_not_overridden_by_staff(self):
+        # A rental with a real resource_id already gets its price computed
+        # server-side from RentalItem.price_per_day — an owner posting a
+        # different total_price alongside a resource_id must not override
+        # that computed figure with an arbitrary one.
+        from rentals.models import RentalItem
+        item = RentalItem.objects.create(
+            tenant=self.tenant, name='Golf 7', rental_type='car',
+            price_per_day=Decimal('4000.00'), status='available',
+        )
+        self.client.force_authenticate(user=self.owner)
+        resp = self.client.post('/api/bookings/', {
+            'booking_type': 'rental',
+            'resource_type': 'rental_item',
+            'resource_id': str(item.pk),
+            'start_date': '2026-09-20',
+            'end_date': '2026-09-20',
+            'guest_name': 'Guest',
+            'total_price': 1,  # attempted override — must be ignored
+        })
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Decimal(str(resp.data['total_price'])), Decimal('4000.00'))
+
+
 def make_tenant__admin_gaps(slug='bookingadmingapbiz'):
     return Tenant.objects.create(name=slug.title(), slug=slug, business_type='restaurant', plan='pro', is_active=True)
 

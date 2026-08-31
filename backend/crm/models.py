@@ -15,6 +15,7 @@ LEAD_SOURCE = [
     ('referral', 'Referral'),
     ('social', 'Social Media'),
     ('walk_in', 'Walk-in'),
+    ('call', 'Phone Call'),
     ('chatbot', 'Chatbot'),
     ('other', 'Other'),
 ]

@@ -980,8 +980,19 @@ const SVC_ICON = {
 const FOOD_TYPES   = ['restaurant', 'bar', 'bakery', 'delivery_kitchen', 'catering'];
 const RENTAL_TYPES = ['car_rental', 'property_rental', 'equipment_rental', 'boat_rental'];
 const HOTEL_TYPES  = ['hotel'];
+// NOTE: 'bakery' and 'delivery_kitchen' intentionally live in FOOD_TYPES
+// only, not here — they used to appear in both lists, which made isFood(bt)
+// and isShop(bt) both return true for the same tenant. Since different call
+// sites check food-first in some places and shop-first in others (with no
+// consistent priority), that overlap silently sent bakery/delivery-kitchen
+// tenants down whichever branch happened to be checked first at each call
+// site — e.g. the masthead CTA text came from the food branch ("Rezervo
+// Tavolinë") while its click handler came from quickBookAction(), which
+// checks isShop before isFood, so clicking it landed on the products
+// section instead. This mirrors backend/tenants/business_type_meta.py,
+// which categorizes both types as 'food', not 'retail'.
 const SHOP_TYPES   = [
-  'market', 'pharmacy', 'bakery', 'delivery_kitchen', 'clothing', 'electronics',
+  'market', 'pharmacy', 'clothing', 'electronics',
   'organic', 'furniture', 'jewelry', 'toy_store', 'sports_shop', 'petrol_station',
   'bookstore',
 ];

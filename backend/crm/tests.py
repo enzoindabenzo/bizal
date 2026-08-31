@@ -245,3 +245,64 @@ class CRMLeadNoteTest(TestCase):
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
         # Confirm no note was actually created
         self.assertFalse(LeadNote.objects.filter(lead=other_lead).exists())
+
+
+class CRMLeadSourceStatusChoicesTest(TestCase):
+    """
+    REGRESSION: frontend/templates/tenant_admin.html's lead-edit modal
+    dropdowns previously drifted from these backend choices in two ways:
+    (1) the source dropdown offered 'walk-in' (hyphen) and 'call', neither
+    of which was a valid LEAD_SOURCE value ('walk_in' with an underscore
+    existed, 'call' didn't exist at all) — so saving a lead with either
+    selected silently failed the source field.
+    (2) the status dropdown only listed 4 of the 6 LEAD_STATUS values
+    (missing 'proposal' and 'won') — so re-saving a lead already in one of
+    those two statuses from the edit modal silently reset it to 'new'.
+    These tests pin every value the frontend now sends as a valid backend
+    choice, so future drift between the two is caught here instead of
+    silently corrupting saved leads.
+    """
+    def setUp(self):
+        self.client = APIClient()
+        self.tenant = Tenant.objects.create(
+            name='Choices SH', slug='crm-choices', business_type='car_rental',
+            plan='enterprise', is_active=True,
+        )
+        self.owner = User.objects.create_user(
+            email='owner@crm-choices.com', password='pass1234', tenant=self.tenant, role='owner',
+        )
+        self.client.defaults['HTTP_HOST'] = 'crm-choices.bizal.al'
+        self.client.force_authenticate(user=self.owner)
+
+    def test_every_frontend_source_option_is_accepted(self):
+        # Mirrors the exact value list in tenant_admin.html's #ld-source select.
+        frontend_sources = ['website', 'referral', 'social', 'walk_in', 'call', 'chatbot', 'other']
+        for source in frontend_sources:
+            resp = self.client.post('/api/crm/leads/', {
+                'name': f'Lead via {source}', 'source': source, 'status': 'new',
+            })
+            self.assertEqual(
+                resp.status_code, status.HTTP_201_CREATED,
+                f"source={source!r} was rejected: {resp.data}",
+            )
+
+    def test_every_frontend_status_option_is_accepted(self):
+        # Mirrors the exact value list in tenant_admin.html's #ld-status select.
+        frontend_statuses = ['new', 'contacted', 'qualified', 'proposal', 'won', 'lost']
+        for lead_status in frontend_statuses:
+            resp = self.client.post('/api/crm/leads/', {
+                'name': f'Lead {lead_status}', 'source': 'website', 'status': lead_status,
+            })
+            self.assertEqual(
+                resp.status_code, status.HTTP_201_CREATED,
+                f"status={lead_status!r} was rejected: {resp.data}",
+            )
+
+    def test_saving_lead_already_in_proposal_status_does_not_reset_it(self):
+        lead = Lead.objects.create(
+            tenant=self.tenant, name='Big Deal', status='proposal', source='website',
+        )
+        resp = self.client.patch(f'/api/crm/leads/{lead.pk}/', {'status': 'proposal'})
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        lead.refresh_from_db()
+        self.assertEqual(lead.status, 'proposal')

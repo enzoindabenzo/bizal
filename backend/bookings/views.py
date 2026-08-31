@@ -88,6 +88,35 @@ class BookingListCreateView(generics.ListCreateAPIView):
         user = self.request.user if self.request.user.is_authenticated else None
         booking = serializer.save(tenant=self.request.tenant, user=user)
 
+        # STAFF FIX: total_price is read-only on BookingSerializer for
+        # anti-fraud reasons (an anonymous/customer POST can't set its own
+        # price — see the SECURITY FIX comment on BookingSerializer.Meta).
+        # But this same AllowAny endpoint is also what the tenant admin
+        # panel's "Shto Rezervimin" (Add Booking) form posts to for
+        # staff-entered manual bookings — e.g. a walk-in table reservation,
+        # or any booking with no priced resource_id — and that form has its
+        # own "Çmimi Total" (Total Price) field. Because _compute_total_price()
+        # has no resource to compute from in that case, the price was being
+        # silently discarded and the booking saved at 0 regardless of what
+        # staff typed. Let staff set the real price here at creation time,
+        # the same way admin_update_booking already lets them set it later.
+        # Gated on total_price == 0 so a resource-priced booking (which the
+        # serializer already computed correctly) is never overridden by this.
+        is_staff = user and (
+            user.is_superuser or get_effective_role(user, self.request.tenant) is not None
+        )
+        if is_staff and booking.total_price == 0:
+            raw_price = self.request.data.get('total_price')
+            if raw_price is not None:
+                from decimal import Decimal, InvalidOperation
+                try:
+                    price = Decimal(str(raw_price))
+                    if price >= 0:
+                        booking.total_price = price
+                        booking.save(update_fields=['total_price'])
+                except InvalidOperation:
+                    pass
+
         # Write a RoomBooking join row so is_room_available() can actually
         # detect overlaps. Without this the RoomBooking table stays empty and
         # every availability check returns True regardless of existing bookings.

@@ -513,7 +513,13 @@ function buildSidebar() {
                          'language_school','tutoring','driving_school','veterinary','optician',
                          'photography','travel_agency','event_agency','nursery','coding_bootcamp',
                          'cleaning','funeral_home','security'].includes(bt);
-  const isProduct     = ['market','pharmacy','bakery','delivery_kitchen','clothing','electronics',
+  // NOTE: 'bakery'/'delivery_kitchen' are deliberately NOT in this list —
+  // they're food-category types (see backend/tenants/business_type_meta.py)
+  // and already covered by isFood above. Having them in both caused isFood
+  // and isProduct to disagree with each other depending on check order at
+  // each call site (e.g. mismatched CTA label vs. click action on the
+  // public storefront masthead).
+  const isProduct     = ['market','pharmacy','clothing','electronics',
                          'organic','furniture','jewelry','toy_store','sports_shop','petrol_station',
                          'bookstore'].includes(bt);
   const isB2B         = ['real_estate','construction','architecture','import_export','agro',
@@ -711,7 +717,9 @@ function bindPager(el, onPage) {
 async function dashboard(el) {
   const bt = TENANT?.business_type || '';
   const isFood = ['restaurant','bar','bakery','delivery_kitchen','catering'].includes(bt);
-  const isProduct = ['market','pharmacy','bakery','delivery_kitchen','clothing','electronics',
+  // See NOTE above the other isProduct definition — bakery/delivery_kitchen
+  // stay out of this list on purpose; they're covered by isFood.
+  const isProduct = ['market','pharmacy','clothing','electronics',
                       'organic','furniture','jewelry','toy_store','sports_shop','petrol_station',
                       'bookstore'].includes(bt);
   // FIX: order-taking (cart checkout -> /api/orders/) is shared by both food
@@ -2430,12 +2438,12 @@ function openLeadModal(id, data={}) {
     <div class="form-grid">
       <div class="form-group"><label class="form-label" for="ld-status">Statusi</label>
         <select id="ld-status" class="form-select">
-          ${['new','contacted','qualified','lost'].map(s=>`<option value="${s}" ${data.status===s?'selected':''}>${s}</option>`).join('')}
+          ${['new','contacted','qualified','proposal','won','lost'].map(s=>`<option value="${s}" ${data.status===s?'selected':''}>${s}</option>`).join('')}
         </select>
       </div>
       <div class="form-group"><label class="form-label" for="ld-source">Burimi</label>
         <select id="ld-source" class="form-select">
-          ${['','website','referral','social','walk-in','call','other'].map(s=>`<option value="${s}" ${data.source===s?'selected':''}>${s||'— Zgjidh —'}</option>`).join('')}
+          ${['','website','referral','social','walk_in','call','chatbot','other'].map(s=>`<option value="${s}" ${data.source===s?'selected':''}>${s||'— Zgjidh —'}</option>`).join('')}
         </select>
       </div>
     </div>
