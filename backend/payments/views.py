@@ -4,18 +4,19 @@ import stripe
 from django.conf import settings
 from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured
-from django.db import transaction
+from django.db import models, transaction
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import generics, status
+from rest_framework.views import APIView
 
 from tenants.models import Tenant, PLAN_PRO, PLAN_ENTERPRISE, PLAN_STARTER, PLAN_TRIAL
-from tenants.permissions import IsTenantOwner, get_effective_role
+from tenants.permissions import IsTenantOwner, IsTenantStaff, get_effective_role
 from .models import Payment
-from .serializers import PaymentSerializer
+from .serializers import PaymentSerializer, ManualPaymentSerializer
 
 # Avoid setting stripe.api_key globally at module import time.
 # If STRIPE_SECRET_KEY is empty (base.py default) and this module is imported
@@ -771,11 +772,18 @@ def _handle_event(event):
                 from django.core.cache import cache
                 tenant = Tenant.objects.get(stripe_subscription_id=sub_id)
                 tenant.is_active = True
-                if plan_from_stripe and plan_from_stripe != tenant.plan:
+                plan_changed = bool(plan_from_stripe and plan_from_stripe != tenant.plan)
+                if plan_changed:
                     tenant.plan = plan_from_stripe
                     tenant.trial_ends_at = None
                 with transaction.atomic():
                     tenant.save()
+                if plan_changed:
+                    # Stripe customer-portal upgrades/downgrades land here, not in
+                    # checkout.session.completed — without this the two other plan-change
+                    # paths (checkout completed, subscription deleted) write an activity
+                    # log entry but a self-serve portal plan switch left no audit trail.
+                    _log_plan_change(tenant, plan_from_stripe)
                 cache.delete(f'tenant:{tenant.slug}')
                 # Also clear the trial_expired cache flag (see
                 # checkout.session.completed above for why this matters):
@@ -892,6 +900,66 @@ class PaymentListView(generics.ListAPIView):
         if status_filter:
             qs = qs.filter(status=status_filter)
         return qs
+
+
+class RecordManualPaymentView(APIView):
+    """
+    Staff-facing endpoint to record a cash or bank-transfer payment that
+    happened outside Stripe (e.g. a customer paying cash at the counter for
+    an invoice, or a bank transfer for a booking deposit).
+
+    IsTenantStaff rather than IsTenantOwner: any staff member handling the
+    till/reception desk needs to be able to log these, not just
+    owners/managers — narrower than billing (Stripe) actions, which stay
+    owner-only, but this is a routine day-to-day operation.
+    """
+    permission_classes = [IsTenantStaff]
+
+    def post(self, request):
+        serializer = ManualPaymentSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+
+        with transaction.atomic():
+            payment = serializer.save(
+                tenant=request.tenant,
+                status='completed',
+                recorded_by=request.user,
+            )
+            if payment.payment_type == 'invoice' and payment.invoice_id:
+                self._reconcile_invoice(payment.invoice_id)
+            elif payment.payment_type == 'booking_deposit' and payment.booking_id:
+                self._reconcile_booking(payment.booking_id, payment.amount)
+
+        return Response(PaymentSerializer(payment).data, status=status.HTTP_201_CREATED)
+
+    def _reconcile_booking(self, booking_id, amount):
+        """
+        Credit the booking's deposit_paid ledger, mirroring exactly what the
+        checkout.session.completed webhook does for Stripe deposits (see
+        stripe_webhook._handle_event above) — same field, same
+        select_for_update() locking, just triggered by a staff-entered cash/
+        bank_transfer row instead of a Stripe event.
+        """
+        from bookings.models import Booking
+        booking = Booking.objects.select_for_update().get(pk=booking_id)
+        booking.deposit_paid = booking.deposit_paid + amount
+        booking.save(update_fields=['deposit_paid', 'updated_at'])
+
+    def _reconcile_invoice(self, invoice_id):
+        """
+        Mark the invoice paid once completed payments against it cover the
+        total. select_for_update() prevents two concurrent manual-payment
+        submissions (or a manual payment racing a Stripe webhook) from both
+        reading a stale total and under/over-crediting the invoice.
+        """
+        from billing.models import Invoice
+        invoice = Invoice.objects.select_for_update().get(pk=invoice_id)
+        paid_total = Payment.objects.filter(
+            invoice_id=invoice_id, status='completed'
+        ).aggregate(total=models.Sum('amount'))['total'] or Decimal('0')
+        if paid_total >= invoice.total_amount and invoice.status not in ('paid', 'cancelled'):
+            invoice.status = 'paid'
+            invoice.save(update_fields=['status'])
 
 
 from rest_framework import serializers as _drf_serializers

@@ -316,6 +316,51 @@ class StripeWebhookSubscriptionUpdatedTest(TestCase):
         })
         self.assertEqual(resp.status_code, 200)
 
+    @patch('payments.views._plan_price_map', return_value={'pro': 'price_pro_test', 'enterprise': 'price_ent_test'})
+    def test_plan_upgrade_writes_activity_log(self, _mock):
+        """
+        A Stripe customer-portal upgrade (this branch) must log an activity entry
+        just like checkout.session.completed and customer.subscription.deleted do —
+        this previously silently skipped _log_plan_change, leaving self-serve
+        plan switches with no audit trail.
+        """
+        from activity.models import ActivityLog as Activity
+        resp = self._post_event({
+            'id': 'evt_upd_005',
+            'type': 'customer.subscription.updated',
+            'data': {'object': {
+                'id': 'sub_upd123',
+                'status': 'active',
+                'items': {'data': [{'price': {'id': 'price_pro_test'}}]},
+            }},
+        })
+        self.assertEqual(resp.status_code, 200)
+        entry = Activity.objects.filter(
+            tenant=self.tenant, verb='billing.plan_changed',
+        ).order_by('-id').first()
+        self.assertIsNotNone(entry)
+        self.assertIn('pro', entry.description)
+
+    @patch('payments.views._plan_price_map', return_value={'pro': 'price_pro_test', 'enterprise': 'price_ent_test'})
+    def test_unchanged_plan_does_not_write_activity_log(self, _mock):
+        """No-op status refreshes (same plan) shouldn't spam the activity log."""
+        from activity.models import ActivityLog as Activity
+        self.tenant.plan = 'pro'
+        self.tenant.save(update_fields=['plan'])
+        resp = self._post_event({
+            'id': 'evt_upd_006',
+            'type': 'customer.subscription.updated',
+            'data': {'object': {
+                'id': 'sub_upd123',
+                'status': 'active',
+                'items': {'data': [{'price': {'id': 'price_pro_test'}}]},
+            }},
+        })
+        self.assertEqual(resp.status_code, 200)
+        self.assertFalse(
+            Activity.objects.filter(tenant=self.tenant, verb='billing.plan_changed').exists()
+        )
+
 
 class StripeWebhookPaymentFailedTest(TestCase):
     """
@@ -1635,3 +1680,202 @@ class WebhookEventListViewTests(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(len(resp.data['results']), 1)
         self.assertEqual(resp.data['results'][0]['stripe_event_id'], 'e1')
+
+
+class RecordManualPaymentTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.tenant = make_tenant('manualpaybiz')
+        self.other_tenant = make_tenant('othermanualpaybiz')
+        self.owner = make_user('owner@manualpaybiz.com', self.tenant)
+        self.customer = make_user('cust@manualpaybiz.com', self.tenant, 'customer')
+        self.client.defaults['HTTP_HOST'] = 'manualpaybiz.bizal.al'
+
+        from billing.models import Invoice
+        self.invoice = Invoice.objects.create(
+            tenant=self.tenant, status='sent', total_amount=Decimal('1000.00'),
+        )
+        self.other_invoice = Invoice.objects.create(
+            tenant=self.other_tenant, status='sent', total_amount=Decimal('500.00'),
+        )
+        self.booking = make_booking(self.tenant, total_price='300.00')
+
+    def test_owner_can_record_cash_payment_against_invoice(self):
+        self.client.force_authenticate(user=self.owner)
+        resp = self.client.post('/api/payments/manual/', {
+            'invoice': str(self.invoice.pk),
+            'amount': '1000.00',
+            'payment_type': 'invoice',
+            'payment_method': 'cash',
+        })
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED, resp.data)
+        self.assertEqual(resp.data['status'], 'completed')
+        self.assertEqual(resp.data['payment_method'], 'cash')
+        self.assertEqual(resp.data['recorded_by'], self.owner.pk)
+
+    def test_full_payment_marks_invoice_paid(self):
+        self.client.force_authenticate(user=self.owner)
+        resp = self.client.post('/api/payments/manual/', {
+            'invoice': str(self.invoice.pk),
+            'amount': '1000.00',
+            'payment_type': 'invoice',
+            'payment_method': 'bank_transfer',
+        })
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        self.invoice.refresh_from_db()
+        self.assertEqual(self.invoice.status, 'paid')
+
+    def test_partial_payment_does_not_mark_invoice_paid(self):
+        self.client.force_authenticate(user=self.owner)
+        resp = self.client.post('/api/payments/manual/', {
+            'invoice': str(self.invoice.pk),
+            'amount': '400.00',
+            'payment_type': 'invoice',
+            'payment_method': 'cash',
+        })
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        self.invoice.refresh_from_db()
+        self.assertEqual(self.invoice.status, 'sent')
+
+    def test_two_partial_payments_sum_to_mark_invoice_paid(self):
+        self.client.force_authenticate(user=self.owner)
+        self.client.post('/api/payments/manual/', {
+            'invoice': str(self.invoice.pk), 'amount': '600.00',
+            'payment_type': 'invoice', 'payment_method': 'cash',
+        })
+        self.client.post('/api/payments/manual/', {
+            'invoice': str(self.invoice.pk), 'amount': '400.00',
+            'payment_type': 'invoice', 'payment_method': 'bank_transfer',
+        })
+        self.invoice.refresh_from_db()
+        self.assertEqual(self.invoice.status, 'paid')
+
+    def test_invoice_required_for_invoice_payment_type(self):
+        self.client.force_authenticate(user=self.owner)
+        resp = self.client.post('/api/payments/manual/', {
+            'amount': '100.00', 'payment_type': 'invoice', 'payment_method': 'cash',
+        })
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('invoice', resp.data)
+
+    def test_booking_required_for_booking_deposit_payment_type(self):
+        self.client.force_authenticate(user=self.owner)
+        resp = self.client.post('/api/payments/manual/', {
+            'amount': '100.00', 'payment_type': 'booking_deposit', 'payment_method': 'cash',
+        })
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('booking', resp.data)
+
+    def test_cannot_record_payment_against_other_tenants_invoice(self):
+        self.client.force_authenticate(user=self.owner)
+        resp = self.client.post('/api/payments/manual/', {
+            'invoice': str(self.other_invoice.pk),
+            'amount': '500.00',
+            'payment_type': 'invoice',
+            'payment_method': 'cash',
+        })
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('invoice', resp.data)
+
+    def test_cannot_record_payment_against_booking_deposit_with_valid_booking(self):
+        self.client.force_authenticate(user=self.owner)
+        resp = self.client.post('/api/payments/manual/', {
+            'booking': str(self.booking.pk),
+            'amount': '300.00',
+            'payment_type': 'booking_deposit',
+            'payment_method': 'cash',
+        })
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED, resp.data)
+
+    def test_stripe_payment_method_rejected(self):
+        # Staff cannot fake a 'stripe' row through the manual endpoint —
+        # only 'cash'/'bank_transfer' are valid choices here.
+        self.client.force_authenticate(user=self.owner)
+        resp = self.client.post('/api/payments/manual/', {
+            'invoice': str(self.invoice.pk),
+            'amount': '1000.00',
+            'payment_type': 'invoice',
+            'payment_method': 'stripe',
+        })
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('payment_method', resp.data)
+
+    def test_customer_cannot_record_manual_payment(self):
+        self.client.force_authenticate(user=self.customer)
+        resp = self.client.post('/api/payments/manual/', {
+            'invoice': str(self.invoice.pk),
+            'amount': '1000.00',
+            'payment_type': 'invoice',
+            'payment_method': 'cash',
+        })
+        self.assertIn(resp.status_code, [status.HTTP_403_FORBIDDEN, status.HTTP_401_UNAUTHORIZED])
+
+    def test_unauthenticated_cannot_record_manual_payment(self):
+        resp = self.client.post('/api/payments/manual/', {
+            'invoice': str(self.invoice.pk),
+            'amount': '1000.00',
+            'payment_type': 'invoice',
+            'payment_method': 'cash',
+        })
+        self.assertIn(resp.status_code, [status.HTTP_403_FORBIDDEN, status.HTTP_401_UNAUTHORIZED])
+
+    def test_already_paid_invoice_not_double_credited_below_paid_status(self):
+        # An invoice already 'cancelled' should never flip to 'paid' via
+        # a stray manual payment recorded against it after the fact.
+        self.invoice.status = 'cancelled'
+        self.invoice.save(update_fields=['status'])
+        self.client.force_authenticate(user=self.owner)
+        resp = self.client.post('/api/payments/manual/', {
+            'invoice': str(self.invoice.pk),
+            'amount': '1000.00',
+            'payment_type': 'invoice',
+            'payment_method': 'cash',
+        })
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        self.invoice.refresh_from_db()
+        self.assertEqual(self.invoice.status, 'cancelled')
+
+
+class RecordManualBookingDepositPaymentTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.tenant = make_tenant('manualbookingbiz')
+        self.owner = make_user('owner@manualbookingbiz.com', self.tenant)
+        self.client.defaults['HTTP_HOST'] = 'manualbookingbiz.bizal.al'
+        self.booking = make_booking(self.tenant, total_price='1000.00', deposit_paid='0.00')
+
+    def test_cash_deposit_credits_booking(self):
+        self.client.force_authenticate(user=self.owner)
+        resp = self.client.post('/api/payments/manual/', {
+            'booking': str(self.booking.pk),
+            'amount': '300.00',
+            'payment_type': 'booking_deposit',
+            'payment_method': 'cash',
+        })
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED, resp.data)
+        self.booking.refresh_from_db()
+        self.assertEqual(self.booking.deposit_paid, Decimal('300.00'))
+
+    def test_two_partial_deposits_sum_correctly(self):
+        self.client.force_authenticate(user=self.owner)
+        self.client.post('/api/payments/manual/', {
+            'booking': str(self.booking.pk), 'amount': '200.00',
+            'payment_type': 'booking_deposit', 'payment_method': 'cash',
+        })
+        self.client.post('/api/payments/manual/', {
+            'booking': str(self.booking.pk), 'amount': '150.00',
+            'payment_type': 'booking_deposit', 'payment_method': 'bank_transfer',
+        })
+        self.booking.refresh_from_db()
+        self.assertEqual(self.booking.deposit_paid, Decimal('350.00'))
+
+    def test_booking_status_untouched_by_manual_deposit(self):
+        # Matches the Stripe webhook's existing behaviour: a deposit payment
+        # only updates deposit_paid, never the booking's status.
+        self.client.force_authenticate(user=self.owner)
+        self.client.post('/api/payments/manual/', {
+            'booking': str(self.booking.pk), 'amount': '1000.00',
+            'payment_type': 'booking_deposit', 'payment_method': 'cash',
+        })
+        self.booking.refresh_from_db()
+        self.assertEqual(self.booking.status, 'pending')

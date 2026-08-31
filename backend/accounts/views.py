@@ -1,6 +1,7 @@
 import logging
 
 from django.utils.decorators import method_decorator
+from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import generics, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -525,6 +526,112 @@ class MeAppointmentsView(APIView):
             # appearing as an empty appointments list with HTTP 200.
             logger.exception('MeAppointmentsView: failed to fetch appointments for user %s', request.user.pk)
             return Response({'detail': 'Gabim gjatë ngarkimit të takimeve.'}, status=500)
+
+
+class MeExportDataView(APIView):
+    """
+    GDPR Art. 20 (data portability): lets a user download all personal data
+    this platform holds on them, across every tenant they have an account
+    or activity with. Complements MeDeleteView (Art. 17, right to erasure) —
+    that view already existed; this was the missing half.
+
+    Deliberately un-paginated and returns everything in one JSON payload
+    (unlike MeBookingsView etc., which paginate for UI list views) since
+    this is a one-shot export a user downloads once, not something rendered
+    incrementally in an interface.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        data = {
+            'exported_at': timezone.now().isoformat(),
+            'profile': {
+                'id': str(user.id),
+                'email': user.email,
+                'full_name': user.full_name,
+                'phone': user.phone,
+                'city': user.city,
+                'business_name': user.business_name,
+                'role': user.role,
+                'tenant': user.tenant.slug if user.tenant else None,
+                'is_email_verified': user.is_email_verified,
+                'notification_prefs': user.notification_prefs,
+                'created_at': user.created_at.isoformat(),
+            },
+            'bookings': [],
+            'orders': [],
+            'appointments': [],
+            'reviews': [],
+            'payments': [],
+        }
+
+        for booking in Booking.objects.filter(user=user).select_related('tenant'):
+            data['bookings'].append({
+                'id': str(booking.id),
+                'tenant': booking.tenant.slug if booking.tenant else None,
+                'booking_type': booking.booking_type,
+                'status': booking.status,
+                'start_date': booking.start_date.isoformat() if booking.start_date else None,
+                'end_date': booking.end_date.isoformat() if booking.end_date else None,
+                'total_price': str(booking.total_price),
+                'deposit_paid': str(booking.deposit_paid),
+                'created_at': booking.created_at.isoformat(),
+            })
+
+        try:
+            from orders.models import Order
+            for order in Order.objects.filter(user=user).select_related('tenant'):
+                data['orders'].append({
+                    'id': str(order.id),
+                    'tenant': order.tenant.slug if order.tenant else None,
+                    'status': order.status,
+                    'total': str(order.total_price),
+                    'created_at': order.created_at.isoformat(),
+                })
+        except Exception:
+            logger.exception('MeExportDataView: failed to export orders for user %s', user.pk)
+
+        try:
+            from appointments.models import Appointment
+            for appt in Appointment.objects.filter(user=user).select_related('tenant'):
+                data['appointments'].append({
+                    'id': str(appt.id),
+                    'tenant': appt.tenant.slug if appt.tenant else None,
+                    'status': appt.status,
+                    'date': appt.date.isoformat() if appt.date else None,
+                    'created_at': appt.created_at.isoformat(),
+                })
+        except Exception:
+            logger.exception('MeExportDataView: failed to export appointments for user %s', user.pk)
+
+        for review in Review.objects.filter(user=user).select_related('tenant'):
+            data['reviews'].append({
+                'id': str(review.id),
+                'tenant': review.tenant.name if review.tenant else None,
+                'rating': review.rating,
+                'comment': review.comment,
+                'created_at': review.created_at.isoformat(),
+            })
+
+        try:
+            from payments.models import Payment
+            for payment in Payment.objects.filter(user=user).select_related('tenant'):
+                data['payments'].append({
+                    'id': str(payment.id),
+                    'tenant': payment.tenant.slug if payment.tenant else None,
+                    'amount': str(payment.amount),
+                    'currency': payment.currency,
+                    'payment_type': payment.payment_type,
+                    'status': payment.status,
+                    'created_at': payment.created_at.isoformat(),
+                })
+        except Exception:
+            logger.exception('MeExportDataView: failed to export payments for user %s', user.pk)
+
+        response = Response(data, status=status.HTTP_200_OK)
+        response['Content-Disposition'] = f'attachment; filename="bizal-data-export-{user.id}.json"'
+        return response
 
 
 class MeDeleteView(APIView):

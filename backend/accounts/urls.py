@@ -13,6 +13,7 @@ urlpatterns = [
     path('me/appointments/',       views.MeAppointmentsView.as_view(),          name='me-appointments'),
     path('me/notifications/',      views.MeNotificationPrefsView.as_view(),     name='me-notifications'),
     path('me/reviews/',             views.MeReviewsView.as_view(),              name='me-reviews'),
+    path('me/export/',              views.MeExportDataView.as_view(),           name='me-export'),
     path('me/delete/',              views.MeDeleteView.as_view(),               name='me-delete'),
     path('verify-email/',                views.EmailVerificationSendView.as_view(),    name='verify-email-send'),
     path('verify-email/<uid>/<token>/',   views.EmailVerificationConfirmView.as_view(), name='verify-email-confirm'),

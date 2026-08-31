@@ -19,7 +19,7 @@ class BookingSerializer(serializers.ModelSerializer):
             'id', 'booking_type', 'status', 'start_date', 'end_date',
             'start_time', 'end_time', 'resource_label',
             'guest_name', 'guest_email', 'guest_phone', 'guest_count',
-            'total_price', 'deposit_paid', 'notes', 'user_name', 'user_email', 'created_at',
+            'total_price', 'deposit_paid', 'payment_method', 'notes', 'user_name', 'user_email', 'created_at',
             'resource_type', 'resource_id', 'resource_status',
         )
         # SECURITY FIX: total_price used to be a plain writable field. Any

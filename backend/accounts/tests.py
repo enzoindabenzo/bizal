@@ -1085,3 +1085,103 @@ class MeDeleteGapsTests(TestCase):
         ):
             resp = self.client.delete('/api/auth/me/delete/')
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
+
+class MeExportDataTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.tenant = Tenant.objects.create(
+            name='Export Co', slug='exportco', business_type='restaurant', plan='pro', is_active=True,
+        )
+        self.other_tenant = Tenant.objects.create(
+            name='Other Export Co', slug='otherexportco', business_type='restaurant', plan='pro', is_active=True,
+        )
+        self.user = User.objects.create_user(
+            email='cust@exportco.com', password='pass1234', tenant=self.tenant, role='customer',
+            full_name='Export Customer', phone='+35569000000', city='Tirana',
+        )
+        self.other_user = User.objects.create_user(
+            email='other@exportco.com', password='pass1234', tenant=self.tenant, role='customer',
+        )
+        self.client.defaults['HTTP_HOST'] = 'exportco.bizal.al'
+        self.client.force_authenticate(user=self.user)
+
+    def test_unauthenticated_cannot_export(self):
+        client = APIClient()
+        client.defaults['HTTP_HOST'] = 'exportco.bizal.al'
+        resp = client.get('/api/auth/me/export/')
+        self.assertIn(resp.status_code, [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN])
+
+    def test_export_returns_profile(self):
+        resp = self.client.get('/api/auth/me/export/')
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data['profile']['email'], 'cust@exportco.com')
+        self.assertEqual(resp.data['profile']['full_name'], 'Export Customer')
+        self.assertEqual(resp.data['profile']['tenant'], 'exportco')
+
+    def test_export_has_download_content_disposition(self):
+        resp = self.client.get('/api/auth/me/export/')
+        self.assertIn('attachment', resp['Content-Disposition'])
+        self.assertIn(str(self.user.id), resp['Content-Disposition'])
+
+    def test_export_includes_own_bookings_only(self):
+        from bookings.models import Booking
+        Booking.objects.create(
+            tenant=self.tenant, user=self.user, booking_type='table', total_price='50.00',
+        )
+        Booking.objects.create(
+            tenant=self.tenant, user=self.other_user, booking_type='table', total_price='999.00',
+        )
+        resp = self.client.get('/api/auth/me/export/')
+        booking_prices = [b['total_price'] for b in resp.data['bookings']]
+        self.assertIn('50.00', booking_prices)
+        self.assertNotIn('999.00', booking_prices)
+
+    def test_export_includes_own_reviews_only(self):
+        from reviews.models import Review
+        Review.objects.create(tenant=self.tenant, user=self.user, rating=5, comment='great')
+        Review.objects.create(tenant=self.tenant, user=self.other_user, rating=1, comment='not mine')
+        resp = self.client.get('/api/auth/me/export/')
+        comments = [r['comment'] for r in resp.data['reviews']]
+        self.assertIn('great', comments)
+        self.assertNotIn('not mine', comments)
+
+    def test_export_includes_own_payments_only(self):
+        from payments.models import Payment
+        Payment.objects.create(
+            tenant=self.tenant, user=self.user, amount='120.00', payment_type='order', status='completed',
+        )
+        Payment.objects.create(
+            tenant=self.tenant, user=self.other_user, amount='999.00', payment_type='order', status='completed',
+        )
+        resp = self.client.get('/api/auth/me/export/')
+        amounts = [p['amount'] for p in resp.data['payments']]
+        self.assertIn('120.00', amounts)
+        self.assertNotIn('999.00', amounts)
+
+    def test_export_empty_when_no_related_data(self):
+        resp = self.client.get('/api/auth/me/export/')
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data['bookings'], [])
+        self.assertEqual(resp.data['orders'], [])
+        self.assertEqual(resp.data['appointments'], [])
+        self.assertEqual(resp.data['reviews'], [])
+        self.assertEqual(resp.data['payments'], [])
+
+    def test_orders_export_failure_is_nonfatal(self):
+        with patch('orders.models.Order.objects.filter', side_effect=RuntimeError('boom')):
+            resp = self.client.get('/api/auth/me/export/')
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data['orders'], [])
+
+    def test_appointments_export_failure_is_nonfatal(self):
+        with patch('appointments.models.Appointment.objects.filter', side_effect=RuntimeError('boom')):
+            resp = self.client.get('/api/auth/me/export/')
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data['appointments'], [])
+
+    def test_payments_export_failure_is_nonfatal(self):
+        with patch('payments.models.Payment.objects.filter', side_effect=RuntimeError('boom')):
+            resp = self.client.get('/api/auth/me/export/')
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data['payments'], [])

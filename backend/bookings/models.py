@@ -20,6 +20,19 @@ BOOKING_TYPE_CHOICES = [
     ('delivery', 'Delivery Order'),
 ]
 
+# How the customer intends to pay their deposit/balance. 'online' is the
+# existing Stripe checkout flow (create_booking_checkout); 'cash' and
+# 'bank_transfer' mean the customer will pay in person or by transfer and a
+# staff member records it later via RecordManualPaymentView. Default is
+# 'online' to preserve the existing behaviour for every booking created
+# before this field existed (frontend already calls the Stripe checkout
+# endpoint as a separate step after creation).
+PAYMENT_METHOD_CHOICES = [
+    ('online', 'Online (Card)'),
+    ('cash', 'Cash'),
+    ('bank_transfer', 'Bank Transfer'),
+]
+
 
 class Booking(TenantScopedUUIDModel):
     user = models.ForeignKey(
@@ -49,6 +62,7 @@ class Booking(TenantScopedUUIDModel):
     total_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     deposit_paid = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     stripe_session_id = models.CharField(max_length=200, blank=True)
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default='online')
 
     notes = models.TextField(blank=True)
     internal_notes = models.TextField(blank=True)

@@ -16,6 +16,15 @@ class Order(TenantScopedUUIDModel):
         ('takeaway', 'Takeaway'),
         ('delivery', 'Delivery'),
     ]
+    # No online (Stripe) checkout flow exists for orders — customers pay in
+    # person or by transfer, and a staff member records the payment via
+    # RecordManualPaymentView. Default 'cash' preserves the current implicit
+    # behaviour (every order created before this field existed was
+    # effectively a cash order).
+    PAYMENT_METHOD_CHOICES = [
+        ('cash', 'Cash'),
+        ('bank_transfer', 'Bank Transfer'),
+    ]
 
     # lazy string refs (matching every other app's models.py) instead of
     # hard imports — avoids the risk of circular imports if menu/accounts
@@ -29,6 +38,7 @@ class Order(TenantScopedUUIDModel):
     status       = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     notes        = models.TextField(blank=True)
     total_price  = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default='cash')
 
     class Meta:
         ordering = ['-created_at']

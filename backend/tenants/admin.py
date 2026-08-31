@@ -1,13 +1,310 @@
 import datetime
+import unicodedata
 
 from django.conf import settings
 from django.contrib import admin
 from django.core.cache import cache
 from django.core.mail import send_mail
+from django.db.models import Q
 from django.utils import timezone
 from django.utils.html import format_html
 
 from .models import Tenant, TenantFeature, TenantLocation, TenantReferral, TrialTenant, PLAN_TRIAL, TRIAL_DAYS
+
+
+def _normalize_city(value):
+    """Strip diacritics + case so 'Durrës'/'Durres' and 'Tiranë'/'Tirane'
+    collapse to the same bucket. Same normalization Albanian users commonly
+    type both ways when typing without special-character keyboard layouts."""
+    if not value:
+        return ''
+    decomposed = unicodedata.normalize('NFKD', value)
+    return ''.join(c for c in decomposed if not unicodedata.combining(c)).strip().lower()
+
+
+class NormalizedCityFilter(admin.SimpleListFilter):
+    """
+    Replaces the raw `city` list_filter, which — because city is free-text —
+    rendered every distinct spelling as its own entry (Durres/Durrës,
+    Tirane/Tiranë each separately), plus a blank/unlabeled option for empty
+    strings. This groups spellings that normalize to the same city and adds
+    an explicit "No city set" bucket instead of a silent blank link.
+    """
+    title = 'city'
+    parameter_name = 'city_norm'
+
+    def lookups(self, request, model_admin):
+        raw_cities = (
+            Tenant.objects.exclude(city='')
+            .values_list('city', flat=True).distinct()
+        )
+        by_norm = {}
+        for city in raw_cities:
+            norm = _normalize_city(city)
+            has_diacritics = any(ord(ch) > 127 for ch in city)
+            # Prefer whichever spelling actually has diacritics (Durrës over
+            # Durres) as the display label when both variants exist.
+            if norm not in by_norm or has_diacritics:
+                by_norm[norm] = city
+        options = [(norm, label) for norm, label in sorted(by_norm.items(), key=lambda kv: kv[1])]
+        options.append(('__blank__', 'No city set'))
+        return options
+
+    def queryset(self, request, queryset):
+        value = self.value()
+        if not value:
+            return queryset
+        if value == '__blank__':
+            return queryset.filter(city='')
+        matches = [
+            c for c in queryset.values_list('city', flat=True).distinct()
+            if _normalize_city(c) == value
+        ]
+        return queryset.filter(city__in=matches)
+
+
+BUSINESS_CATEGORY_GROUPS = {
+    'retail': ('Retail', [
+        'market', 'pharmacy', 'electronics', 'clothing', 'organic', 'bookstore',
+        'jewelry', 'toy_store', 'sports_shop', 'furniture', 'petrol_station',
+    ]),
+    'food': ('Food & Hospitality', [
+        'restaurant', 'hotel', 'bar', 'delivery_kitchen', 'bakery', 'catering',
+    ]),
+    'rentals': ('Rentals', [
+        'car_rental', 'property_rental', 'equipment_rental', 'boat_rental',
+    ]),
+    'health_beauty': ('Health & Beauty', [
+        'barbershop', 'spa', 'gym', 'clinic', 'tattoo', 'veterinary', 'optician',
+    ]),
+    'services': ('Services', [
+        'auto_repair', 'cleaning', 'lawyer', 'accounting', 'event_agency',
+        'photography', 'printing', 'travel_agency', 'funeral_home', 'security',
+    ]),
+    'education': ('Education', [
+        'language_school', 'tutoring', 'driving_school', 'coding_bootcamp', 'nursery',
+    ]),
+    'professional': ('Professional & B2B', [
+        'real_estate', 'construction', 'architecture', 'import_export', 'agro',
+        'transport', 'it_company', 'marketing_agency',
+    ]),
+}
+
+
+class BusinessCategoryFilter(admin.SimpleListFilter):
+    """
+    business_type has ~50 choices, which made the plain list_filter dropdown
+    a single unbroken scroll with no way to narrow by category. This adds a
+    category-level filter (mirroring the grouping already used as section
+    comments in BUSINESS_TYPE_CHOICES) that sits above the existing
+    business_type filter rather than replacing it — so an admin can narrow
+    to "Food & Hospitality" first, then to "Hotel / Guesthouse" specifically.
+    """
+    title = 'business category'
+    parameter_name = 'business_category'
+
+    def lookups(self, request, model_admin):
+        return [(key, label) for key, (label, _types) in BUSINESS_CATEGORY_GROUPS.items()]
+
+    def queryset(self, request, queryset):
+        value = self.value()
+        if not value or value not in BUSINESS_CATEGORY_GROUPS:
+            return queryset
+        return queryset.filter(business_type__in=BUSINESS_CATEGORY_GROUPS[value][1])
+
+
+class TrialStatusFilter(admin.SimpleListFilter):
+    """
+    trial_status/trial_days_remaining are computed properties (plan +
+    trial_ends_at), so they weren't filterable at all before — there was no
+    way to pull up e.g. "all expired trials that still haven't been
+    deactivated" without opening the Trial dashboard and eyeballing every
+    row's countdown. This adds queryset-level equivalents of that logic.
+    """
+    title = 'trial status'
+    parameter_name = 'trial_status'
+
+    def lookups(self, request, model_admin):
+        return [
+            ('active', 'Trial — active'),
+            ('expiring_soon', 'Trial — expiring in ≤3 days'),
+            ('expired', 'Trial — expired (not yet converted/deactivated)'),
+            ('not_trial', 'Not on trial'),
+        ]
+
+    def queryset(self, request, queryset):
+        value = self.value()
+        now = timezone.now()
+        if value == 'active':
+            return queryset.filter(plan=PLAN_TRIAL).filter(
+                Q(trial_ends_at__isnull=True) | Q(trial_ends_at__gt=now)
+            )
+        if value == 'expiring_soon':
+            return queryset.filter(
+                plan=PLAN_TRIAL,
+                trial_ends_at__gt=now,
+                trial_ends_at__lte=now + datetime.timedelta(days=3),
+            )
+        if value == 'expired':
+            return queryset.filter(plan=PLAN_TRIAL, trial_ends_at__lt=now)
+        if value == 'not_trial':
+            return queryset.exclude(plan=PLAN_TRIAL)
+        return queryset
+
+
+class HasOwnerFilter(admin.SimpleListFilter):
+    """
+    Surfaces tenants with no linked owner User row — previously the only way
+    to spot one of these (a signup that silently failed to create the owner
+    account, per TenantUserInline's docstring above) was opening each tenant
+    individually and checking the Linked users inline by hand.
+    """
+    title = 'owner account'
+    parameter_name = 'has_owner'
+
+    def lookups(self, request, model_admin):
+        return [('yes', 'Has owner'), ('no', 'Missing owner (needs attention)')]
+
+    def queryset(self, request, queryset):
+        value = self.value()
+        if value == 'yes':
+            return queryset.filter(users__role='owner').distinct()
+        if value == 'no':
+            return queryset.exclude(users__role='owner').distinct()
+        return queryset
+
+
+class BillingLinkedFilter(admin.SimpleListFilter):
+    """Whether a Stripe subscription is actually attached — useful for
+    catching paid-plan tenants (plan=pro/enterprise) with no
+    stripe_subscription_id, which usually means the plan was set manually
+    in admin rather than through a real checkout."""
+    title = 'stripe subscription'
+    parameter_name = 'has_stripe'
+
+    def lookups(self, request, model_admin):
+        return [('yes', 'Linked'), ('no', 'Not linked')]
+
+    def queryset(self, request, queryset):
+        value = self.value()
+        if value == 'yes':
+            return queryset.exclude(stripe_subscription_id='').exclude(stripe_subscription_id__isnull=True)
+        if value == 'no':
+            return queryset.filter(Q(stripe_subscription_id='') | Q(stripe_subscription_id__isnull=True))
+        return queryset
+
+
+class OnboardingProgressFilter(admin.SimpleListFilter):
+    """
+    onboarding_complete is a boolean, but onboarding_step is the actual
+    funnel counter behind it — with it un-filterable, there was no way to
+    see *where* incomplete signups stall (e.g. everyone stuck at step 1
+    vs. spread evenly) without exporting the whole incomplete set and
+    sorting by hand. This buckets the step count into funnel stages.
+    """
+    title = 'onboarding progress'
+    parameter_name = 'onboarding_progress'
+
+    # Buckets are deliberately coarse — enough to spot where the funnel
+    # leaks without hardcoding the exact number of onboarding steps here
+    # (that lives in the onboarding flow itself and can change).
+    _BUCKETS = (
+        ('not_started', 'Not started (step 0)', lambda step: step == 0),
+        ('early', 'Early (steps 1–2)', lambda step: 1 <= step <= 2),
+        ('mid', 'Mid (steps 3–4)', lambda step: 3 <= step <= 4),
+        ('late', 'Late (step 5+, not yet complete)', lambda step: step >= 5),
+    )
+
+    def lookups(self, request, model_admin):
+        return [(key, label) for key, label, _pred in self._BUCKETS]
+
+    def queryset(self, request, queryset):
+        value = self.value()
+        if not value:
+            return queryset
+        queryset = queryset.filter(onboarding_complete=False)
+        if value == 'not_started':
+            return queryset.filter(onboarding_step=0)
+        if value == 'early':
+            return queryset.filter(onboarding_step__in=[1, 2])
+        if value == 'mid':
+            return queryset.filter(onboarding_step__in=[3, 4])
+        if value == 'late':
+            return queryset.filter(onboarding_step__gte=5)
+        return queryset
+
+
+class ReferralSourceFilter(admin.SimpleListFilter):
+    """Organic signup vs. arrived via another tenant's referral link —
+    previously only visible one tenant at a time via the referred_by field
+    on the change form."""
+    title = 'referral source'
+    parameter_name = 'referral_source'
+
+    def lookups(self, request, model_admin):
+        return [('referred', 'Referred by another tenant'), ('organic', 'Organic (no referrer)')]
+
+    def queryset(self, request, queryset):
+        value = self.value()
+        if value == 'referred':
+            return queryset.exclude(referred_by__isnull=True)
+        if value == 'organic':
+            return queryset.filter(referred_by__isnull=True)
+        return queryset
+
+
+class MarketplaceDataQualityFilter(admin.SimpleListFilter):
+    """
+    listed_on_marketplace just says whether a tenant *should* appear in the
+    public directory — it says nothing about whether the listing actually
+    has enough content to be worth showing (no logo, no blurb reads as a
+    broken/empty card to a visitor). Only meaningful for listed tenants, so
+    it's scoped to listed_on_marketplace=True rather than offered globally.
+    """
+    title = 'marketplace listing quality'
+    parameter_name = 'marketplace_quality'
+
+    def lookups(self, request, model_admin):
+        return [
+            ('missing_description', 'Listed, missing description'),
+            ('missing_logo', 'Listed, missing logo'),
+            ('incomplete', 'Listed, missing description or logo'),
+        ]
+
+    def queryset(self, request, queryset):
+        value = self.value()
+        if not value:
+            return queryset
+        queryset = queryset.filter(listed_on_marketplace=True)
+        no_description = Q(marketplace_description='')
+        no_logo = Q(logo='') | Q(logo__isnull=True)
+        if value == 'missing_description':
+            return queryset.filter(no_description)
+        if value == 'missing_logo':
+            return queryset.filter(no_logo)
+        if value == 'incomplete':
+            return queryset.filter(no_description | no_logo)
+        return queryset
+
+
+class GeolocatedFilter(admin.SimpleListFilter):
+    """Whether lat/long are set — anything that plots tenants on a map
+    (marketplace directory, location pickers) silently drops rows missing
+    these, which was previously only discoverable by opening a tenant and
+    noticing the coordinate fields were blank."""
+    title = 'map coordinates'
+    parameter_name = 'has_coords'
+
+    def lookups(self, request, model_admin):
+        return [('yes', 'Has coordinates'), ('no', 'Missing coordinates')]
+
+    def queryset(self, request, queryset):
+        value = self.value()
+        if value == 'yes':
+            return queryset.filter(latitude__isnull=False, longitude__isnull=False)
+        if value == 'no':
+            return queryset.filter(Q(latitude__isnull=True) | Q(longitude__isnull=True))
+        return queryset
 
 
 def apply_activation_side_effects(tenant, was_active, actor=None):
@@ -70,6 +367,65 @@ def apply_activation_side_effects(tenant, was_active, actor=None):
         pass  # Email nuk duhet të bllokojë update-in
 
 
+def _bulk_deactivate_tenants(queryset, request):
+    """
+    Shared by TenantAdmin.deactivate_tenants and TrialTenantAdmin.deactivate_tenants
+    so the two admin dashboards can't drift out of sync on what "deactivate" does.
+    (Previously TrialTenantAdmin had its own copy that only flipped is_active and
+    cleared the cache — no deactivation email via apply_activation_side_effects,
+    no activity.log_activity entry, so deactivating from the Trial dashboard left
+    no audit trail and never notified the owner.)
+    """
+    was_active_by_id = dict(queryset.values_list('id', 'is_active'))
+    updated = queryset.update(is_active=False)
+    # queryset.update() bypasses save(), so the tenant cache is never
+    # invalidated as a side effect — has to be done explicitly here.
+    for t in queryset:
+        cache.delete(f'tenant:{t.slug}')
+        apply_activation_side_effects(t, was_active_by_id.get(t.id, True))
+    try:
+        from activity.utils import log_activity
+        for t in queryset:
+            log_activity(
+                tenant=t, actor=request.user,
+                verb='tenant.deactivated',
+                description='Bulk deactivated by superadmin',
+                target_type='tenant', target_id=t.id,
+            )
+    except Exception:
+        pass
+    return updated
+
+
+def _bulk_convert_to_pro(queryset, request):
+    """
+    Shared by TenantAdmin.convert_to_pro and TrialTenantAdmin.convert_to_pro, for
+    the same reason as _bulk_deactivate_tenants above — TrialTenantAdmin's copy
+    updated the plan and cache but skipped the log_activity call.
+    """
+    tenant_ids = list(queryset.values_list('id', flat=True))
+    for t in queryset:
+        t.plan = 'pro'
+        t.save()
+        cache.delete(f'tenant:{t.slug}')
+    try:
+        from activity.utils import log_activity
+        # Re-fetch by id rather than re-using `queryset`: for callers whose
+        # queryset filters on plan (e.g. TrialTenantAdmin's plan='trial'
+        # get_queryset), the plan='pro' save above would make re-iterating
+        # the original queryset return zero rows.
+        for t in Tenant.objects.filter(id__in=tenant_ids):
+            log_activity(
+                tenant=t, actor=request.user,
+                verb='tenant.plan_changed',
+                description='Plan converted to Pro by superadmin',
+                target_type='tenant', target_id=t.id,
+            )
+    except Exception:
+        pass
+    return len(tenant_ids)
+
+
 class TenantFeatureInline(admin.TabularInline):
     model = TenantFeature
     extra = 0
@@ -110,17 +466,37 @@ class TenantUserInline(admin.TabularInline):
 @admin.register(Tenant)
 class TenantAdmin(admin.ModelAdmin):
     list_display = ('name', 'slug', 'business_type', 'plan', 'owner_email', 'onboarding_complete', 'is_active', 'trial_status', 'city', 'created_at')
-    list_filter  = ('plan', 'is_active', 'onboarding_complete', 'business_type', 'city', 'listed_on_marketplace')
+    # Reordered + expanded: status filters first (what an admin scans for
+    # daily — activity/onboarding/trial health), then classification
+    # (plan/category/type/city), then billing/marketplace last. The plain
+    # `business_type` filter is kept alongside the new category filter
+    # rather than replaced by it, so a specific type is still one click away
+    # once narrowed by category.
+    list_filter  = (
+        'is_active', 'onboarding_complete', OnboardingProgressFilter, HasOwnerFilter,
+        TrialStatusFilter, 'plan', BusinessCategoryFilter, 'business_type',
+        NormalizedCityFilter, 'currency', 'accepts_online_payments',
+        BillingLinkedFilter, 'listed_on_marketplace', MarketplaceDataQualityFilter,
+        GeolocatedFilter, ReferralSourceFilter,
+    )
     search_fields = ('name', 'slug', 'email', 'referral_code', 'users__email')
+    date_hierarchy = 'created_at'
     prepopulated_fields = {'slug': ('name',)}
     readonly_fields = ('id', 'created_at', 'updated_at', 'stripe_customer_id',
                        'stripe_subscription_id', 'referral_code', 'referral_credits')
     inlines = [TenantUserInline, TenantFeatureInline, TenantLocationInline]
     actions = ['activate_tenants', 'deactivate_tenants', 'convert_to_pro', 'list_on_marketplace']
+    list_per_page = 50
+
+    def get_queryset(self, request):
+        # owner_email() below does a query per row (obj.users.filter(...)).
+        # Prefetching the reverse FK once here turns that from N+1 queries
+        # into 2 for a full page of results — same output, no per-row hit.
+        return super().get_queryset(request).prefetch_related('users')
 
     def owner_email(self, obj):
-        owner = obj.users.filter(role='owner').order_by('created_at').first()
-        return owner.email if owner else '— nuk u gjet —'
+        owners = sorted((u for u in obj.users.all() if u.role == 'owner'), key=lambda u: u.created_at)
+        return owners[0].email if owners else '— nuk u gjet —'
     owner_email.short_description = 'Owner'
 
     # FIX #6: Disable hard-delete from the admin to prevent accidental
@@ -200,49 +576,23 @@ class TenantAdmin(admin.ModelAdmin):
     activate_tenants.short_description = 'Activate selected tenants'
 
     def deactivate_tenants(self, request, queryset):
-        was_active_by_id = dict(queryset.values_list('id', 'is_active'))
-        updated = queryset.update(is_active=False)
         # FIX: same cache-invalidation gap as activate_tenants above — this
         # one matters more, since a deactivated tenant stayed fully live for
-        # up to 5 minutes after this action ran.
-        for t in queryset:
-            cache.delete(f'tenant:{t.slug}')
-            apply_activation_side_effects(t, was_active_by_id.get(t.id, True))
+        # up to 5 minutes after this action ran. Shared with
+        # TrialTenantAdmin.deactivate_tenants — see _bulk_deactivate_tenants.
+        updated = _bulk_deactivate_tenants(queryset, request)
         self.message_user(request, f'{updated} tenant(s) deactivated.')
-        try:
-            from activity.utils import log_activity
-            for t in queryset:
-                log_activity(
-                    tenant=t, actor=request.user,
-                    verb='tenant.deactivated',
-                    description='Bulk deactivated by superadmin',
-                    target_type='tenant', target_id=t.id,
-                )
-        except Exception:
-            pass
     deactivate_tenants.short_description = 'Deactivate selected tenants'
 
     def convert_to_pro(self, request, queryset):
-        for t in queryset:
-            t.plan = 'pro'
-            t.save()
-            # FIX: same cache-invalidation gap as activate/deactivate above.
-            # request.tenant.plan (read by has_feature() everywhere) comes
-            # from this cache, so without the delete here a tenant could
-            # keep getting Starter-plan feature limits for up to 5 minutes
-            # after being converted to Pro.
-            cache.delete(f'tenant:{t.slug}')
-        try:
-            from activity.utils import log_activity
-            for t in queryset:
-                log_activity(
-                    tenant=t, actor=request.user,
-                    verb='tenant.plan_changed',
-                    description='Plan converted to Pro by superadmin',
-                    target_type='tenant', target_id=t.id,
-                )
-        except Exception:
-            pass
+        # FIX: same cache-invalidation gap as activate/deactivate above.
+        # request.tenant.plan (read by has_feature() everywhere) comes
+        # from this cache, so without the delete here a tenant could
+        # keep getting Starter-plan feature limits for up to 5 minutes
+        # after being converted to Pro. Shared with
+        # TrialTenantAdmin.convert_to_pro — see _bulk_convert_to_pro.
+        count = _bulk_convert_to_pro(queryset, request)
+        self.message_user(request, f'{count} tenant(s) converted to Pro.')
     convert_to_pro.short_description = 'Convert to Pro plan'
 
     def list_on_marketplace(self, request, queryset):
@@ -344,17 +694,18 @@ class TrialTenantAdmin(admin.ModelAdmin):
     extend_trial_30d.short_description = 'Extend trial by 30 days'
 
     def convert_to_pro(self, request, queryset):
-        for t in queryset:
-            t.plan = 'pro'
-            t.save()
-            cache.delete(f'tenant:{t.slug}')
-        self.message_user(request, f'{queryset.count()} tenant(s) converted to Pro.')
+        # Shared with TenantAdmin.convert_to_pro so the two dashboards can't
+        # drift apart again — see _bulk_convert_to_pro for what this adds
+        # over the old local copy (activation email/log_activity entry).
+        count = _bulk_convert_to_pro(queryset, request)
+        self.message_user(request, f'{count} tenant(s) converted to Pro.')
     convert_to_pro.short_description = 'Convert to Pro plan'
 
     def deactivate_tenants(self, request, queryset):
-        updated = queryset.update(is_active=False)
-        for t in queryset:
-            cache.delete(f'tenant:{t.slug}')
+        # Shared with TenantAdmin.deactivate_tenants — see
+        # _bulk_deactivate_tenants for what this adds over the old local
+        # copy (deactivation email/log_activity entry).
+        updated = _bulk_deactivate_tenants(queryset, request)
         self.message_user(request, f'{updated} tenant(s) deactivated.')
     deactivate_tenants.short_description = 'Deactivate selected tenants'
 

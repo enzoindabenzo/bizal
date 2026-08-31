@@ -674,3 +674,40 @@ class OrderCreateGapsTest(TestCase):
                 'items': [{'product': str(self.active_product.id), 'quantity': 1}],
             }, format='json')
         self.assertEqual(resp.status_code, 201, resp.data)
+
+
+class OrderPaymentMethodTests(TestCase):
+    def setUp(self):
+        self.tenant = make_tenant(slug='paymethoddiner')
+        self.category = MenuCategory.objects.create(tenant=self.tenant, name='Mains')
+        self.item = MenuItem.objects.create(
+            tenant=self.tenant, category=self.category, name='Pasta', price=Decimal('10.00'),
+        )
+        self.client = APIClient()
+        self.client.defaults['HTTP_HOST'] = 'paymethoddiner.bizal.al'
+
+    def test_payment_method_defaults_to_cash(self):
+        resp = self.client.post('/api/orders/', {
+            'guest_name': 'Walk-in', 'order_type': 'dine_in',
+            'items': [{'menu_item': str(self.item.id), 'quantity': 1}],
+        }, format='json')
+        self.assertEqual(resp.status_code, 201, resp.data)
+        self.assertEqual(resp.data['payment_method'], 'cash')
+
+    def test_customer_can_choose_bank_transfer(self):
+        resp = self.client.post('/api/orders/', {
+            'guest_name': 'Walk-in', 'order_type': 'takeaway',
+            'payment_method': 'bank_transfer',
+            'items': [{'menu_item': str(self.item.id), 'quantity': 1}],
+        }, format='json')
+        self.assertEqual(resp.status_code, 201, resp.data)
+        self.assertEqual(resp.data['payment_method'], 'bank_transfer')
+
+    def test_invalid_payment_method_rejected(self):
+        resp = self.client.post('/api/orders/', {
+            'guest_name': 'Walk-in', 'order_type': 'takeaway',
+            'payment_method': 'online',
+            'items': [{'menu_item': str(self.item.id), 'quantity': 1}],
+        }, format='json')
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn('payment_method', resp.data)

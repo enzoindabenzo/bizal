@@ -15,6 +15,12 @@ TYPE_CHOICES = [
     ('invoice', 'Invoice'),
 ]
 
+METHOD_CHOICES = [
+    ('stripe', 'Stripe'),
+    ('cash', 'Cash'),
+    ('bank_transfer', 'Bank Transfer'),
+]
+
 
 class Payment(TenantScopedUUIDModel):
     user = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True, related_name='payments')
@@ -24,14 +30,29 @@ class Payment(TenantScopedUUIDModel):
     booking = models.ForeignKey(
         'bookings.Booking', on_delete=models.SET_NULL, null=True, blank=True, related_name='payments'
     )
+    # Only set for payment_type='invoice' rows recorded against a manual
+    # (billing.Invoice) invoice. SET_NULL so deleting an invoice doesn't
+    # wipe out the payment history that was already recorded against it.
+    invoice = models.ForeignKey(
+        'billing.Invoice', on_delete=models.SET_NULL, null=True, blank=True, related_name='payments'
+    )
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     currency = models.CharField(max_length=3, default='ALL')
     payment_type = models.CharField(max_length=30, choices=TYPE_CHOICES)
+    # 'stripe' for anything that came through the Stripe checkout/webhook
+    # flow; 'cash'/'bank_transfer' for payments a staff member records by
+    # hand (e.g. a customer paying cash at the counter for an invoice).
+    payment_method = models.CharField(max_length=20, choices=METHOD_CHOICES, default='stripe')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     stripe_session_id = models.CharField(max_length=200, blank=True, db_index=True)
     stripe_payment_intent = models.CharField(max_length=200, blank=True)
     description = models.CharField(max_length=300, blank=True)
     metadata = models.JSONField(default=dict, blank=True)
+    # Staff member who manually recorded this payment (cash/bank_transfer
+    # only). Null for Stripe-originated rows, which have no human recorder.
+    recorded_by = models.ForeignKey(
+        'accounts.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='recorded_payments'
+    )
 
     class Meta:
         ordering = ['-created_at']

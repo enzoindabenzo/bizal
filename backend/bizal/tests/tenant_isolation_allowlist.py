@@ -57,6 +57,11 @@ ALLOWLIST = {
         "self-scoped, same reasoning as MeBookingsView.",
     "accounts/views.py:MeAppointmentsView":
         "self-scoped, same reasoning as MeBookingsView.",
+    "accounts/views.py:MeExportDataView":
+        "self-scoped, same reasoning as MeBookingsView - aggregates "
+        "request.user's own bookings/orders/appointments/reviews/payments "
+        "across every tenant they have an account or activity with (GDPR "
+        "data portability export), all filtered by user=request.user.",
     "accounts/views.py:EmailVerificationSendView":
         "self-scoped - sends a verification email to request.user.email only.",
     "accounts/views.py:EmailVerificationConfirmView":

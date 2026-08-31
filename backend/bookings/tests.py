@@ -1161,3 +1161,53 @@ class AdminUpdateBookingGapsTests(TestCase):
                 'status': 'confirmed',
             }, format='json')
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
+
+class BookingPaymentMethodTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.tenant = make_tenant('paymethodbiz')
+        self.client.defaults['HTTP_HOST'] = 'paymethodbiz.bizal.al'
+
+    def test_payment_method_defaults_to_online(self):
+        resp = self.client.post('/api/bookings/', {
+            'booking_type': 'table_reservation',
+            'start_date': '2026-09-10',
+            'guest_name': 'Ana Kola',
+            'guest_email': 'ana@test.com',
+        })
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(resp.data['payment_method'], 'online')
+
+    def test_customer_can_choose_cash(self):
+        resp = self.client.post('/api/bookings/', {
+            'booking_type': 'table_reservation',
+            'start_date': '2026-09-10',
+            'guest_name': 'Dritan Leka',
+            'guest_email': 'dritan@test.com',
+            'payment_method': 'cash',
+        })
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(resp.data['payment_method'], 'cash')
+
+    def test_customer_can_choose_bank_transfer(self):
+        resp = self.client.post('/api/bookings/', {
+            'booking_type': 'table_reservation',
+            'start_date': '2026-09-10',
+            'guest_name': 'Elira Mema',
+            'guest_email': 'elira@test.com',
+            'payment_method': 'bank_transfer',
+        })
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(resp.data['payment_method'], 'bank_transfer')
+
+    def test_invalid_payment_method_rejected(self):
+        resp = self.client.post('/api/bookings/', {
+            'booking_type': 'table_reservation',
+            'start_date': '2026-09-10',
+            'guest_name': 'Test User',
+            'guest_email': 'test@test.com',
+            'payment_method': 'crypto',
+        })
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('payment_method', resp.data)
