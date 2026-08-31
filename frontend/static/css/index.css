@@ -274,9 +274,15 @@
     .services-header { display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:24px;flex-wrap:wrap; }
     .services-header h2 { font-family:var(--font-serif);font-size:1.7rem;font-weight:600;color:var(--text);margin-bottom:2px; }
     .search-row { display:flex;gap:8px;align-items:center;flex-wrap:wrap; }
-    .search-inp { padding:9px 13px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;background:var(--surface);color:var(--text);min-width:160px;transition:border-color .15s,box-shadow .15s; }
+    .search-inp { height:38px;padding:0 13px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;line-height:36px;background:var(--surface);color:var(--text);min-width:160px;transition:border-color .15s,box-shadow .15s; }
     .search-inp:focus { outline:none;border-color:var(--tenant-primary,var(--ink));box-shadow:0 0 0 3px rgba(var(--tenant-primary-rgb,17,17,17),.1); }
-    .filter-sel { padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius);font-size:12.5px;background:var(--surface);color:var(--text);cursor:pointer; }
+    /* appearance:none strips each browser's native <select> chrome (which
+       renders at different heights/baselines than a plain <input> even with
+       identical padding — the cause of the search box and this dropdown
+       visually misaligning next to each other on Android Chrome). Height/
+       line-height are then set to match .search-inp exactly, and a custom
+       chevron replaces the native arrow that appearance:none also removes. */
+    .filter-sel { -webkit-appearance:none;-moz-appearance:none;appearance:none;height:38px;padding:0 30px 0 12px;border:1px solid var(--border);border-radius:var(--radius);font-size:12.5px;line-height:36px;background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 12px center;color:var(--text);cursor:pointer; }
     .view-toggle { display:flex;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden; }
     .view-btn { background:none;border:none;cursor:pointer;padding:7px 11px;font-size:13px;color:var(--text-muted);transition:var(--transition); }
     .view-btn.active,.view-btn:hover { background:var(--vapor);color:var(--text); }
