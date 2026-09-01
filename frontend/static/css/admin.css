@@ -107,7 +107,7 @@
   color: var(--chrome-muted);
   font-size: 12px;
   font-weight: 400;
-  transition: var(--transition);
+  transition: background-color var(--transition), color var(--transition);
   cursor: pointer;
   border: none;
   background: none;
@@ -136,7 +136,7 @@
   font-size: 15px;
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  transition: var(--transition);
+  transition: background-color var(--transition), color var(--transition);
   flex-shrink: 0;
 }
 .sf-logout:hover { background: rgba(139,26,26,.25); color: #F7A0A0; }
@@ -222,7 +222,7 @@
   font-size: 14px;
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  transition: var(--transition);
+  transition: background-color var(--transition), border-color var(--transition), color var(--transition);
 }
 .icon-btn:hover { background: var(--vapor); color: var(--text); }
 

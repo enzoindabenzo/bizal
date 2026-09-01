@@ -2,6 +2,7 @@
 BizAL — shared field validators.
 """
 import re
+from django.contrib.auth.password_validation import CommonPasswordValidator
 from django.core.exceptions import ValidationError
 
 # Allowed image formats as reported by Pillow's Image.format.
@@ -10,6 +11,29 @@ from django.core.exceptions import ValidationError
 _ALLOWED_IMAGE_FORMATS = {'PNG', 'JPEG', 'GIF', 'WEBP'}
 
 _HEX_COLOR_RE = re.compile(r'^#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$')
+
+
+class FriendlyCommonPasswordValidator(CommonPasswordValidator):
+    """
+    Same check as Django's stock CommonPasswordValidator (rejects the
+    ~20k most common passwords), but with our own Albanian copy instead
+    of Django's default translated string ("Ky fjalëkalim është shumë i
+    rëndomtë."), which reads stiffly. Swapped in via AUTH_PASSWORD_VALIDATORS
+    in place of the stock validator — no behavior change, wording only.
+    """
+
+    def validate(self, password, user=None):
+        try:
+            super().validate(password, user)
+        except ValidationError:
+            raise ValidationError(
+                'Ky fjalëkalim përdoret nga shumë njerëz dhe hamendësohet '
+                'lehtë. Provo një tjetër, më unik.',
+                code='password_too_common',
+            )
+
+    def get_help_text(self):
+        return 'Fjalëkalimi nuk duhet të jetë ndër ato më të përdorurit.'
 
 
 def validate_hex_color(value):

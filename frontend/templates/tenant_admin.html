@@ -983,6 +983,24 @@ async function vNotifications(el) {
 }
 
 // ── BOOKINGS ─────────────────────────────────────────────────
+// Shared Albanian labels for booking/order status values. Used anywhere a
+// raw API status string (pending/confirmed/preparing/ready/delivered/
+// completed/cancelled) would otherwise leak untranslated into the UI —
+// filter buttons, table badges, the order status <select>, and the booking
+// detail modal all pull from this one map so they can't drift apart.
+const STATUS_LABEL_SQ = {
+  pending:   'Në pritje',
+  confirmed: 'Konfirmuar',
+  preparing: 'Po përgatitet',
+  ready:     'Gati',
+  delivered: 'Dorëzuar',
+  completed: 'Kompletuar',
+  cancelled: 'Anuluar',
+};
+function statusLabelSq(status) {
+  return STATUS_LABEL_SQ[status] || status;
+}
+
 function renderBkTable(rows, actions=true) {
   if (!rows.length) return `<table><tr class="empty-row"><td colspan="6">Nuk ka rezervime.</td></tr></table>`;
   return `<table>
@@ -996,7 +1014,7 @@ function renderBkTable(rows, actions=true) {
       <td>${fmtDate(b.start_date)}${b.end_date&&b.end_date!==b.start_date?` → ${fmtDate(b.end_date)}`:''}</td>
       <td>${b.guest_count||1}</td>
       <td>${fmtPrice(b.total_price)}</td>
-      <td><span class="badge badge-${b.status} bk-status-badge">${esc(b.status)}</span></td>
+      <td><span class="badge badge-${b.status} bk-status-badge">${esc(statusLabelSq(b.status))}</span></td>
       ${actions?`<td><div style="display:flex;gap:5px;flex-wrap:wrap">
         <button class="btn btn-xs btn-outline bk-view-btn" data-id="${b.id}">👁</button>
         ${b.status==='pending' && hasTenantRole('receptionist','staff')?`<button class="btn btn-xs btn-success bk-confirm-btn" data-id="${b.id}">✓ Konfirmo</button>`:''}
@@ -1021,7 +1039,7 @@ async function vBookings(el) {
           <span class="panel-title">📅 Rezervimet <span class="u-fw400-fs13-muted">(${filtered.length})</span></span>
           <div class="u-flex-g8-wrap">
             ${['all','pending','confirmed','completed','cancelled'].map(s=>`
-              <button class="btn btn-sm ${filter===s?'btn-primary':'btn-ghost'} bk-filter" data-s="${s}">${s==='all'?'Të gjitha':s}</button>`).join('')}
+              <button class="btn btn-sm ${filter===s?'btn-primary':'btn-ghost'} bk-filter" data-s="${s}">${s==='all'?'Të gjitha':statusLabelSq(s)}</button>`).join('')}
             ${hasTenantRole() && hasFeature('csv_export') ? '<button class="btn btn-sm btn-outline" id="bk-export-btn">⬇ Eksporto CSV</button>' : ''}
             <button class="btn btn-sm btn-primary" id="bk-new-btn">+ Rezervim i ri</button>
           </div>
@@ -1051,7 +1069,7 @@ function bindBkActions(el) {
     if(r.ok){
       toast('Rezervimi u konfirmua ✓');
       const row=b.closest('tr');
-      row.querySelector('.bk-status-badge').outerHTML=`<span class="badge badge-confirmed">confirmed</span>`;
+      row.querySelector('.bk-status-badge').outerHTML=`<span class="badge badge-confirmed">${statusLabelSq('confirmed')}</span>`;
       b.closest('td').querySelectorAll('.bk-confirm-btn,.bk-cancel-btn').forEach(x=>x.remove());
     } else { b.disabled=false; b.textContent='✓ Konfirmo'; toast('Gabim','error'); }
   }));
@@ -1061,7 +1079,7 @@ function bindBkActions(el) {
       if(r.ok){
         toast('Rezervimi u anulua');
         const row=b.closest('tr');
-        row.querySelector('.bk-status-badge').outerHTML=`<span class="badge badge-cancelled">cancelled</span>`;
+        row.querySelector('.bk-status-badge').outerHTML=`<span class="badge badge-cancelled">${statusLabelSq('cancelled')}</span>`;
         b.closest('td').querySelectorAll('.bk-confirm-btn,.bk-cancel-btn').forEach(x=>x.remove());
       }
     });
@@ -1082,7 +1100,7 @@ async function openBkModal(id, viewOnly=false) {
         <div><div class="form-label">Klienti</div><div class="u-fw600">${esc(b.user_name||b.guest_name||'—')}</div></div>
         <div><div class="form-label">Email</div><div>${esc(b.guest_email||'—')}</div></div>
         <div><div class="form-label">Telefon</div><div>${esc(b.guest_phone||'—')}</div></div>
-        <div><div class="form-label">Status</div><span class="badge badge-${b.status}">${esc(b.status)}</span></div>
+        <div><div class="form-label">Status</div><span class="badge badge-${b.status}">${esc(statusLabelSq(b.status))}</span></div>
         <div><div class="form-label">Data Fillimit</div><div>${fmtDate(b.start_date)}</div></div>
         <div><div class="form-label">Data Mbarimit</div><div>${fmtDate(b.end_date)}</div></div>
         <div><div class="form-label">Personat</div><div>${b.guest_count||1}</div></div>
@@ -1178,11 +1196,11 @@ function renderOrdTable(rows, actions=true, canEdit=true) {
       <td><div class="u-fw600">${o.table_number?`Tavolina ${esc(o.table_number)}`:esc(o.client_name||'—')}</div></td>
       <td>${fmtDate(o.created_at)}</td>
       <td>${fmtPrice(o.total_price)}</td>
-      <td><span class="badge badge-${o.status} ord-status-badge">${esc(o.status)}</span></td>
+      <td><span class="badge badge-${o.status} ord-status-badge">${esc(statusLabelSq(o.status))}</span></td>
       ${actions?`<td><div class="u-flex-g5">
         <button class="btn btn-xs btn-outline ord-view-btn" data-id="${o.id}">👁</button>
         ${canEdit ? `<select class="ord-status-sel" data-id="${o.id}">
-          ${ordStatusOptions(o.status).map(s=>`<option ${o.status===s?'selected':''} value="${s}">${s}</option>`).join('')}
+          ${ordStatusOptions(o.status).map(s=>`<option ${o.status===s?'selected':''} value="${s}">${esc(statusLabelSq(s))}</option>`).join('')}
         </select>` : ''}
       </div></td>`:''}
     </tr>`).join('')}</tbody></table>`;
@@ -1203,7 +1221,7 @@ async function vOrders(el) {
           <span class="panel-title">🛒 Porositë <span class="u-fw400-fs13-muted">(${filtered.length})</span></span>
           <div class="u-flex-g8-wrap">
             ${['all','pending','confirmed','preparing','ready','delivered'].map(s=>`
-              <button class="btn btn-sm ${filter===s?'btn-primary':'btn-ghost'} ord-filter" data-s="${s}">${s==='all'?'Të gjitha':s}</button>`).join('')}
+              <button class="btn btn-sm ${filter===s?'btn-primary':'btn-ghost'} ord-filter" data-s="${s}">${s==='all'?'Të gjitha':statusLabelSq(s)}</button>`).join('')}
             ${hasTenantRole() && hasFeature('csv_export') ? '<button class="btn btn-sm btn-outline" id="ord-export-btn">⬇ Eksporto CSV</button>' : ''}
           </div>
         </div>

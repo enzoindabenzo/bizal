@@ -500,7 +500,98 @@ class Tenant(models.Model):
             instance._loaded_business_type = instance.business_type
         return instance
 
+    def _compress_logo_if_needed(self, max_bytes=2 * 1024 * 1024):
+        """
+        If a new logo was just attached and it's over 2MB, re-encode it down
+        under the limit before it hits storage: first by lowering
+        JPEG/WEBP quality, then — if still too big — by shrinking
+        dimensions. PNG has no meaningful quality knob, so PNGs only go
+        through the dimension-shrink step.
+
+        Only touches a *freshly assigned* file: FieldFile._committed is
+        False for a file that's just been attached in memory and hasn't
+        been written to storage yet, and True for one already loaded from
+        the DB. That means saving a tenant for an unrelated reason (name,
+        color, plan, etc.) never re-touches an already-saved logo — this
+        only runs the moment a new logo is uploaded.
+
+        GIFs are left untouched: this only downsizes JPEG/PNG/WEBP, since
+        re-encoding an animated GIF risks losing the animation.
+        """
+        if not self.logo or getattr(self.logo, '_committed', True):
+            return
+        try:
+            import io
+            from PIL import Image
+            from django.core.files.base import ContentFile
+
+            self.logo.seek(0)
+            raw = self.logo.read()
+            self.logo.seek(0)
+            if len(raw) <= max_bytes:
+                return
+
+            img = Image.open(io.BytesIO(raw))
+            img_format = (img.format or '').upper()
+            if img_format not in ('JPEG', 'PNG', 'WEBP'):
+                # GIF or anything else Pillow can still open (validate_image_type
+                # already restricted the upload to PNG/JPEG/GIF/WEBP) — leave
+                # as-is rather than risk mangling it.
+                return
+
+            has_alpha = img.mode in ('RGBA', 'LA') or (
+                img.mode == 'P' and 'transparency' in img.info
+            )
+            if img_format == 'JPEG' and has_alpha:
+                # Shouldn't normally happen (JPEG has no alpha channel), but
+                # guard against a mislabeled file anyway.
+                img = img.convert('RGB')
+
+            lossy = img_format in ('JPEG', 'WEBP')
+            ext = {'JPEG': 'jpg', 'PNG': 'png', 'WEBP': 'webp'}[img_format]
+
+            buf = io.BytesIO()
+            quality = 90
+            if lossy:
+                while True:
+                    buf.seek(0)
+                    buf.truncate(0)
+                    img.save(buf, format=img_format, quality=quality, optimize=True)
+                    if buf.tell() <= max_bytes or quality <= 30:
+                        break
+                    quality -= 10
+            else:
+                img.save(buf, format=img_format, optimize=True)
+
+            # Still too big (very large source image, or PNG that quality
+            # alone can't shrink enough) — shrink dimensions and retry.
+            width, height = img.size
+            working = img
+            while buf.tell() > max_bytes and min(width, height) > 64:
+                width = int(width * 0.85)
+                height = int(height * 0.85)
+                working = img.resize((width, height), Image.LANCZOS)
+                buf.seek(0)
+                buf.truncate(0)
+                save_kwargs = {'optimize': True}
+                if lossy:
+                    save_kwargs['quality'] = max(quality, 40)
+                working.save(buf, format=img_format, **save_kwargs)
+
+            buf.seek(0)
+            original_name = self.logo.name or f'logo.{ext}'
+            new_name = original_name.rsplit('.', 1)[0] + '.' + ext
+            # save=False: just writes to storage and updates this FieldFile's
+            # name in memory. The row itself is written by the super().save()
+            # call right after this method returns in Tenant.save().
+            self.logo.save(new_name, ContentFile(buf.read()), save=False)
+        except Exception:
+            # A compression failure should never block saving the tenant —
+            # worst case, the original (oversized) logo goes through as-is.
+            pass
+
     def save(self, *args, **kwargs):
+        self._compress_logo_if_needed()
         if not self.slug:
             self.slug = slugify(self.name)
         if not self.site_title:

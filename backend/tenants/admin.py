@@ -9,7 +9,10 @@ from django.db.models import Q
 from django.utils import timezone
 from django.utils.html import format_html
 
-from .models import Tenant, TenantFeature, TenantLocation, TenantReferral, TrialTenant, PLAN_TRIAL, TRIAL_DAYS
+from .models import (
+    Tenant, TenantFeature, TenantLocation, TenantReferral, TrialTenant,
+    PLAN_TRIAL, PLAN_STARTER, PLAN_PRO, PLAN_ENTERPRISE, TRIAL_DAYS,
+)
 
 
 def _normalize_city(value):
@@ -397,28 +400,35 @@ def _bulk_deactivate_tenants(queryset, request):
     return updated
 
 
-def _bulk_convert_to_pro(queryset, request):
+def _bulk_change_plan(queryset, request, new_plan):
     """
-    Shared by TenantAdmin.convert_to_pro and TrialTenantAdmin.convert_to_pro, for
-    the same reason as _bulk_deactivate_tenants above — TrialTenantAdmin's copy
-    updated the plan and cache but skipped the log_activity call.
+    Generalized version of the old _bulk_convert_to_pro (which only ever set
+    plan='pro'). Shared by every change_plan_to_* action on both TenantAdmin
+    and TrialTenantAdmin, so upgrade AND downgrade go through one code path
+    instead of each dashboard growing its own copy that can drift (that's
+    what happened before: TrialTenantAdmin's old convert_to_pro updated the
+    plan and cache but skipped the log_activity call).
+
+    new_plan must be one of the PLAN_CHOICES values ('trial', 'starter',
+    'pro', 'enterprise'); callers pass a fixed constant, never user input,
+    so no validation of new_plan itself is needed here.
     """
     tenant_ids = list(queryset.values_list('id', flat=True))
     for t in queryset:
-        t.plan = 'pro'
+        t.plan = new_plan
         t.save()
         cache.delete(f'tenant:{t.slug}')
     try:
         from activity.utils import log_activity
         # Re-fetch by id rather than re-using `queryset`: for callers whose
         # queryset filters on plan (e.g. TrialTenantAdmin's plan='trial'
-        # get_queryset), the plan='pro' save above would make re-iterating
+        # get_queryset), the plan-change save above would make re-iterating
         # the original queryset return zero rows.
         for t in Tenant.objects.filter(id__in=tenant_ids):
             log_activity(
                 tenant=t, actor=request.user,
                 verb='tenant.plan_changed',
-                description='Plan converted to Pro by superadmin',
+                description=f'Plan changed to {new_plan.capitalize()} by superadmin',
                 target_type='tenant', target_id=t.id,
             )
     except Exception:
@@ -485,7 +495,11 @@ class TenantAdmin(admin.ModelAdmin):
     readonly_fields = ('id', 'created_at', 'updated_at', 'stripe_customer_id',
                        'stripe_subscription_id', 'referral_code', 'referral_credits')
     inlines = [TenantUserInline, TenantFeatureInline, TenantLocationInline]
-    actions = ['activate_tenants', 'deactivate_tenants', 'convert_to_pro', 'list_on_marketplace']
+    actions = [
+        'activate_tenants', 'deactivate_tenants',
+        'change_plan_to_starter', 'change_plan_to_pro', 'change_plan_to_enterprise',
+        'list_on_marketplace',
+    ]
     list_per_page = 50
 
     def get_queryset(self, request):
@@ -584,16 +598,27 @@ class TenantAdmin(admin.ModelAdmin):
         self.message_user(request, f'{updated} tenant(s) deactivated.')
     deactivate_tenants.short_description = 'Deactivate selected tenants'
 
-    def convert_to_pro(self, request, queryset):
+    def change_plan_to_starter(self, request, queryset):
         # FIX: same cache-invalidation gap as activate/deactivate above.
         # request.tenant.plan (read by has_feature() everywhere) comes
-        # from this cache, so without the delete here a tenant could
-        # keep getting Starter-plan feature limits for up to 5 minutes
-        # after being converted to Pro. Shared with
-        # TrialTenantAdmin.convert_to_pro — see _bulk_convert_to_pro.
-        count = _bulk_convert_to_pro(queryset, request)
-        self.message_user(request, f'{count} tenant(s) converted to Pro.')
-    convert_to_pro.short_description = 'Convert to Pro plan'
+        # from this cache, so without the delete here a tenant could keep
+        # getting its old plan's feature limits for up to 5 minutes after
+        # this runs. Shared with TrialTenantAdmin — see _bulk_change_plan.
+        # This is a downgrade path as much as convert_to_pro was an upgrade
+        # path — same helper handles both directions.
+        count = _bulk_change_plan(queryset, request, PLAN_STARTER)
+        self.message_user(request, f'{count} tenant(s) changed to Starter plan.')
+    change_plan_to_starter.short_description = 'Change plan → Starter'
+
+    def change_plan_to_pro(self, request, queryset):
+        count = _bulk_change_plan(queryset, request, PLAN_PRO)
+        self.message_user(request, f'{count} tenant(s) changed to Pro plan.')
+    change_plan_to_pro.short_description = 'Change plan → Pro'
+
+    def change_plan_to_enterprise(self, request, queryset):
+        count = _bulk_change_plan(queryset, request, PLAN_ENTERPRISE)
+        self.message_user(request, f'{count} tenant(s) changed to Enterprise plan.')
+    change_plan_to_enterprise.short_description = 'Change plan → Enterprise'
 
     def list_on_marketplace(self, request, queryset):
         updated = queryset.update(listed_on_marketplace=True)
@@ -638,7 +663,11 @@ class TrialTenantAdmin(admin.ModelAdmin):
     ordering      = ('trial_ends_at',)
     readonly_fields = ('id', 'name', 'slug', 'email', 'city', 'plan',
                        'created_at', 'updated_at', 'trial_ends_at')
-    actions = ['extend_trial_7d', 'extend_trial_30d', 'convert_to_pro', 'deactivate_tenants']
+    actions = [
+        'extend_trial_7d', 'extend_trial_30d',
+        'change_plan_to_starter', 'change_plan_to_pro', 'change_plan_to_enterprise',
+        'deactivate_tenants',
+    ]
 
     fieldsets = (
         ('Tenant', {'fields': ('id', 'name', 'slug', 'email', 'city')}),
@@ -693,13 +722,23 @@ class TrialTenantAdmin(admin.ModelAdmin):
         self._extend(request, queryset, 30)
     extend_trial_30d.short_description = 'Extend trial by 30 days'
 
-    def convert_to_pro(self, request, queryset):
-        # Shared with TenantAdmin.convert_to_pro so the two dashboards can't
-        # drift apart again — see _bulk_convert_to_pro for what this adds
-        # over the old local copy (activation email/log_activity entry).
-        count = _bulk_convert_to_pro(queryset, request)
-        self.message_user(request, f'{count} tenant(s) converted to Pro.')
-    convert_to_pro.short_description = 'Convert to Pro plan'
+    def change_plan_to_starter(self, request, queryset):
+        # Shared with TenantAdmin so the two dashboards can't drift apart
+        # again — see _bulk_change_plan for what this adds over the old
+        # local copy (activation email/log_activity entry).
+        count = _bulk_change_plan(queryset, request, PLAN_STARTER)
+        self.message_user(request, f'{count} tenant(s) changed to Starter plan.')
+    change_plan_to_starter.short_description = 'Change plan → Starter'
+
+    def change_plan_to_pro(self, request, queryset):
+        count = _bulk_change_plan(queryset, request, PLAN_PRO)
+        self.message_user(request, f'{count} tenant(s) changed to Pro plan.')
+    change_plan_to_pro.short_description = 'Change plan → Pro'
+
+    def change_plan_to_enterprise(self, request, queryset):
+        count = _bulk_change_plan(queryset, request, PLAN_ENTERPRISE)
+        self.message_user(request, f'{count} tenant(s) changed to Enterprise plan.')
+    change_plan_to_enterprise.short_description = 'Change plan → Enterprise'
 
     def deactivate_tenants(self, request, queryset):
         # Shared with TenantAdmin.deactivate_tenants — see

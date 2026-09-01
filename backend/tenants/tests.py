@@ -1470,14 +1470,37 @@ class TenantAdminAdditionalActionsTests(TestCase):
         )
         self.changelist_url = '/django-admin/tenants/tenant/'
 
-    def test_convert_to_pro_action(self):
+    def test_change_plan_to_pro_action(self):
         resp = self.client.post(self.changelist_url, {
-            'action': 'convert_to_pro',
+            'action': 'change_plan_to_pro',
             '_selected_action': [str(self.tenant.pk)],
         }, follow=True)
         self.assertEqual(resp.status_code, 200)
         self.tenant.refresh_from_db()
         self.assertEqual(self.tenant.plan, 'pro')
+
+    def test_change_plan_to_enterprise_action(self):
+        resp = self.client.post(self.changelist_url, {
+            'action': 'change_plan_to_enterprise',
+            '_selected_action': [str(self.tenant.pk)],
+        }, follow=True)
+        self.assertEqual(resp.status_code, 200)
+        self.tenant.refresh_from_db()
+        self.assertEqual(self.tenant.plan, 'enterprise')
+
+    def test_change_plan_to_starter_action_is_a_downgrade_path(self):
+        # self.tenant starts on 'starter' already, so bump it to 'pro' first
+        # to prove change_plan_to_starter actually downgrades rather than
+        # just being a no-op / upgrade-only action.
+        self.tenant.plan = 'pro'
+        self.tenant.save(update_fields=['plan'])
+        resp = self.client.post(self.changelist_url, {
+            'action': 'change_plan_to_starter',
+            '_selected_action': [str(self.tenant.pk)],
+        }, follow=True)
+        self.assertEqual(resp.status_code, 200)
+        self.tenant.refresh_from_db()
+        self.assertEqual(self.tenant.plan, 'starter')
 
     def test_list_on_marketplace_action(self):
         resp = self.client.post(self.changelist_url, {
@@ -1511,9 +1534,9 @@ class TenantAdminAdditionalActionsTests(TestCase):
         self.assertFalse(self.tenant.is_active)
 
     @patch('activity.utils.log_activity', side_effect=Exception('boom'))
-    def test_convert_to_pro_survives_log_activity_failure(self, _mock_log):
+    def test_change_plan_to_pro_survives_log_activity_failure(self, _mock_log):
         resp = self.client.post(self.changelist_url, {
-            'action': 'convert_to_pro',
+            'action': 'change_plan_to_pro',
             '_selected_action': [str(self.tenant.pk)],
         }, follow=True)
         self.assertEqual(resp.status_code, 200)
@@ -1696,15 +1719,25 @@ class TrialTenantAdminTests(TestCase):
         }, follow=True)
         self.assertEqual(resp.status_code, 200)
 
-    def test_convert_to_pro_action_from_trial_admin(self):
+    def test_change_plan_to_pro_action_from_trial_admin(self):
         trial = self._make_trial('trial-to-pro', timezone.now() + timedelta(days=5))
         resp = self.client.post(self.changelist_url, {
-            'action': 'convert_to_pro',
+            'action': 'change_plan_to_pro',
             '_selected_action': [str(trial.pk)],
         }, follow=True)
         self.assertEqual(resp.status_code, 200)
         trial.refresh_from_db()
         self.assertEqual(trial.plan, 'pro')
+
+    def test_change_plan_to_enterprise_action_from_trial_admin(self):
+        trial = self._make_trial('trial-to-ent', timezone.now() + timedelta(days=5))
+        resp = self.client.post(self.changelist_url, {
+            'action': 'change_plan_to_enterprise',
+            '_selected_action': [str(trial.pk)],
+        }, follow=True)
+        self.assertEqual(resp.status_code, 200)
+        trial.refresh_from_db()
+        self.assertEqual(trial.plan, 'enterprise')
 
     def test_deactivate_action_from_trial_admin(self):
         trial = self._make_trial('trial-deactivate', timezone.now() + timedelta(days=5))
@@ -3334,3 +3367,81 @@ class CreditLedgerNonPaginatedBranchTests(TestCase):
             resp = client.get('/api/tenants/credits/ledger/')
         self.assertEqual(resp.status_code, 200)
         self.assertIsInstance(resp.data, list)
+
+
+class LogoAutoCompressionTests(TestCase):
+    """
+    Tenant._compress_logo_if_needed(), wired into Tenant.save(). Any newly
+    uploaded logo over 2MB should be re-encoded down under the limit;
+    existing/small logos should be left completely alone.
+    """
+
+    @staticmethod
+    def _noisy_image_bytes(size, fmt, **save_kwargs):
+        import io
+        import random
+        from PIL import Image
+        img = Image.new('RGB', size)
+        random.seed(size[0] * size[1])  # deterministic across test runs
+        img.putdata([
+            (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+            for _ in range(size[0] * size[1])
+        ])
+        buf = io.BytesIO()
+        img.save(buf, format=fmt, **save_kwargs)
+        return buf.getvalue()
+
+    def test_large_png_gets_compressed_under_2mb(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        raw = self._noisy_image_bytes((2000, 2000), 'PNG')
+        self.assertGreater(len(raw), 2 * 1024 * 1024)
+
+        t = Tenant(name='Logo PNG Co', business_type='restaurant')
+        t.logo = SimpleUploadedFile('logo.png', raw, content_type='image/png')
+        t.save()
+
+        self.assertLessEqual(t.logo.size, 2 * 1024 * 1024)
+
+    def test_large_jpeg_gets_compressed_under_2mb(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        raw = self._noisy_image_bytes((3000, 3000), 'JPEG', quality=100)
+        self.assertGreater(len(raw), 2 * 1024 * 1024)
+
+        t = Tenant(name='Logo JPEG Co', business_type='restaurant')
+        t.logo = SimpleUploadedFile('logo.jpg', raw, content_type='image/jpeg')
+        t.save()
+
+        self.assertLessEqual(t.logo.size, 2 * 1024 * 1024)
+
+    def test_small_logo_is_left_untouched(self):
+        import io
+        from PIL import Image
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        img = Image.new('RGB', (100, 100), color=(10, 20, 30))
+        buf = io.BytesIO()
+        img.save(buf, format='PNG')
+        raw = buf.getvalue()
+
+        t = Tenant(name='Small Logo Co', business_type='restaurant')
+        t.logo = SimpleUploadedFile('small.png', raw, content_type='image/png')
+        t.save()
+        self.assertEqual(t.logo.read(), raw)
+
+    def test_unrelated_save_does_not_retouch_existing_logo(self):
+        import io
+        from PIL import Image
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        img = Image.new('RGB', (100, 100), color=(1, 2, 3))
+        buf = io.BytesIO()
+        img.save(buf, format='PNG')
+        raw = buf.getvalue()
+
+        t = Tenant(name='Stable Logo Co', business_type='restaurant')
+        t.logo = SimpleUploadedFile('stable.png', raw, content_type='image/png')
+        t.save()
+        old_name = t.logo.name
+
+        t.name = 'Stable Logo Co Renamed'
+        t.save(update_fields=['name'])
+        t.refresh_from_db()
+        self.assertEqual(t.logo.name, old_name)
