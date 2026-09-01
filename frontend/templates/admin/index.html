@@ -2,22 +2,24 @@
 {% load i18n %}
 {% load static %}
 
-{# ─────────────────────────────────────────────────────────────────────
-   BizAL — django-admin dashboard.
+{% comment %}
+─────────────────────────────────────────────────────────────────────
+BizAL — django-admin dashboard.
 
-   Overrides Unfold's own admin/index.html (same block structure — see
-   the vendored template in django_unfold/templates/admin/index.html) to
-   add a KPI + analytics dashboard above the app list, organized into
-   three clear sections:
-     1. Overview   — KPI cards (bizal_kpis)
-     2. Analytics  — Chart.js charts fed by bizal_analytics (all real,
-                      directly-queried counts — see bizal/dashboard.py's
-                      module docstring for why there's no revenue chart)
-     3. Activity   — recent tenants / expiring trials / webhook failures /
-                      activity log, as link-out panels
-   Populated by bizal.dashboard.dashboard_callback via
-   UNFOLD['DASHBOARD_CALLBACK'].
-───────────────────────────────────────────────────────────────────── #}
+Overrides Unfold's own admin/index.html (same block structure — see
+the vendored template in django_unfold/templates/admin/index.html) to
+add a KPI + analytics dashboard above the app list, organized into
+three clear sections:
+  1. Overview   — KPI cards (bizal_kpis)
+  2. Analytics  — Chart.js charts fed by bizal_analytics (all real,
+                   directly-queried counts — see bizal/dashboard.py's
+                   module docstring for why there's no revenue chart)
+  3. Activity   — recent tenants / expiring trials / webhook failures /
+                   activity log, as link-out panels
+Populated by bizal.dashboard.dashboard_callback via
+UNFOLD['DASHBOARD_CALLBACK'].
+─────────────────────────────────────────────────────────────────────
+{% endcomment %}
 
 {% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
 
@@ -243,17 +245,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
     <div class="flex flex-col lg:flex-row lg:gap-8">
         <div class="grow">
-            {# The full alphabetical-by-app model index (Unfold's default
-               app_list_default.html) used to render here — 21 app cards,
-               every model listed alphabetically underneath. It duplicated
-               the curated "SIDEBAR.navigation" groups above (Platform,
-               Billing & payments, Bookings & orders, ...), which are
-               already visible on every admin page, just with a worse,
-               unsorted ordering — making the dashboard feel cluttered and
-               making any one model harder to find, not easier. Removed in
-               favour of that sidebar (plus ⌘K / command search, which
-               indexes every model too — see COMMAND.search_models above)
-               as the single place to browse or jump to a model. #}
+            {% comment %}
+            The full alphabetical-by-app model index (Unfold's default
+            app_list_default.html) used to render here — 21 app cards,
+            every model listed alphabetically underneath. It duplicated
+            the curated "SIDEBAR.navigation" groups above (Platform,
+            Billing & payments, Bookings & orders, ...), which are
+            already visible on every admin page, just with a worse,
+            unsorted ordering — making the dashboard feel cluttered and
+            making any one model harder to find, not easier. Removed in
+            favour of that sidebar (plus ⌘K / command search, which
+            indexes every model too — see COMMAND.search_models above)
+            as the single place to browse or jump to a model.
+            {% endcomment %}
             <div class="bizal-section-title">{% translate "Find anything" %}</div>
             <div class="bizal-panel" style="padding:16px">
                 <p style="margin:0;color:var(--body-quiet-color);font-size:.8125rem;line-height:1.6">
