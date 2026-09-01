@@ -243,7 +243,25 @@ document.addEventListener('DOMContentLoaded', function () {
 
     <div class="flex flex-col lg:flex-row lg:gap-8">
         <div class="grow">
-            {% include "unfold/helpers/app_list_default.html" %}
+            {# The full alphabetical-by-app model index (Unfold's default
+               app_list_default.html) used to render here — 21 app cards,
+               every model listed alphabetically underneath. It duplicated
+               the curated "SIDEBAR.navigation" groups above (Platform,
+               Billing & payments, Bookings & orders, ...), which are
+               already visible on every admin page, just with a worse,
+               unsorted ordering — making the dashboard feel cluttered and
+               making any one model harder to find, not easier. Removed in
+               favour of that sidebar (plus ⌘K / command search, which
+               indexes every model too — see COMMAND.search_models above)
+               as the single place to browse or jump to a model. #}
+            <div class="bizal-section-title">{% translate "Find anything" %}</div>
+            <div class="bizal-panel" style="padding:16px">
+                <p style="margin:0;color:var(--body-quiet-color);font-size:.8125rem;line-height:1.6">
+                    {% translate "Every model — tenants, bookings, orders, billing, and the rest — lives in the sidebar on the left, grouped by what you're actually doing. Press" %}
+                    <kbd style="background:var(--darkened-bg);border:1px solid var(--border-color);border-radius:4px;padding:1px 6px;font-size:.8em">⌘K</kbd>
+                    {% translate "(or Ctrl+K) to search for a model or a specific record by name instead of hunting through menus." %}
+                </p>
+            </div>
         </div>
 
         {% include "unfold/helpers/history.html" %}

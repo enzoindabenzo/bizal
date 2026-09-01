@@ -16,14 +16,16 @@ class Order(TenantScopedUUIDModel):
         ('takeaway', 'Takeaway'),
         ('delivery', 'Delivery'),
     ]
-    # No online (Stripe) checkout flow exists for orders — customers pay in
-    # person or by transfer, and a staff member records the payment via
-    # RecordManualPaymentView. Default 'cash' preserves the current implicit
-    # behaviour (every order created before this field existed was
-    # effectively a cash order).
+    # 'online' pays the full order total via Stripe Checkout (see
+    # payments.views.create_order_checkout — mirrors create_booking_checkout
+    # but pay-in-full, not partial). 'cash'/'bank_transfer' stay in-person —
+    # a staff member records those via RecordManualPaymentView. Default
+    # 'cash' preserves the current implicit behaviour (every order created
+    # before this field existed was effectively a cash order).
     PAYMENT_METHOD_CHOICES = [
         ('cash', 'Cash'),
         ('bank_transfer', 'Bank Transfer'),
+        ('online', 'Online (Card)'),
     ]
 
     # lazy string refs (matching every other app's models.py) instead of
@@ -39,6 +41,13 @@ class Order(TenantScopedUUIDModel):
     notes        = models.TextField(blank=True)
     total_price  = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default='cash')
+    # Ledger for 'online' orders, mirroring Booking.deposit_paid. Orders are
+    # pay-in-full (no partial/deposit concept like bookings), so in practice
+    # this only ever moves from 0 straight to total_price — but it's kept as
+    # its own field (rather than inferring "paid" from status) so a manual
+    # cash payment recorded against a cash/bank_transfer order updates the
+    # same ledger the Stripe webhook uses for online orders.
+    amount_paid  = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     class Meta:
         ordering = ['-created_at']

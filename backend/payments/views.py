@@ -153,7 +153,7 @@ def available_pay_currencies(request):
 
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def create_booking_checkout(request, pk):
     """
     Create a Stripe Checkout session (one-off payment) so a booking's
@@ -165,6 +165,14 @@ def create_booking_checkout(request, pk):
     Stripe Connect integration, so — same as every other payment in this
     codebase — the funds land in the single platform Stripe account and are
     tracked per-tenant via the Payment row for the tenant to reconcile.
+
+    AllowAny rather than IsAuthenticated: most storefront customers are
+    guests (not logged in), so requiring auth here would silently 403 every
+    guest checkout. The booking pk is a hard-to-guess UUID, which is the
+    same capability-token guarantee every other guest-facing booking action
+    in this codebase relies on; the ownership check below still applies
+    whenever the requester *is* authenticated, so a logged-in account can
+    never be used to pay someone else's booking.
     """
     from bookings.models import Booking
 
@@ -183,13 +191,18 @@ def create_booking_checkout(request, pk):
         return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
 
     # Only the booking's own customer, or tenant staff, may initiate payment
-    # on it — mirrors the ownership check in bookings.views.cancel_booking.
-    is_staff = request.user.is_superuser or get_effective_role(request.user, request.tenant) is not None
-    if not is_staff and booking.user_id != request.user.id:
-        return Response(
-            {'detail': 'You do not have permission to pay for this booking.'},
-            status=status.HTTP_403_FORBIDDEN,
-        )
+    # on it when authenticated — mirrors the ownership check in
+    # bookings.views.cancel_booking. Anonymous requests are allowed through
+    # (guest bookings have no user_id to check against); the booking pk
+    # itself is the access control for guests, same as the rest of the
+    # guest-booking flow.
+    if request.user.is_authenticated:
+        is_staff = request.user.is_superuser or get_effective_role(request.user, request.tenant) is not None
+        if not is_staff and booking.user_id != request.user.id:
+            return Response(
+                {'detail': 'You do not have permission to pay for this booking.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
     if booking.status in ('cancelled', 'completed', 'no_show'):
         return Response(
@@ -293,6 +306,88 @@ def create_booking_checkout(request, pk):
             session_kwargs['customer_email'] = payer_email
 
         session = stripe.checkout.Session.create(**session_kwargs)
+        return Response({'checkout_url': session.url})
+    except ImproperlyConfigured as e:
+        return Response({'detail': str(e)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+    except stripe.error.StripeError as e:
+        return Response({'detail': str(e)}, status=status.HTTP_502_BAD_GATEWAY)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def create_order_checkout(request, pk):
+    """
+    Create a Stripe Checkout session so a food/shop order's customer can pay
+    online instead of cash/bank_transfer. Mirrors create_booking_checkout
+    above, with two differences: orders are pay-in-full (no partial-amount
+    param — there's no deposit concept for an order), and there's no
+    pay_currency choice (kept simple; can be added later the same way
+    bookings have it if needed).
+
+    AllowAny for the same guest-checkout reason as create_booking_checkout —
+    most storefront order customers aren't logged in.
+    """
+    from orders.models import Order
+
+    if not request.tenant:
+        return Response({'detail': 'Orders must be paid from a tenant subdomain.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if not request.tenant.accepts_online_payments:
+        return Response(
+            {'detail': 'Online payment is not enabled for this business. Please arrange payment directly with them.'},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    try:
+        order = Order.objects.get(pk=pk, tenant=request.tenant)
+    except Order.DoesNotExist:
+        return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.user.is_authenticated:
+        is_staff = request.user.is_superuser or get_effective_role(request.user, request.tenant) is not None
+        if not is_staff and order.user_id != request.user.id:
+            return Response(
+                {'detail': 'You do not have permission to pay for this order.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+    if order.status == 'cancelled':
+        return Response({'detail': 'Cannot pay for a cancelled order.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    outstanding = order.total_price - order.amount_paid
+    if outstanding <= 0:
+        return Response({'detail': 'This order has no outstanding balance.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        _stripe_key()
+        tenant = request.tenant
+        payer_email = request.user.email if request.user.is_authenticated else ''
+
+        session = stripe.checkout.Session.create(
+            mode='payment',
+            payment_method_types=['card'],
+            line_items=[{
+                'price_data': {
+                    'currency': 'all',
+                    'unit_amount': int((outstanding * 100).to_integral_value()),
+                    'product_data': {
+                        'name': f'Order #{str(order.pk)[:8]} — {tenant.name}',
+                    },
+                },
+                'quantity': 1,
+            }],
+            success_url=(
+                f"{settings.FRONTEND_BASE_URL}/orders/{order.pk}/payment-success"
+                f"?session_id={{CHECKOUT_SESSION_ID}}"
+            ),
+            cancel_url=f"{settings.FRONTEND_BASE_URL}/orders/{order.pk}/payment-cancel",
+            metadata={
+                'order_id': str(order.pk),
+                'tenant_slug': tenant.slug,
+                'amount_all': str(outstanding),
+            },
+            **({'customer_email': payer_email} if payer_email else {}),
+        )
         return Response({'checkout_url': session.url})
     except ImproperlyConfigured as e:
         return Response({'detail': str(e)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
@@ -563,6 +658,60 @@ def _handle_event(event):
         slug = metadata.get('tenant_slug')
         plan = metadata.get('plan')
         booking_id = metadata.get('booking_id')
+        order_id = metadata.get('order_id')
+
+        if slug and order_id:
+            # Order checkout (create_order_checkout above) — pay-in-full, so
+            # unlike the booking branch below there's no pay_currency/FX
+            # reconversion path; create_order_checkout always charges in ALL.
+            from orders.models import Order
+            try:
+                tenant = Tenant.objects.get(slug=slug)
+                order = Order.objects.get(pk=order_id, tenant=tenant)
+            except (Tenant.DoesNotExist, Order.DoesNotExist):
+                import logging as _log
+                _log.getLogger(__name__).warning(
+                    '_handle_event %s: tenant/order not found for order checkout — skipping', event_type
+                )
+                return
+            amount_total = data.get('amount_total') or 0
+            amount_all = Decimal(amount_total) / 100
+
+            with transaction.atomic():
+                _payment, _payment_created = Payment.objects.update_or_create(
+                    tenant=tenant,
+                    stripe_session_id=data.get('id', ''),
+                    defaults=dict(
+                        order=order,
+                        user_id=order.user_id,
+                        amount=amount_all,
+                        currency='ALL',
+                        payment_type='order',
+                        status='completed',
+                        stripe_payment_intent=data.get('payment_intent', '') or '',
+                        description=f'Order #{str(order.pk)[:8]} payment',
+                        metadata={'stripe_event': 'checkout.session.completed'},
+                    ),
+                )
+                # Same idempotency guard as the booking branch below —
+                # only adjust amount_paid when this is a new Payment row, so
+                # a Stripe webhook retry (Redis idempotency cache evicted)
+                # doesn't double-credit the order.
+                if _payment_created:
+                    order.amount_paid = order.amount_paid + amount_all
+                    order.payment_method = 'online'
+                    order.save(update_fields=['amount_paid', 'payment_method', 'updated_at'])
+            try:
+                from notifications.tasks import notify_owner_async
+                notify_owner_async.delay(
+                    str(tenant.pk), 'order_payment_received', 'Payment received',
+                    f'{order.guest_name or "A customer"} paid online for order #{str(order.pk)[:8]}.',
+                    metadata={'order_id': str(order.id)},
+                    idempotency_key=f'order-payment:{event.get("id", "")}',
+                )
+            except Exception:
+                pass  # Never let a notification failure break webhook processing
+            return
 
         if slug and booking_id:
             # Booking-deposit checkout (create_booking_checkout above), not a
@@ -929,6 +1078,8 @@ class RecordManualPaymentView(APIView):
                 self._reconcile_invoice(payment.invoice_id)
             elif payment.payment_type == 'booking_deposit' and payment.booking_id:
                 self._reconcile_booking(payment.booking_id, payment.amount)
+            elif payment.payment_type == 'order' and payment.order_id:
+                self._reconcile_order(payment.order_id, payment.amount)
 
         return Response(PaymentSerializer(payment).data, status=status.HTTP_201_CREATED)
 
@@ -944,6 +1095,18 @@ class RecordManualPaymentView(APIView):
         booking = Booking.objects.select_for_update().get(pk=booking_id)
         booking.deposit_paid = booking.deposit_paid + amount
         booking.save(update_fields=['deposit_paid', 'updated_at'])
+
+    def _reconcile_order(self, order_id, amount):
+        """
+        Credit the order's amount_paid ledger for a staff-recorded cash/
+        bank_transfer payment — same pattern as _reconcile_booking above,
+        just for orders. The Stripe webhook branch in _handle_event does the
+        equivalent for 'online' orders.
+        """
+        from orders.models import Order
+        order = Order.objects.select_for_update().get(pk=order_id)
+        order.amount_paid = order.amount_paid + amount
+        order.save(update_fields=['amount_paid', 'updated_at'])
 
     def _reconcile_invoice(self, invoice_id):
         """

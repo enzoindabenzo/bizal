@@ -79,9 +79,28 @@ class OrderSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'tenant', 'user', 'guest_name', 'guest_phone',
             'order_type', 'table_number', 'delivery_address', 'status', 'notes',
-            'payment_method', 'total_price', 'items', 'created_at', 'updated_at',
+            'payment_method', 'total_price', 'amount_paid', 'items', 'created_at', 'updated_at',
         ]
-        read_only_fields = ['id', 'tenant', 'user', 'status', 'total_price', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'tenant', 'user', 'status', 'total_price', 'amount_paid', 'created_at', 'updated_at']
+
+    def validate(self, attrs):
+        # Enforce the tenant's payment-method toggles server-side, mirroring
+        # BookingSerializer.validate — the storefront only offers the
+        # enabled option(s), but a direct API call could still submit a
+        # disabled one without this check.
+        request = self.context.get('request')
+        tenant = getattr(request, 'tenant', None) if request else None
+        payment_method = attrs.get('payment_method')
+        if payment_method and tenant:
+            if payment_method == 'online' and not tenant.accepts_online_payments:
+                raise serializers.ValidationError(
+                    {'payment_method': 'Online payment is not enabled for this business.'}
+                )
+            if payment_method in ('cash', 'bank_transfer') and not tenant.accepts_cash_payments:
+                raise serializers.ValidationError(
+                    {'payment_method': 'Cash/in-person payment is not enabled for this business.'}
+                )
+        return attrs
 
     def create(self, validated_data):
         # Wrap the entire Order + OrderItem creation sequence in a

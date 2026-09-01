@@ -516,10 +516,41 @@ class BookingCheckoutTest(TestCase):
         resp = self.client.post(f'/api/payments/booking/{booking.pk}/checkout/')
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_unauthenticated_cannot_pay(self):
-        booking = make_booking(self.tenant, user=self.customer)
+    def test_unauthenticated_can_pay_guest_booking(self):
+        """
+        create_booking_checkout is AllowAny — most storefront customers are
+        guests, not logged in, so requiring auth would 403 every one of
+        them. The booking pk (a UUID) is the access-control token for
+        guests, same as the rest of the guest-booking flow. This only
+        checks that the request clears the permission/ownership layer (no
+        401/403) and reaches the Stripe call — it's mocked in the other
+        tests in this class; here we just confirm it's not blocked at the
+        auth layer, regardless of how the (unmocked) Stripe call resolves.
+        """
+        booking = make_booking(self.tenant, user=None)  # guest booking, no user
         resp = self.client.post(f'/api/payments/booking/{booking.pk}/checkout/')
-        self.assertIn(resp.status_code, [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN])
+        self.assertNotIn(resp.status_code, [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN])
+
+    @patch('payments.views.stripe.checkout.Session.create')
+    def test_unauthenticated_can_pay_guest_booking_full_flow(self, mock_create):
+        mock_create.return_value = MagicMock(url='https://checkout.stripe.com/deposit')
+        booking = make_booking(self.tenant, user=None)
+        resp = self.client.post(f'/api/payments/booking/{booking.pk}/checkout/')
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
+    def test_unauthenticated_cannot_be_impersonated_as_owner(self):
+        """
+        Anonymous requests skip the ownership check (no user to check), but
+        an authenticated non-owner/non-staff account is still blocked from
+        paying someone else's booking — covered by
+        test_other_customer_cannot_pay_someone_elses_booking above. This
+        just documents that the AllowAny change didn't accidentally weaken
+        that check for authenticated users.
+        """
+        booking = make_booking(self.tenant, user=self.customer)
+        self.client.force_authenticate(user=self.other_customer)
+        resp = self.client.post(f'/api/payments/booking/{booking.pk}/checkout/')
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
 
 
 class BookingRefundTest(TestCase):

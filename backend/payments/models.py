@@ -36,6 +36,13 @@ class Payment(TenantScopedUUIDModel):
     invoice = models.ForeignKey(
         'billing.Invoice', on_delete=models.SET_NULL, null=True, blank=True, related_name='payments'
     )
+    # Only set for payment_type='order' rows. 'order' has existed in
+    # TYPE_CHOICES from the start, but nothing ever wrote it — there was no
+    # order FK to point at and no code path that produced it. SET_NULL for
+    # the same reason as booking/invoice above.
+    order = models.ForeignKey(
+        'orders.Order', on_delete=models.SET_NULL, null=True, blank=True, related_name='payments'
+    )
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     currency = models.CharField(max_length=3, default='ALL')
     payment_type = models.CharField(max_length=30, choices=TYPE_CHOICES)

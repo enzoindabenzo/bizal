@@ -1,7 +1,7 @@
 from django.urls import path
 from .views import (
     subscribe, customer_portal, stripe_webhook, PaymentListView, WebhookEventListView,
-    create_booking_checkout, refund_booking_payment, available_pay_currencies,
+    create_booking_checkout, create_order_checkout, refund_booking_payment, available_pay_currencies,
     RecordManualPaymentView,
 )
 
@@ -14,5 +14,6 @@ urlpatterns = [
     path('available-currencies/', available_pay_currencies, name='available-pay-currencies'),
     path('booking/<uuid:pk>/checkout/', create_booking_checkout, name='booking-checkout'),
     path('booking/<uuid:pk>/refund/',   refund_booking_payment,  name='booking-refund'),
+    path('order/<uuid:pk>/checkout/',   create_order_checkout,   name='order-checkout'),
     path('manual/',     RecordManualPaymentView.as_view(), name='record-manual-payment'),
 ]

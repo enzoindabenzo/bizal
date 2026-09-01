@@ -56,6 +56,23 @@ class BookingSerializer(serializers.ModelSerializer):
             return None
 
     def validate(self, data):
+        # Enforce the tenant's payment-method toggles server-side — the
+        # storefront only offers the enabled option(s) in the UI, but that's
+        # just UX; a direct API call could still submit a disabled method
+        # without this check.
+        request = self.context.get('request')
+        tenant = getattr(request, 'tenant', None) if request else None
+        payment_method = data.get('payment_method')
+        if payment_method and tenant:
+            if payment_method == 'online' and not tenant.accepts_online_payments:
+                raise serializers.ValidationError(
+                    {'payment_method': 'Online payment is not enabled for this business.'}
+                )
+            if payment_method in ('cash', 'bank_transfer') and not tenant.accepts_cash_payments:
+                raise serializers.ValidationError(
+                    {'payment_method': 'Cash/in-person payment is not enabled for this business.'}
+                )
+
         if not data.get('booking_type'):
             tenant = self.context['request'].tenant
             TYPE_MAP = {

@@ -403,6 +403,13 @@ class Tenant(models.Model):
     # change surfaced a "Pay online" button without their consent. The
     # tenant flips this on themselves once they actually want it.
     accepts_online_payments = models.BooleanField(default=False)
+    # Whether this tenant lets its own customers choose to pay cash/in-person
+    # for a booking or order, as opposed to being forced online. Defaults to
+    # True (matches every tenant's actual behaviour before this field
+    # existed — everything was implicitly cash/in-person). A tenant can
+    # disable this once accepts_online_payments is on, to force card-only
+    # checkout if they want.
+    accepts_cash_payments = models.BooleanField(default=True)
 
     # Referral
     referral_code       = models.CharField(max_length=20, unique=True, blank=True)

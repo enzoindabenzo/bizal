@@ -526,6 +526,7 @@
       <input type="text" class="finp" id="ord-table" style="display:none"/>
       <input type="text" class="finp" id="ord-address" placeholder="Adresa e dërgimit *"/>
       <textarea class="finp" id="ord-notes" placeholder="Shënime (alergjene, preferencë…)" rows="2"></textarea>
+      <div id="ord-payment-row" style="display:none;margin:2px 0 4px"></div>
       <button class="btn-brand" id="ord-submit" style="width:100%;justify-content:center;margin-top:4px">Dërgo Porosinë →</button>
       <div class="form-feedback" id="ord-feedback"></div>
     </div>
@@ -730,6 +731,12 @@ function toggleTheme() {
   document.documentElement.setAttribute('data-theme', n);
   localStorage.setItem('bizal-theme', n);
   document.getElementById('theme-toggle').innerHTML     = icon(n === 'dark' ? 'sun' : 'moon');
+  // Re-soften the tenant's brand color for the new theme — the same
+  // saturated hue needs a different clamp against a near-black surface
+  // than against a light one (see softenBrandColor). Without this, toggling
+  // theme would leave whichever color was computed for the *previous*
+  // theme in place until the next full page load.
+  if (LAST_BRAND_ARGS) applyBrand(...LAST_BRAND_ARGS);
 }
 document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
 
@@ -864,9 +871,67 @@ function isColorDark(hex) {
   const rgb = hexToRgb(hex).split(',').map(Number);
   return (0.299*rgb[0]+0.587*rgb[1]+0.114*rgb[2])/255 < 0.25;
 }
+function hexToHsl(hex) {
+  const [r, g, b] = hexToRgb(hex).split(',').map(v => Number(v) / 255);
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h, s, l = (max + min) / 2;
+  if (max === min) { h = s = 0; }
+  else {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      default: h = (r - g) / d + 4;
+    }
+    h /= 6;
+  }
+  return [h * 360, s * 100, l * 100];
+}
+function hslToHex(h, s, l) {
+  h /= 360; s /= 100; l /= 100;
+  let r, g, b;
+  if (s === 0) { r = g = b = l; }
+  else {
+    const hue2rgb = (p, q, t) => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1/6) return p + (q - p) * 6 * t;
+      if (t < 1/2) return q;
+      if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+      return p;
+    };
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    r = hue2rgb(p, q, h + 1/3); g = hue2rgb(p, q, h); b = hue2rgb(p, q, h - 1/3);
+  }
+  const toHex = v => Math.round(v * 255).toString(16).padStart(2, '0');
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+/* Tones down an overly vibrant tenant-chosen brand color so the storefront
+   reads as calm/confident rather than neon — caps saturation and keeps
+   lightness in a comfortable band. Tenants still pick whatever hue they
+   like (this never changes which color it "is"); it only trims how
+   loud/extreme the rendered version is. Tuned slightly differently per
+   theme, since the exact same saturated hue reads noticeably harsher
+   against the near-black dark-mode surface than against a light one — a
+   hot-pink/neon-green pick that's merely bold in light mode can look like
+   it's glowing on black otherwise. */
+function softenBrandColor(hex, isDark) {
+  if (!/^#?[a-f\d]{6}$/i.test(hex || '')) return hex;
+  const [h, s, l] = hexToHsl(hex);
+  const maxS = isDark ? 55 : 68;
+  const [minL, maxL] = isDark ? [52, 72] : [30, 55];
+  const clampedS = Math.min(s, maxS);
+  const clampedL = Math.min(Math.max(l, minL), maxL);
+  return hslToHex(h, clampedS, clampedL);
+}
+let LAST_BRAND_ARGS = null;
 function applyBrand(primary, accent, fontHeading, fontBody, borderRadius, backgroundColor, textColor) {
-  const p   = primary || '#111111';
-  const a   = accent  || p;
+  LAST_BRAND_ARGS = [primary, accent, fontHeading, fontBody, borderRadius, backgroundColor, textColor];
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const p   = softenBrandColor(primary || '#111111', isDark);
+  const a   = softenBrandColor(accent  || primary || '#111111', isDark);
   const root = document.documentElement;
   root.style.setProperty('--brand', p);
   root.style.setProperty('--brand-accent', a);
@@ -1015,6 +1080,77 @@ function isRental(bt) { return RENTAL_TYPES.includes(bt) || HOTEL_TYPES.includes
 function isShop(bt)   { return SHOP_TYPES.includes(bt); }
 function isAppt(bt)   { return APPT_TYPES.includes(bt); }
 function isB2B(bt)    { return B2B_TYPES.includes(bt); }
+/* Payment-method picker shared by the booking modal and the cart/order
+   modal. Only rendered when the tenant has BOTH methods enabled — if only
+   one is on, there's nothing to choose, so the field stays hidden and that
+   method is used implicitly (still explicitly sent to the API, just not
+   presented as a choice). */
+function setupPaymentPicker(rowId, namePrefix, tenant) {
+  const row = document.getElementById(rowId);
+  if (!row) return;
+  const onlineOn = !!tenant.accepts_online_payments;
+  const cashOn   = !!tenant.accepts_cash_payments;
+  if (onlineOn && cashOn) {
+    row.style.display = 'block';
+    row.innerHTML = `
+      <div style="font-size:.78rem;color:var(--muted);margin-bottom:6px">Mënyra e pagesës</div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap">
+        <label style="display:flex;align-items:center;gap:6px;font-size:.85rem;cursor:pointer">
+          <input type="radio" name="${namePrefix}-pay" value="cash" checked/> Para në dorë / transfertë
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:.85rem;cursor:pointer">
+          <input type="radio" name="${namePrefix}-pay" value="online"/> Online me kartë
+        </label>
+      </div>`;
+  } else {
+    row.style.display = 'none';
+    row.innerHTML = '';
+  }
+}
+function getPaymentMethod(namePrefix, tenant) {
+  const checked = document.querySelector(`input[name="${namePrefix}-pay"]:checked`);
+  if (checked) return checked.value;
+  return tenant.accepts_online_payments && !tenant.accepts_cash_payments ? 'online' : 'cash';
+}
+/* API_BASE-aware payments endpoint URL, matching the same dev/localhost
+   routing every other tenant-scoped fetch in this file already uses (see
+   the bookingUrl/orderUrl construction nearby) — payments/urls.py also
+   requires request.tenant, so it needs the same subdomain-routing dance in
+   local dev. */
+function paymentsCheckoutUrl(kind, id) {
+  const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  return isLocal
+    ? `http://localhost:8001/api/payments/${kind}/${id}/checkout/?tenant=${encodeURIComponent(slug)}`
+    : `/api/payments/${kind}/${id}/checkout/`;
+}
+/* Requests a Stripe Checkout session for a just-created booking/order and
+   redirects the browser to it. Called only when the customer picked
+   'online' — cash/bank_transfer orders/bookings never hit this. On failure,
+   shows a message but leaves the booking/order itself intact (it was
+   already created successfully; only the online payment step failed, so
+   the customer can still pay in person). */
+async function redirectToCheckout(kind, id, fb) {
+  try {
+    const headers = { 'Content-Type': 'application/json' };
+    const token = Auth.getAccess();
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const r = await fetch(paymentsCheckoutUrl(kind, id), { method: 'POST', headers });
+    const d = await r.json();
+    if (r.ok && d.checkout_url) {
+      window.location.href = d.checkout_url;
+      return;
+    }
+    if (fb) fb.textContent = (d.detail || 'Pagesa online dështoi — mund të paguani me para në dorë.');
+  } catch {
+    if (fb) fb.textContent = 'Pagesa online dështoi — mund të paguani me para në dorë.';
+  }
+}
+function emptyStateNoun(bt) {
+  if (isRental(bt)) return bt === 'hotel' ? 'dhoma' : bt === 'boat_rental' ? 'anije' : bt === 'property_rental' ? 'prona' : bt === 'equipment_rental' ? 'pajisje' : 'automjete';
+  if (isFood(bt))   return 'artikuj menuje';
+  if (isShop(bt))   return 'produkte';
+  return 'shërbime';
+}
 function esc(s)     { return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function escHtml(s) { return esc(s); }
 
@@ -1346,9 +1482,11 @@ function openBookingModal(svcName, svcPrice, resourceId, resourceType) {
       ${partySizeField}
       ${rentalTotalField}
       <textarea class="finp" id="bk-notes" placeholder="${notesLabel}" rows="2"></textarea>
+      <div id="bk-payment-row" style="display:none;margin:2px 0 4px"></div>
       <button class="btn-brand" id="bk-submit" style="width:100%;justify-content:center;margin-top:4px">Konfirmo →</button>
       <div class="form-feedback" id="bk-feedback"></div>
     </div>`;
+  setupPaymentPicker('bk-payment-row', 'bkpay', t);
   if (isRental(bt)) {
     const recalc = () => updateRentalTotal(svcPrice || 0);
     document.getElementById('bk-date')?.addEventListener('change', recalc);
@@ -1428,6 +1566,7 @@ function openBookingModal(svcName, svcPrice, resourceId, resourceType) {
     const guestsRaw = document.getElementById('bk-guests')?.value || '';
     const guests = guestsRaw ? parseInt(guestsRaw, 10) : undefined;
     const notes = document.getElementById('bk-notes').value.trim();
+    const paymentMethod = getPaymentMethod('bkpay', t);
     const fb    = document.getElementById('bk-feedback');
     const btn   = document.getElementById('bk-submit');
     if (!name || !phone) { fb.innerHTML = icon('warning','ic-xs') + ' Emri dhe telefoni janë të detyrueshëm.'; fb.className = 'form-feedback err'; return; }
@@ -1468,9 +1607,22 @@ function openBookingModal(svcName, svcPrice, resourceId, resourceType) {
           // it just can no longer be tampered with in transit.
           ...(resourceId ? { resource_id: resourceId, resource_type: resourceType } : {}),
           notes,
+          payment_method: paymentMethod,
           ...(guests ? { guest_count: guests } : {}) }),
       });
       if (r.ok || r.status === 201) {
+        const created = await r.json().catch(() => null);
+        if (paymentMethod === 'online' && created?.id) {
+          fb.innerHTML = icon('check-circle','ic-xs') + ' Rezervimi u dërgua! Duke ju çuar te pagesa…';
+          fb.className   = 'form-feedback ok';
+          toast('Rezervimi u konfirmua!');
+          if (Auth.isLoggedIn() && CURRENT_USER && phone && CURRENT_USER.phone !== phone) {
+            try { await Auth.patch('/auth/me/', { phone }); CURRENT_USER.phone = phone; } catch {}
+          }
+          await redirectToCheckout('booking', created.id, fb);
+          btn.disabled = false; btn.textContent = 'Konfirmo →';
+          return;
+        }
         fb.innerHTML = icon('check-circle','ic-xs') + ' Rezervimi u dërgua! Do ju kontaktojmë së shpejti.';
         fb.className   = 'form-feedback ok';
         toast('Rezervimi u konfirmua!');
@@ -1634,6 +1786,7 @@ function openCartModal() {
   renderCartItems();
   cartModal.classList.add('open');
   document.body.style.overflow = 'hidden';
+  setupPaymentPicker('ord-payment-row', 'ordpay', TENANT || {});
   if (Auth.isLoggedIn() && CURRENT_USER) {
     const nameEl  = document.getElementById('ord-name');
     const phoneEl = document.getElementById('ord-phone');
@@ -1693,6 +1846,7 @@ document.getElementById('ord-submit').addEventListener('click', async () => {
   const table = document.getElementById('ord-table').value.trim();
   const addr  = document.getElementById('ord-address').value.trim();
   const notes = document.getElementById('ord-notes').value.trim();
+  const paymentMethod = getPaymentMethod('ordpay', TENANT || {});
   const fb    = document.getElementById('ord-feedback');
   const btn   = document.getElementById('ord-submit');
   if (type === 'delivery' && !addr) { fb.innerHTML = icon('warning','ic-xs') + ' Shkruani adresën e dërgimit.'; fb.className = 'form-feedback err'; return; }
@@ -1719,12 +1873,27 @@ document.getElementById('ord-submit').addEventListener('click', async () => {
       body: JSON.stringify({
         guest_name: name, guest_phone: phone, order_type: type,
         table_number: table, delivery_address: addr, notes,
+        payment_method: paymentMethod,
         items: cart.map(c => isShop(TENANT?.business_type)
           ? { product: c.id, quantity: c.quantity }
           : { menu_item: c.id, quantity: c.quantity }),
       }),
     });
     if (r.ok || r.status === 201) {
+      const created = await r.json().catch(() => null);
+      if (paymentMethod === 'online' && created?.id) {
+        fb.innerHTML = icon('check-circle','ic-xs') + ' Porosia u dërgua! Duke ju çuar te pagesa…';
+        fb.className   = 'form-feedback ok';
+        toast('Porosia u dërgua!');
+        if (Auth.isLoggedIn() && CURRENT_USER && phone && CURRENT_USER.phone !== phone) {
+          try { await Auth.patch('/auth/me/', { phone }); CURRENT_USER.phone = phone; } catch {}
+        }
+        cart = []; updateCartBadge();
+        await redirectToCheckout('order', created.id, fb);
+        btn.disabled = false; btn.textContent = 'Dërgo Porosinë →';
+        _orderSubmitting = false;
+        return;
+      }
       fb.innerHTML = icon('check-circle','ic-xs') + ' Porosia u dërgua! Do ju kontaktojmë për konfirmim.';
       fb.className   = 'form-feedback ok';
       toast('Porosia u dërgua!');
@@ -2601,7 +2770,7 @@ function renderServices(items) {
   const container = document.getElementById('svc-container');
   const bt = TENANT?.business_type || '';
   if (!items.length) {
-    container.innerHTML = `<div class="empty-state"><span>${icon('sparkle','ic-lg')}</span><p>Nuk ka shërbime të listuara ende.</p></div>`;
+    container.innerHTML = `<div class="empty-state"><span>${icon('sparkle','ic-lg')}</span><p>Nuk ka ${emptyStateNoun(bt)} të listuara ende.</p></div>`;
     return;
   }
   const actionLabel = getActionLabel(bt);

@@ -115,6 +115,12 @@ class TenantPublicSerializer(serializers.ModelSerializer):
             # visitors; exposing it lets competitors identify businesses with
             # incomplete setups for targeted outreach.
             'listed_on_marketplace', 'marketplace_description',
+            # accepts_online_payments/accepts_cash_payments: the storefront
+            # needs to know which payment methods to offer *before* the
+            # customer has necessarily logged in (booking/order modals are
+            # usable by guests), so these live here too, not just in
+            # TenantSettingsSerializer (owner-only).
+            'accepts_online_payments', 'accepts_cash_payments',
             # 'referral_code' removed. TenantPublicSerializer is served by
             # TenantInfoView (AllowAny) — any anonymous visitor, competitor, or scraper
             # can enumerate all referral codes via paginated /api/tenants/marketplace/
@@ -161,7 +167,7 @@ class TenantSettingsSerializer(serializers.ModelSerializer):
             'listed_on_marketplace', 'marketplace_description',
             'plan', 'trial_ends_at', 'trial_days_remaining', 'trial_expired',
             'has_billing_account', 'features', 'nav_config', 'currency',
-            'accepts_online_payments',
+            'accepts_online_payments', 'accepts_cash_payments',
         ]
         read_only_fields = [
             'plan', 'trial_ends_at', 'trial_days_remaining', 'trial_expired',
@@ -216,7 +222,7 @@ class TenantAdminSerializer(serializers.ModelSerializer):
             'facebook', 'instagram', 'tiktok', 'website',
             'story', 'founded_year',
             'plan', 'is_active', 'trial_ends_at', 'trial_warning_sent_at',
-            'has_billing_account', 'currency', 'accepts_online_payments',
+            'has_billing_account', 'currency', 'accepts_online_payments', 'accepts_cash_payments',
             'referral_code', 'referred_by', 'referral_credits',
             'listed_on_marketplace', 'marketplace_description',
             'meta_description', 'meta_keywords',

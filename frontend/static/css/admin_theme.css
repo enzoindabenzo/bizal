@@ -1,12 +1,14 @@
 /* ═══════════════════════════════════════════════════════
    BizAL — Django admin theme
    Retheme of Django's built-in admin CSS variables to match
-   brand.css (Cormorant Garamond + DM Sans, warm neutral palette).
+   brand.css's warm neutral palette (colors only — typography
+   stays plain sans throughout; see the note further down on
+   why the storefront's decorative serif isn't used here).
    Loaded after admin/css/base.css via admin/base_site.html
    override, so these declarations win.
 ═══════════════════════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;1,400&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap');
 
 /* Unfold's dark-mode toggle is Tailwind class-based (darkMode:'class' — it
    adds/removes a `dark` class on <html>), NOT the `data-theme` attribute
@@ -21,7 +23,14 @@
 html:not(.dark) {
   --primary:        #1A1A1A;   /* ink */
   --secondary:      #5F5B53;   /* slate */
-  --accent:         #7A4010;   /* warning/gold accent */
+  --accent:         #4F46E5;   /* indigo — matches UNFOLD primary-600. Brand/
+                                   link accent only — NOT for warning states,
+                                   see --warning-fg below. */
+  --warning-fg:     #7A4010;   /* warm amber-brown — pairs with the orange-
+                                   tinted --message-warning-bg for trial/
+                                   inactive KPI states. Kept separate from
+                                   --accent so "warning" doesn't render in
+                                   the brand's indigo link color. */
   --primary-fg:     #FAFAF8;   /* parchment */
 
   --body-fg:        #111111;
@@ -39,8 +48,8 @@ html:not(.dark) {
   --breadcrumbs-bg:      #161616;
 
   --link-fg:            #1A1A1A;
-  --link-hover-color:   #7A4010;
-  --link-selected-fg:   #7A4010;
+  --link-hover-color:   #4F46E5;
+  --link-selected-fg:   #4F46E5;
 
   --hairline-color:  #EAE8E3;
   --border-color:    #D8D5CE;
@@ -83,7 +92,8 @@ html:not(.dark) {
 html.dark {
   --primary:        #FAFAF8;
   --secondary:      #A8A29E;
-  --accent:         #D9963F;
+  --accent:         #818CF8;   /* indigo-400 — lighter tint for dark bg */
+  --warning-fg:     #D9963F;
   --primary-fg:     #111111;
 
   --body-fg:        #F2F1EE;
@@ -101,8 +111,8 @@ html.dark {
   --breadcrumbs-bg:      #161616;
 
   --link-fg:            #F2F1EE;
-  --link-hover-color:   #D9963F;
-  --link-selected-fg:   #D9963F;
+  --link-hover-color:   #818CF8;
+  --link-selected-fg:   #818CF8;
 
   --hairline-color:  #33302B;
   --border-color:    #44403C;
@@ -136,13 +146,17 @@ html.dark {
     Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-/* Headings read as BizAL's serif, everything else stays DM Sans */
+/* Headings read as plain sans throughout — the admin is a working tool,
+   not a marketing page, so the decorative serif (Cormorant Garamond) that
+   brand.css uses for the public storefront is deliberately NOT used here
+   anymore. One consistent typeface end-to-end reads calmer and more
+   "organized data tool" than mixing a display serif into numbers/headers. */
 #header #site-name,
 .dashboard #content h1,
 h1, h2.section-title,
 .module h2, .module caption {
-  font-family: 'Cormorant Garamond', Georgia, serif;
-  letter-spacing: .01em;
+  font-family: var(--font-family-primary);
+  letter-spacing: 0;
 }
 
 #header {
@@ -165,11 +179,11 @@ div.breadcrumbs {
 }
 
 #changelist-filter {
-  border-radius: 8px;
+  border-radius: 6px;
 }
 
 .module {
-  border-radius: 8px;
+  border-radius: 6px;
 }
 
 .selector-chosen h2, .calendar caption, .calendarbox h2 {
@@ -179,11 +193,11 @@ div.breadcrumbs {
 /* ── BizAL platform-admin dashboard (admin/index.html) ─────────────────
    Namespaced under .bizal-dashboard so nothing here leaks into the
    ordinary changelist/changeform pages. */
-.bizal-dashboard { margin-bottom: 28px; font-family: var(--font-family-primary); }
+.bizal-dashboard { margin-bottom: 24px; font-family: var(--font-family-primary); }
 
 .bizal-section-title {
-  margin: 28px 0 12px;
-  font-size: .8125rem;
+  margin: 22px 0 10px;
+  font-size: .75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .05em;
@@ -193,35 +207,37 @@ div.breadcrumbs {
 
 .bizal-kpi-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 14px;
-  margin-bottom: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1px;
+  margin-bottom: 18px;
+  background: var(--border-color);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  overflow: hidden;
 }
 
 .bizal-kpi-card {
   background: var(--body-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  padding: 16px 18px;
+  padding: 12px 16px;
 }
 
 .bizal-kpi-value {
-  font-family: 'Cormorant Garamond', Georgia, serif;
-  font-size: 2rem;
-  font-weight: 600;
-  line-height: 1;
+  font-family: var(--font-family-primary);
+  font-size: 1.625rem;
+  font-weight: 700;
+  line-height: 1.15;
   color: var(--body-loud-color);
 }
 
 .bizal-kpi-label {
-  margin-top: 6px;
-  font-size: .75rem;
+  margin-top: 4px;
+  font-size: .6875rem;
   color: var(--body-quiet-color);
   text-transform: uppercase;
-  letter-spacing: .04em;
+  letter-spacing: .03em;
 }
 
-.bizal-kpi-card.is-warning .bizal-kpi-value { color: var(--accent); }
+.bizal-kpi-card.is-warning .bizal-kpi-value { color: var(--warning-fg); }
 .bizal-kpi-card.is-danger .bizal-kpi-value  { color: var(--error-fg); }
 
 /* Analytics charts — two-thirds/one-third split on wide screens (trend
@@ -230,8 +246,8 @@ div.breadcrumbs {
 .bizal-analytics-grid {
   display: grid;
   grid-template-columns: 2fr 1fr;
-  gap: 16px;
-  margin-bottom: 20px;
+  gap: 12px;
+  margin-bottom: 18px;
 }
 @media (max-width: 900px) {
   .bizal-analytics-grid { grid-template-columns: 1fr; }
@@ -240,13 +256,13 @@ div.breadcrumbs {
 .bizal-chart-card {
   background: var(--body-bg);
   border: 1px solid var(--border-color);
-  border-radius: 10px;
-  padding: 16px 18px;
+  border-radius: 6px;
+  padding: 14px 16px;
 }
 
 .bizal-chart-card h2 {
-  margin: 0 0 4px;
-  font-size: .8125rem;
+  margin: 0 0 3px;
+  font-size: .75rem;
   font-family: var(--font-family-primary);
   font-weight: 600;
   text-transform: uppercase;
@@ -255,8 +271,8 @@ div.breadcrumbs {
 }
 
 .bizal-chart-sub {
-  margin: 0 0 12px;
-  font-size: .75rem;
+  margin: 0 0 10px;
+  font-size: .6875rem;
   color: var(--body-quiet-color);
 }
 
@@ -267,7 +283,7 @@ div.breadcrumbs {
    reliably cap it. This wrapper is what actually constrains chart height. */
 .bizal-chart-canvas-wrap {
   position: relative;
-  height: 220px;
+  height: 200px;
   width: 100%;
 }
 .bizal-chart-canvas-wrap canvas {
@@ -279,22 +295,22 @@ div.breadcrumbs {
 
 .bizal-panels {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
   margin-bottom: 8px;
 }
 
 .bizal-panel {
   background: var(--body-bg);
   border: 1px solid var(--border-color);
-  border-radius: 10px;
+  border-radius: 6px;
   overflow: hidden;
 }
 
 .bizal-panel h2 {
   margin: 0;
-  padding: 12px 16px;
-  font-size: .8125rem;
+  padding: 10px 14px;
+  font-size: .75rem;
   font-family: var(--font-family-primary);
   font-weight: 600;
   text-transform: uppercase;
@@ -307,9 +323,9 @@ div.breadcrumbs {
 .bizal-panel ul { list-style: none; margin: 0; padding: 0; }
 
 .bizal-panel li {
-  padding: 10px 16px;
+  padding: 8px 14px;
   border-bottom: 1px solid var(--hairline-color);
-  font-size: .8125rem;
+  font-size: .75rem;
   display: flex;
   justify-content: space-between;
   gap: 10px;
@@ -317,18 +333,24 @@ div.breadcrumbs {
 
 .bizal-panel li:last-child { border-bottom: none; }
 
-.bizal-panel .bizal-muted { color: var(--body-quiet-color); font-size: .75rem; }
-.bizal-panel .bizal-empty { padding: 16px; color: var(--body-quiet-color); font-size: .8125rem; }
+.bizal-panel .bizal-muted { color: var(--body-quiet-color); font-size: .6875rem; }
+.bizal-panel .bizal-empty { padding: 14px; color: var(--body-quiet-color); font-size: .75rem; }
 
+/* Plan badges: functional color-coding (which tier is this tenant on) is
+   worth keeping, but a small, low-saturation, square-cornered tag reads as
+   "data label" — a full pill in a bright fill reads as a marketing/status
+   chip. Kept distinguishable, made quieter. */
 .bizal-badge {
   display: inline-block;
-  padding: 1px 8px;
-  border-radius: 999px;
-  font-size: .6875rem;
+  padding: 1px 7px;
+  border-radius: 4px;
+  font-size: .625rem;
   font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .02em;
 }
-.bizal-badge.plan-trial      { background: var(--message-warning-bg); color: var(--accent); }
+.bizal-badge.plan-trial      { background: var(--message-warning-bg); color: var(--warning-fg); }
 .bizal-badge.plan-starter    { background: var(--darkened-bg); color: var(--body-quiet-color); }
 .bizal-badge.plan-pro        { background: var(--message-success-bg); color: #1A6B42; }
-.bizal-badge.plan-enterprise { background: #1A1A1A; color: #FAFAF8; }
+.bizal-badge.plan-enterprise { background: var(--darkened-bg); color: var(--body-loud-color); border: 1px solid var(--border-color); }
 .bizal-badge.status-failed   { background: var(--message-error-bg); color: var(--error-fg); }
