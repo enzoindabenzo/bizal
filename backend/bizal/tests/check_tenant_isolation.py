@@ -202,7 +202,7 @@ def scan_file(path: str, app_root: str) -> list[Finding]:
         return []
 
     aliases, list_aliases = resolve_module_aliases(tree)
-    rel = os.path.relpath(path, app_root)
+    rel = os.path.relpath(path, app_root).replace(os.sep, "/")
     findings: list[Finding] = []
 
     for node in tree.body:

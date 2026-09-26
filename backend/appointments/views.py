@@ -1,4 +1,7 @@
-from django.db import transaction
+import logging
+
+from django.db import connection, transaction, OperationalError
+from django.db.utils import DatabaseError
 from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes
 from bizal.throttles import PublicReadThrottle
@@ -13,6 +16,8 @@ from notifications.tasks import notify_owner_async
 # Appointments are a booking-heavy vertical: management endpoints require
 # the tenant's plan to include 'bookings' (public read stays open).
 BOOKINGS_FEATURE = HasTenantFeature('bookings')
+
+logger = logging.getLogger(__name__)
 
 # Mirror the VALID_TRANSITIONS guard already applied to
 # admin_update_booking and admin_update_order. Without this map,
@@ -75,8 +80,38 @@ class AppointmentCreateView(generics.CreateAPIView):
         # AppointmentSerializer.validate() is held all the way through the
         # INSERT. Previously the inner atomic() in validate() released the lock
         # before perform_create() ran, leaving the double-booking race open.
-        with transaction.atomic():
-            return super().create(request, *args, **kwargs)
+        #
+        # CONTENTION FIX (2026-09-12 load test): mirrors the identical fix
+        # applied to bookings/views.py's BookingListCreateView.create() on
+        # 2026-09-11. Under concurrent POSTs against the same provider,
+        # select_for_update() correctly serializes writers via a Postgres row
+        # lock -- that's the intended double-booking protection, not a bug.
+        # But with no lock_timeout set, a waiting request could sit blocked
+        # indefinitely: under the 2026-09-12 500-user load test this is what
+        # actually starved gunicorn workers past --timeout 120, taking down
+        # unrelated requests those workers were also serving. SET LOCAL
+        # lock_timeout scopes a short, deterministic wait to just this
+        # transaction (LOCAL = reset automatically at transaction end, never
+        # leaks to the next request reusing this pooled connection). Postgres
+        # raises OperationalError (SQLSTATE 55P03, "lock_not_available") if
+        # the lock isn't acquired in time, which we catch and turn into a
+        # proper 409 Conflict instead of an opaque hang/502.
+        try:
+            with transaction.atomic():
+                with connection.cursor() as cursor:
+                    cursor.execute("SET LOCAL lock_timeout = '3s'")
+                return super().create(request, *args, **kwargs)
+        except (OperationalError, DatabaseError) as exc:
+            if 'lock' in str(exc).lower() or 'timeout' in str(exc).lower():
+                logger.info(
+                    "Appointment creation lock-timed-out for tenant=%s (resource contention): %s",
+                    getattr(request, 'tenant', None), exc,
+                )
+                return Response(
+                    {'detail': 'This time slot was just booked by someone else. Please try a different time or refresh and try again.'},
+                    status=status.HTTP_409_CONFLICT,
+                )
+            raise
 
     def perform_create(self, serializer):
         user = self.request.user if self.request.user.is_authenticated else None

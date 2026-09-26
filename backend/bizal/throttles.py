@@ -80,3 +80,30 @@ class TenantAdminThrottle(_FixedScopeThrottle):
     updates) could get throttled alongside normal customer-facing API calls.
     """
     scope = 'admin_write'
+
+
+class PlatformAdminReadThrottle(_FixedScopeThrottle):
+    """
+    High-rate throttle for platform-admin (IsAdminUser) read endpoints —
+    the webhook-event audit log and the platform-review moderation queue.
+
+    Same root problem TenantAdminThrottle solves, but discovered the hard
+    way under load testing (2026-09-12): these views had no throttle_classes
+    of their own, so they fell back to the global 'user' scope (1000/hour).
+    That's shared by every authenticated endpoint in the app, keyed per
+    account — fine for a human admin's own browsing, but there is
+    realistically only 1-2 real admin accounts in the whole system, so any
+    sustained admin-panel usage (an admin dashboard left open with
+    auto-refresh, a webhook-audit page polled while debugging a Stripe
+    incident, a bulk moderation session) shares that single 1000/hour
+    budget with everything else that account does. A single load-test
+    soak at 500 concurrent users reproduced this by simulating ~35
+    concurrent admin sessions against one seeded account and blowing
+    through the budget in a few minutes — see loadtest/locustfile.py's
+    AdminPlatformUser docstring for the harness-side half of this fix
+    (slower simulated request rate, closer to how the 1-2 real admins
+    actually use these pages). This throttle is the app-side half: give
+    real admin read traffic its own generous budget instead of sharing the
+    same 1000/hour bucket as ordinary customer/owner API calls.
+    """
+    scope = 'admin_read'

@@ -617,6 +617,27 @@ def _verify_session_token(token: str):
     return session_key
 
 
+def _session_owner_key(session_key: str) -> str:
+    return f'bb:sess:{session_key}:owner'
+
+def _bind_session_owner(session_key: str, user_id) -> None:
+    """
+    Record which authenticated user a chat session belongs to. The HMAC on the
+    session token only proves the token wasn't forged/tampered with — it does
+    not by itself prove the caller is the visitor the session was minted for.
+    Without this binding, any authenticated user who obtains another user's
+    valid session token (e.g. via logging, a shared link, or a proxy) could
+    poll for and drain that other user's pending staff reply.
+    """
+    cache.set(_session_owner_key(session_key), user_id, SESSION_MSG_WINDOW)
+
+def _session_owned_by(session_key: str, user_id) -> bool:
+    owner_id = cache.get(_session_owner_key(session_key))
+    # No recorded owner (e.g. session created before this fix, or already
+    # expired) — treat as not owned so callers fail closed rather than open.
+    return owner_id is not None and str(owner_id) == str(user_id)
+
+
 # ── Chat endpoint ─────────────────────────────────────────────────────────────
 
 @api_view(['POST'])
@@ -664,9 +685,18 @@ def chat(request):
             # Invalid/forged token — mint fresh session
             session_key = str(_uuid.uuid4())
             _new_session_token = _make_session_token(session_key)
+            _bind_session_owner(session_key, request.user.pk)
+        elif not _session_owned_by(session_key, request.user.pk):
+            # Valid HMAC, but this session was minted for a different user
+            # (or its ownership record expired) — don't let this caller
+            # continue writing into someone else's session state; mint fresh.
+            session_key = str(_uuid.uuid4())
+            _new_session_token = _make_session_token(session_key)
+            _bind_session_owner(session_key, request.user.pk)
     else:
         session_key = str(_uuid.uuid4())
         _new_session_token = _make_session_token(session_key)
+        _bind_session_owner(session_key, request.user.pk)
 
     if not messages or not isinstance(messages, list):
         response_data = {"error": "messages[] required."}
@@ -1097,6 +1127,9 @@ def poll(request, session_id):
 
     uid = _verify_session_token(session_id)
     if not uid:
+        return JsonResponse({"error": "invalid session"}, status=400)
+
+    if not _session_owned_by(uid, request.user.pk):
         return JsonResponse({"error": "invalid session"}, status=400)
 
     reply = _get_pending_staff_reply(uid)

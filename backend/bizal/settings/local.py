@@ -5,6 +5,18 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
+        # 'timeout' (seconds) controls how long SQLite waits for the
+        # write lock before raising "database is locked", not Django's
+        # own DB-level query timeout. Default is 5s; raised here because
+        # load testing at 200+ concurrent users produced occasional
+        # "database is locked" errors on POST /api/bookings/ and
+        # /api/auth/login/ — SQLite only allows one writer at a time, so
+        # under concurrent write load some requests were waiting longer
+        # than 5s for their turn. This trades "fail fast" for "wait
+        # longer, then usually succeed" — appropriate for a load-testing
+        # / dev environment; production uses Postgres, which handles
+        # concurrent writers properly and doesn't need this.
+        'OPTIONS': {'timeout': 30},
     }
 }
 
@@ -21,7 +33,14 @@ SILENCED_SYSTEM_CHECKS = ['django_ratelimit.E003', 'django_ratelimit.W001']
 
 # ── Celery runs synchronously ────────────────────────────────
 CELERY_TASK_ALWAYS_EAGER = True
-CELERY_TASK_EAGER_PROPAGATES = True
+# EAGER_PROPAGATES=False: a failed eager task (e.g. the owner-notification
+# task hitting SQLite's write lock under concurrent load) now logs and
+# moves on instead of raising up into the HTTP request that triggered it.
+# Was True — good for catching genuinely broken tasks during normal dev
+# work, but under a Locust load test it turned an internal, retryable
+# notification-write failure into a 500 on the booking/login request
+# itself, which isn't what production's real async worker would do.
+CELERY_TASK_EAGER_PROPAGATES = False
 
 # ── Email — print to console instead of SMTP in local dev ───
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

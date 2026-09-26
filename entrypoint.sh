@@ -60,6 +60,67 @@ if [ $# -eq 0 ]; then
     # process actually binds — a hardcoded 8000 means Railway's edge can
     # never reach the container. Falling back to 8000 when $PORT is unset
     # keeps docker-compose/local `docker run` behavior unchanged.
-    exec gunicorn bizal.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 4 --threads 2 --timeout 120
+    # CAPACITY FIX: bumped from 4 workers x 2 threads (8 slots) to 8 workers x
+    # 4 threads (32 slots) after load testing showed the 8-slot config
+    # saturating around ~90 req/s / ~500 concurrent users, then producing a
+    # clustered wave of 504s at 1000 concurrent users once queued requests'
+    # wait times crossed the 60s timeout. Workload is I/O-bound (waiting on
+    # Postgres), so threads scale cheaply relative to full worker processes;
+    # gunicorn auto-upgrades sync workers to gthread whenever --threads > 1.
+    # Re-check this against the actual Railway service's allocated vCPU/RAM
+    # (Railway dashboard -> service -> Metrics) before trusting it blindly —
+    # 8 workers is only a good number if there are cores to back it.
+    # CONFIG-DRIFT NOTE: this comment previously documented 8x4=32 slots as
+    # tested-safe, but the flags below had drifted to 12x2=24 slots. A
+    # 200-user local Docker Desktop load test briefly tried "restoring" to
+    # 8x4, which made things WORSE (higher latency across every endpoint,
+    # including a trivial health check) — Docker Desktop's local VM has far
+    # fewer cores than Railway's actual production hosts, so more
+    # workers/threads than the local VM has cores just adds context-switch
+    # overhead. Reverted back to 12x2, which measured cleanly (0.057% error
+    # rate) on this hardware. The 8x4 config may still be correct for the
+    # real Railway deployment (more cores available there) — don't copy this
+    # 12x2 number back to production without checking Railway's actual
+    # vCPU allocation first; local Docker Desktop numbers aren't
+    # representative of it.
+    # LOGGING FIX: previously no --access-logfile/--error-logfile/--log-level
+    # was set, so gunicorn wrote almost nothing to stdout — a worker getting
+    # SIGKILL'd (OOM) could pass silently, and there was no per-request
+    # access log to correlate failures with timing. `-` for both log files
+    # means "write to stdout/stderr", which is what `docker compose logs`
+    # already captures. --capture-output redirects any raw print()/stdout
+    # output from application code into gunicorn's error log instead of
+    # being lost. Access log format adds %(D)s (request duration in
+    # microseconds) so slow/failed requests are visible with timing, not
+    # just a bare hit count.
+    # PRELOAD FIX (see load-test findings): without --preload, every worker
+    # respawn (timeout, OOM, rolling restart) re-imports the full app —
+    # including the xhtml2pdf/pyhanko/cryptography import chain in
+    # billing/views.py — while holding the GIL, stalling the whole process.
+    # --preload imports once in the master before fork; workers inherit via
+    # copy-on-write, so a respawn is cheap instead of a multi-second freeze.
+    # WORKER COUNT FIX: hardcoding 12 drifted out of sync with actual
+    # deployment hardware more than once (see history above). Compute from
+    # real CPU count instead: 2×cores+1 is the standard gunicorn rule of
+    # thumb for a mixed I/O+CPU workload. Override with GUNICORN_WORKERS if
+    # you've measured a better number for your actual Railway plan.
+    WORKERS=${GUNICORN_WORKERS:-$(( $(nproc) * 2 + 1 ))}
+    # 2026-09-14 CAPACITY FIX: the 300-user test's slow-query log showed even
+    # trivial Postgres queries (PK lookups, "SELECT 1") taking 700-2800ms —
+    # the signature of CPU starvation from oversubscription, not a query
+    # problem. GUNICORN_WORKERS had drifted to 6 in .env and this file's own
+    # --threads was hardcoded to 8 regardless of env, giving 6x8=48 web slots
+    # alone (before counting spa's 24x4=96) on hardware this repo's own prior
+    # notes describe as "far fewer cores than Railway's production hosts."
+    # --threads is now overridable via GUNICORN_WEB_THREADS so the whole
+    # worker x thread shape can be tuned from .env without editing this file.
+    # Re-derive both numbers from the real host's core count
+    # (docker compose exec web nproc) rather than trusting any number carried
+    # over from a previous session — that's the mistake that produced this
+    # drift in the first place.
+    THREADS=${GUNICORN_WEB_THREADS:-4}
+    exec gunicorn bizal.wsgi:application --preload --bind 0.0.0.0:${PORT:-8000} --workers "$WORKERS" --threads "$THREADS" --timeout 120 --keep-alive 75 \
+      --access-logfile - --error-logfile - --capture-output --log-level info \
+      --access-logformat '%(t)s %(h)s "%(r)s" %(s)s %(b)s %(D)sus'
 fi
 exec "$@"

@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.settings import api_settings
 from django.conf import settings as django_settings
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.encoding import force_bytes, force_str
@@ -167,6 +168,14 @@ class LogoutView(APIView):
         try:
             refresh_token = request.data['refresh']
             token = RefreshToken(refresh_token)
+            # Ownership check: the refresh token's user_id claim must match the
+            # authenticated caller, otherwise an authenticated user could blacklist
+            # (invalidate) another account's refresh token by supplying its value.
+            token_user_id = token.payload.get(
+                api_settings.USER_ID_CLAIM, None
+            )
+            if str(token_user_id) != str(request.user.pk):
+                return Response({'detail': 'Invalid token.'}, status=status.HTTP_400_BAD_REQUEST)
             token.blacklist()
             return Response({'detail': 'Logged out.'}, status=status.HTTP_200_OK)
         except Exception:

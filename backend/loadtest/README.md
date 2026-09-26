@@ -28,6 +28,12 @@ python manage.py runserver 0.0.0.0:8000     # terminal 1
 locust -f loadtest/locustfile.py --host=http://localhost:8000   # terminal 2
 ```
 
+**PowerShell** (Windows, no WSL): same commands, run `runserver` in its own
+window since it blocks the terminal, then Locust in a second window —
+there's nothing bash-specific about either line above, so no translation
+needed for this block. The `&&`/`\` issue only shows up in the *chained*
+and *multi-line* commands further below.
+
 Then open http://localhost:8089, set number of users and spawn rate, and
 start. For a scripted/CI-style run without the web UI:
 
@@ -35,6 +41,17 @@ start. For a scripted/CI-style run without the web UI:
 locust -f loadtest/locustfile.py --host=http://localhost:8000 \
   --headless -u 50 -r 10 --run-time 60s --csv=results/run1
 ```
+
+**PowerShell:**
+
+```powershell
+locust -f loadtest/locustfile.py --host=http://localhost:8000 `
+  --headless -u 50 -r 10 --run-time 60s --csv=results/run1
+```
+
+(backtick `` ` `` for line continuation instead of bash's `\` — or just put
+it all on one line, which sidesteps PowerShell's whitespace-after-backtick
+gotcha entirely.)
 
 This produces `run1_stats.csv` (per-endpoint p50/p95/p99, req/s, failure
 rate) and `run1_stats_history.csv` (same, over time) — both directly
@@ -85,11 +102,65 @@ test's failure rate — a broken test environment produces failures that
 look like a performance/isolation problem but aren't one. Worth a sentence
 in the thesis methodology section as a documented pitfall.
 
+## Rate limiting at higher user counts (read before running 500+)
+
+`bizal/throttles.py` gates anonymous traffic per client IP: `public_read`
+(storefront/menu/reviews/tenant-info reads) at 3000/hour, plain `anon`
+(booking POSTs) at 1000/hour. Locust runs every simulated user from one
+real machine, so all of them would otherwise share a single IP's bucket —
+at 500+ users that budget is gone in seconds and the run fills up with
+429s that look like a capacity failure but are really just "many browsers,
+one IP", not what real concurrent visitors look like.
+
+`locustfile.py` already works around this: every simulated user gets a
+unique fake `X-Forwarded-For` (see the module docstring, "A note on rate
+limiting", for why this is a legitimate fix and not a bypass). No extra
+flags needed — this applies at every user count, including the 30/100
+runs above.
+
+## 1000-user run
+
+```bash
+cd backend
+python manage.py migrate && python seed.py     # confirm DB is seeded — see
+                                                 # the "earlier failed run" note above
+python manage.py runserver 0.0.0.0:8000         # terminal 1
+
+# terminal 2 — ramp to 1000 over ~20s (50/s) rather than spawning all at
+# once; a sudden step to 1000 measures Locust's own connection-open burst
+# as much as the server's actual behaviour under sustained load
+locust -f loadtest/locustfile.py --host=http://localhost:8000 \
+  --headless -u 1000 -r 50 --run-time 3m --csv=results/run_1000users \
+  --processes -1   # use all local CPU cores for the Locust workers
+                    # themselves — at 1000 users a single-process Locust
+                    # can itself become the bottleneck before the server
+                    # does, which would misrepresent BizAL's capacity
+```
+
+Or via the Makefile shortcut:
+
+```bash
+make loadtest USERS=1000 SPAWN_RATE=50 RUN_TIME=3m
+```
+
+(the Makefile target doesn't pass `--processes`; add it directly via the
+`locust` command above if a single core turns out to be the bottleneck —
+watch Locust's own CPU usage during the run, not just the response-time
+graph, to tell the two apart.)
+
+`manage.py runserver` is a single-threaded dev server — it is the
+*worst-case* deployment (see the 30-user baseline table below), so a
+1000-user run against it will likely show real degradation that a
+production Docker/gunicorn stack would not. Worth running the same command
+with `--host=https://staging.bizal.al` or against `docker-compose.prod.yml`
+locally, and reporting both numbers in the thesis: dev-server ceiling vs.
+production-like ceiling.
+
 ## Suggested experiment for the thesis
 
 1. **Baseline**: current 20-second smoke test above (already done).
-2. **Scale test**: repeat at 50, 100, 200, 500 concurrent users against the
-   production Docker stack; plot req/s and p95 latency vs. user count to
+2. **Scale test**: repeat at 50, 100, 200, 500, 1000 concurrent users against
+   the production Docker stack; plot req/s and p95 latency vs. user count to
    find the point where latency or failure rate starts degrading.
 3. **Isolation-under-load test**: run two Locust processes simultaneously —
    one hammering a single tenant (`WriteHeavyTenantUser` only, high user

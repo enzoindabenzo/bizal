@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from bizal.ratelimit_utils import ratelimit_decorator as _ratelimit_decorator
+from bizal.throttles import PlatformAdminReadThrottle
 from .platform_models import PlatformReview
 from .platform_serializers import PlatformReviewSerializer
 
@@ -76,6 +77,7 @@ class PlatformReviewAdminView(generics.ListAPIView):
     """
     from rest_framework.permissions import IsAdminUser
     permission_classes = [IsAdminUser]
+    throttle_classes = [PlatformAdminReadThrottle]
     serializer_class = PlatformReviewSerializer
 
     def get_queryset(self):
@@ -94,6 +96,7 @@ class PlatformReviewApproveView(generics.UpdateAPIView):
     from rest_framework import serializers as _s
 
     permission_classes = [IsAdminUser]
+    throttle_classes = [PlatformAdminReadThrottle]
     http_method_names = ['patch']
     queryset = PlatformReview.objects.all()
     serializer_class = PlatformReviewSerializer

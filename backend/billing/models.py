@@ -58,8 +58,21 @@ class LoyaltyAccount(TenantScopedUUIDModel):
         """
         if amount == 0:
             return
-        from django.db import transaction
+        from django.db import transaction, connection
+        # CONTENTION FIX (2026-09-12 load test): mirrors the lock_timeout
+        # guard applied across bookings/appointments/orders/inventory/
+        # hotels/staff. This method is called from many call sites
+        # (bookings, orders, staff invites' referral credit, etc.), so a
+        # busy LoyaltyAccount row under concurrent load could otherwise
+        # block a caller indefinitely with no bound. SET LOCAL lock_timeout
+        # converts that into a deterministic OperationalError after 3s
+        # rather than an unbounded wait that can starve a gunicorn worker;
+        # callers that need a friendlier response than a 500 can catch
+        # OperationalError/DatabaseError around this call the same way
+        # bookings/views.py etc. do.
         with transaction.atomic():
+            with connection.cursor() as cursor:
+                cursor.execute("SET LOCAL lock_timeout = '3s'")
             # Lock this row for the duration of the transaction and read the
             # current balance under the lock, so the below-zero check can't
             # race with a concurrent debit.
@@ -196,16 +209,25 @@ class InvoiceLine(TenantScopedUUIDModel):
         # the read-recompute-write sequence across concurrent line saves:
         # the second transaction blocks until the first commits, so it
         # always recomputes from the fully up-to-date line set.
-        from django.db import transaction
+        from django.db import transaction, connection
+        # CONTENTION FIX (2026-09-12 load test): same lock_timeout guard as
+        # LoyaltyAccount.add_points above -- bounds the wait on a busy
+        # Invoice row instead of an unbounded block.
         with transaction.atomic():
+            with connection.cursor() as cursor:
+                cursor.execute("SET LOCAL lock_timeout = '3s'")
             super().save(*args, **kwargs)
             locked_invoice = Invoice.objects.select_for_update().get(pk=self.invoice_id)
             locked_invoice.recompute_total()
             self.invoice = locked_invoice
 
     def delete(self, *args, **kwargs):
-        from django.db import transaction
+        from django.db import transaction, connection
+        # CONTENTION FIX (2026-09-12 load test): same lock_timeout guard as
+        # save() above.
         with transaction.atomic():
+            with connection.cursor() as cursor:
+                cursor.execute("SET LOCAL lock_timeout = '3s'")
             invoice_id = self.invoice_id
             super().delete(*args, **kwargs)
             locked_invoice = Invoice.objects.select_for_update().get(pk=invoice_id)

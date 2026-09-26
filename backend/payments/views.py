@@ -1,10 +1,12 @@
+import logging
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 import stripe
 from django.conf import settings
 from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured
-from django.db import models, transaction
+from django.db import connection, models, transaction, OperationalError
+from django.db.utils import DatabaseError
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view, permission_classes
@@ -13,10 +15,13 @@ from rest_framework.response import Response
 from rest_framework import generics, status
 from rest_framework.views import APIView
 
+from bizal.throttles import PlatformAdminReadThrottle
 from tenants.models import Tenant, PLAN_PRO, PLAN_ENTERPRISE, PLAN_STARTER, PLAN_TRIAL
 from tenants.permissions import IsTenantOwner, IsTenantStaff, get_effective_role
 from .models import Payment
 from .serializers import PaymentSerializer, ManualPaymentSerializer
+
+logger = logging.getLogger(__name__)
 
 # Avoid setting stripe.api_key globally at module import time.
 # If STRIPE_SECRET_KEY is empty (base.py default) and this module is imported
@@ -483,88 +488,114 @@ def refund_booking_payment(request, pk):
     # any pair of amounts that both happen to fit under Stripe's remaining
     # balance. select_for_update() mirrors the locking pattern already used
     # everywhere else stock/availability is touched in this codebase.
-    with transaction.atomic():
-        payment = Payment.objects.select_for_update().get(pk=payment_id)
+    #
+    # CONTENTION FIX (2026-09-12 load test): this lock is held across a
+    # live stripe.Refund.create() call below, which is the one call site
+    # in the codebase that combines a row lock with an external API call.
+    # SET LOCAL lock_timeout bounds how long any OTHER request waits behind
+    # this one to a deterministic 3s -- it does not bound the Stripe call
+    # itself (stripe-python has its own ~80s default timeout for that).
+    # Two refund requests can't be issued for the same payment anywhere
+    # near back-to-back in practice (this is a deliberate staff action, not
+    # a hot path — see the docstring above), so this mirrors the same
+    # guard applied everywhere else for consistency and defense-in-depth,
+    # not because it's a likely contention point today.
+    try:
+        with transaction.atomic():
+            with connection.cursor() as cursor:
+                cursor.execute("SET LOCAL lock_timeout = '3s'")
+            payment = Payment.objects.select_for_update().get(pk=payment_id)
 
-        already_refunded = _refunded_so_far(payment)
-        remaining = payment.amount - already_refunded
+            already_refunded = _refunded_so_far(payment)
+            remaining = payment.amount - already_refunded
 
-        if remaining <= 0:
-            return Response(
-                {'detail': 'This payment has already been fully refunded.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        if raw_amount is not None:
-            try:
-                refund_amount = Decimal(str(raw_amount))
-            except InvalidOperation:
-                return Response({'detail': 'amount must be a valid number.'}, status=status.HTTP_400_BAD_REQUEST)
-            if refund_amount <= 0 or refund_amount > remaining:
+            if remaining <= 0:
                 return Response(
-                    {'detail': f'amount must be between 0 and {remaining} (the remaining refundable balance).'},
+                    {'detail': 'This payment has already been fully refunded.'},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-        else:
-            refund_amount = remaining
 
-        # payment.amount/refund_amount are always ALL (the ledger currency —
-        # see the comment on Tenant.currency in tenants/models.py), but Stripe
-        # requires the refund amount in whatever currency was actually charged.
-        # Convert proportionally against the charged_amount/charged_currency
-        # recorded in metadata at checkout time (see _handle_event's
-        # checkout.session.completed branch above), rather than re-converting
-        # via today's FX rate — using today's rate for a partial refund could
-        # refund a different real-world value than what the customer actually
-        # paid, if rates moved since checkout. The ratio is against the
-        # original payment.amount (not `remaining`) since charged_amount is
-        # the full original charge.
-        charged_currency = payment.metadata.get('charged_currency', 'ALL')
-        try:
-            charged_amount = Decimal(str(payment.metadata.get('charged_amount', payment.amount)))
-        except InvalidOperation:
-            charged_amount = payment.amount
-        ratio = (refund_amount / payment.amount) if payment.amount > 0 else Decimal('0')
-        refund_amount_charged = (charged_amount * ratio).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            if raw_amount is not None:
+                try:
+                    refund_amount = Decimal(str(raw_amount))
+                except InvalidOperation:
+                    return Response({'detail': 'amount must be a valid number.'}, status=status.HTTP_400_BAD_REQUEST)
+                if refund_amount <= 0 or refund_amount > remaining:
+                    return Response(
+                        {'detail': f'amount must be between 0 and {remaining} (the remaining refundable balance).'},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+            else:
+                refund_amount = remaining
 
-        try:
-            _stripe_key()
-            refund = stripe.Refund.create(
-                payment_intent=payment.stripe_payment_intent,
-                amount=int((refund_amount_charged * 100).to_integral_value()),
+            # payment.amount/refund_amount are always ALL (the ledger currency —
+            # see the comment on Tenant.currency in tenants/models.py), but Stripe
+            # requires the refund amount in whatever currency was actually charged.
+            # Convert proportionally against the charged_amount/charged_currency
+            # recorded in metadata at checkout time (see _handle_event's
+            # checkout.session.completed branch above), rather than re-converting
+            # via today's FX rate — using today's rate for a partial refund could
+            # refund a different real-world value than what the customer actually
+            # paid, if rates moved since checkout. The ratio is against the
+            # original payment.amount (not `remaining`) since charged_amount is
+            # the full original charge.
+            charged_currency = payment.metadata.get('charged_currency', 'ALL')
+            try:
+                charged_amount = Decimal(str(payment.metadata.get('charged_amount', payment.amount)))
+            except InvalidOperation:
+                charged_amount = payment.amount
+            ratio = (refund_amount / payment.amount) if payment.amount > 0 else Decimal('0')
+            refund_amount_charged = (charged_amount * ratio).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+            try:
+                _stripe_key()
+                refund = stripe.Refund.create(
+                    payment_intent=payment.stripe_payment_intent,
+                    amount=int((refund_amount_charged * 100).to_integral_value()),
+                )
+            except ImproperlyConfigured as e:
+                return Response({'detail': str(e)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+            except stripe.error.StripeError as e:
+                return Response({'detail': str(e)}, status=status.HTTP_502_BAD_GATEWAY)
+
+            total_refunded = already_refunded + refund_amount
+            is_full_refund = total_refunded >= payment.amount
+
+            refunds_log = payment.metadata.get('refunds')
+            if not isinstance(refunds_log, list):
+                refunds_log = []
+            refunds_log.append({
+                'refund_id': refund.get('id', ''),
+                'amount': str(refund_amount),
+                'amount_charged': str(refund_amount_charged),
+                'currency_charged': charged_currency,
+                'refunded_at': timezone.now().isoformat(),
+                'refunded_by': str(request.user.id),
+            })
+
+            payment.status = 'refunded' if is_full_refund else 'completed'
+            payment.metadata = {
+                **payment.metadata,
+                'refund_id': refund.get('id', ''),                      # most recent refund id, kept for back-compat
+                'refunds': refunds_log,                                 # full itemised audit trail
+                'refunded_amount': str(total_refunded),                 # running cumulative total, not a per-call overwrite
+                'refunded_amount_charged': str(refund_amount_charged),  # most recent refund's charged-currency amount
+            }
+            payment.save(update_fields=['status', 'metadata', 'updated_at'])
+
+            booking.deposit_paid = max(booking.deposit_paid - refund_amount, Decimal('0'))
+            booking.save(update_fields=['deposit_paid', 'updated_at'])
+    except (OperationalError, DatabaseError) as exc:
+        if 'lock' in str(exc).lower() or 'timeout' in str(exc).lower():
+            logger.info(
+                "Refund lock-timed-out for tenant=%s payment=%s (resource contention): %s",
+                request.tenant, payment_id, exc,
             )
-        except ImproperlyConfigured as e:
-            return Response({'detail': str(e)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-        except stripe.error.StripeError as e:
-            return Response({'detail': str(e)}, status=status.HTTP_502_BAD_GATEWAY)
-
-        total_refunded = already_refunded + refund_amount
-        is_full_refund = total_refunded >= payment.amount
-
-        refunds_log = payment.metadata.get('refunds')
-        if not isinstance(refunds_log, list):
-            refunds_log = []
-        refunds_log.append({
-            'refund_id': refund.get('id', ''),
-            'amount': str(refund_amount),
-            'amount_charged': str(refund_amount_charged),
-            'currency_charged': charged_currency,
-            'refunded_at': timezone.now().isoformat(),
-            'refunded_by': str(request.user.id),
-        })
-
-        payment.status = 'refunded' if is_full_refund else 'completed'
-        payment.metadata = {
-            **payment.metadata,
-            'refund_id': refund.get('id', ''),                      # most recent refund id, kept for back-compat
-            'refunds': refunds_log,                                 # full itemised audit trail
-            'refunded_amount': str(total_refunded),                 # running cumulative total, not a per-call overwrite
-            'refunded_amount_charged': str(refund_amount_charged),  # most recent refund's charged-currency amount
-        }
-        payment.save(update_fields=['status', 'metadata', 'updated_at'])
-
-        booking.deposit_paid = max(booking.deposit_paid - refund_amount, Decimal('0'))
-        booking.save(update_fields=['deposit_paid', 'updated_at'])
+            return Response(
+                {'detail': 'This payment is being processed by someone else right now. Please try again.'},
+                status=status.HTTP_409_CONFLICT,
+            )
+        raise
 
     from activity.utils import log_activity
     log_activity(
@@ -1068,18 +1099,38 @@ class RecordManualPaymentView(APIView):
         serializer = ManualPaymentSerializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
 
-        with transaction.atomic():
-            payment = serializer.save(
-                tenant=request.tenant,
-                status='completed',
-                recorded_by=request.user,
-            )
-            if payment.payment_type == 'invoice' and payment.invoice_id:
-                self._reconcile_invoice(payment.invoice_id)
-            elif payment.payment_type == 'booking_deposit' and payment.booking_id:
-                self._reconcile_booking(payment.booking_id, payment.amount)
-            elif payment.payment_type == 'order' and payment.order_id:
-                self._reconcile_order(payment.order_id, payment.amount)
+        # CONTENTION FIX (2026-09-12 load test): mirrors the lock_timeout
+        # guard applied across bookings/appointments/orders/inventory/
+        # hotels/staff/tenants/refund. Whichever of _reconcile_booking/
+        # _reconcile_order/_reconcile_invoice runs below takes a
+        # select_for_update() lock on a Booking/Order/Invoice row; bounding
+        # the wait here covers all three from one place.
+        try:
+            with transaction.atomic():
+                with connection.cursor() as cursor:
+                    cursor.execute("SET LOCAL lock_timeout = '3s'")
+                payment = serializer.save(
+                    tenant=request.tenant,
+                    status='completed',
+                    recorded_by=request.user,
+                )
+                if payment.payment_type == 'invoice' and payment.invoice_id:
+                    self._reconcile_invoice(payment.invoice_id)
+                elif payment.payment_type == 'booking_deposit' and payment.booking_id:
+                    self._reconcile_booking(payment.booking_id, payment.amount)
+                elif payment.payment_type == 'order' and payment.order_id:
+                    self._reconcile_order(payment.order_id, payment.amount)
+        except (OperationalError, DatabaseError) as exc:
+            if 'lock' in str(exc).lower() or 'timeout' in str(exc).lower():
+                logger.info(
+                    "Manual payment lock-timed-out for tenant=%s (resource contention): %s",
+                    request.tenant, exc,
+                )
+                return Response(
+                    {'detail': 'This record is being updated by someone else right now. Please try again.'},
+                    status=status.HTTP_409_CONFLICT,
+                )
+            raise
 
         return Response(PaymentSerializer(payment).data, status=status.HTTP_201_CREATED)
 
@@ -1138,6 +1189,7 @@ class _WebhookEventSerializer(_drf_serializers.ModelSerializer):
 class WebhookEventListView(generics.ListAPIView):
     """GET /api/payments/webhook-events/ — superadmin webhook audit log."""
     serializer_class = _WebhookEventSerializer
+    throttle_classes = [PlatformAdminReadThrottle]
 
     def get_permissions(self):
         return [IsAdminUser()]

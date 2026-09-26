@@ -104,129 +104,150 @@ def _perform_staff_invite(request):
     # exceed the plan cap. The lock must be held across both the count check
     # AND the update_or_create write; releasing it in between would reintroduce
     # the TOCTOU race.
-    from django.db import transaction
+    from django.db import transaction, connection, OperationalError
+    from django.db.utils import DatabaseError
     max_staff = tenant.get_limit('max_staff')
     user_role = role if role == 'manager' else 'staff'
-    with transaction.atomic():
-        # Lock the Tenant row itself rather than the existing
-        # StaffMember rows.  SELECT FOR UPDATE on a COUNT() only locks rows
-        # that already exist — it cannot block a concurrent INSERT of a new
-        # StaffMember row that doesn't exist yet (the classic Postgres
-        # phantom-insert gap).  Locking the Tenant row serializes all
-        # concurrent invite attempts for this tenant through a single,
-        # always-existing row, which does block until the first transaction
-        # commits, closing the race entirely.
-        from tenants.models import Tenant as TenantModel
-        TenantModel.objects.select_for_update().get(pk=tenant.pk)
+    # CONTENTION FIX (2026-09-12 load test): mirrors the lock_timeout guard
+    # applied to bookings/appointments/orders/inventory/hotels. The Tenant
+    # row lock below is the correct protection against a phantom-insert
+    # race on concurrent invites, but with no lock_timeout a request queued
+    # behind a busy tenant row (e.g. several invites in flight at once)
+    # could block indefinitely and starve a gunicorn worker.
+    try:
+        with transaction.atomic():
+            with connection.cursor() as cursor:
+                cursor.execute("SET LOCAL lock_timeout = '3s'")
+            # Lock the Tenant row itself rather than the existing
+            # StaffMember rows.  SELECT FOR UPDATE on a COUNT() only locks rows
+            # that already exist — it cannot block a concurrent INSERT of a new
+            # StaffMember row that doesn't exist yet (the classic Postgres
+            # phantom-insert gap).  Locking the Tenant row serializes all
+            # concurrent invite attempts for this tenant through a single,
+            # always-existing row, which does block until the first transaction
+            # commits, closing the race entirely.
+            from tenants.models import Tenant as TenantModel
+            TenantModel.objects.select_for_update().get(pk=tenant.pk)
 
-        # FIX: an "invite" for an email that already has an active
-        # StaffMember row on this tenant (i.e. this call is really a
-        # Role-change re-invite, per the below) must not be
-        # blocked by the plan limit — it doesn't add a new person to the
-        # roster, it just updates an existing one. Without this check, a
-        # tenant sitting exactly at max_staff could never change an
-        # existing staff member's role without first removing someone
-        # else, even though headcount would stay the same.
-        existing_user = User.objects.filter(email=email).first()
-        is_existing_active_member = bool(
-            existing_user and StaffMember.objects.filter(
-                tenant=tenant, user=existing_user, is_active=True,
-            ).exists()
-        )
+            # FIX: an "invite" for an email that already has an active
+            # StaffMember row on this tenant (i.e. this call is really a
+            # Role-change re-invite, per the below) must not be
+            # blocked by the plan limit — it doesn't add a new person to the
+            # roster, it just updates an existing one. Without this check, a
+            # tenant sitting exactly at max_staff could never change an
+            # existing staff member's role without first removing someone
+            # else, even though headcount would stay the same.
+            existing_user = User.objects.filter(email=email).first()
+            is_existing_active_member = bool(
+                existing_user and StaffMember.objects.filter(
+                    tenant=tenant, user=existing_user, is_active=True,
+                ).exists()
+            )
 
-        current_count = (
-            StaffMember.objects.filter(tenant=tenant, is_active=True).count()
-        )
-        if max_staff and current_count >= max_staff and not is_existing_active_member:
+            current_count = (
+                StaffMember.objects.filter(tenant=tenant, is_active=True).count()
+            )
+            if max_staff and current_count >= max_staff and not is_existing_active_member:
+                return Response(
+                    {'detail': f'Staff limit reached for your plan ({max_staff}).'},
+                    status=http_status.HTTP_403_FORBIDDEN,
+                )
+
+            # Get or create User — still inside the atomic block so the count
+            # lock covers the StaffMember write below.
+            # FIX: email is intentionally not globally unique (a person can have
+            # a separate account on each tenant they interact with, enforced via
+            # UniqueConstraint(['email', 'tenant'])). get_or_create() runs an
+            # internal .get(email=email) that raises MultipleObjectsReturned if
+            # that email already has accounts on 2+ other tenants, 500ing the
+            # invite endpoint instead of returning the intended 400. Look the
+            # candidate up explicitly first (preferring this tenant, then a
+            # platform-level account, then any match — same tie-break already
+            # proven correct in accounts/auth_backends.py) and only create when
+            # nothing exists at all.
+            existing_candidate = (
+                User.objects.filter(email=email, tenant=tenant).order_by('id').first()
+                or User.objects.filter(email=email, tenant__isnull=True).order_by('id').first()
+                or User.objects.filter(email=email).order_by('id').first()
+            )
+            if existing_candidate is not None:
+                user, created = existing_candidate, False
+            else:
+                user, created = User.objects.get_or_create(
+                    email=email,
+                    defaults={
+                        'tenant': tenant,
+                        'role': user_role,
+                        # Do NOT pass a raw password string here — Django's ORM stores
+                        # the value directly in the password column, bypassing the
+                        # hasher. Use set_unusable_password() semantics by omitting the
+                        # field entirely; set_password() below is the sole place the
+                        # credential is ever written.
+                    }
+                )
+            if not created:
+                if user.tenant is not None and user.tenant != tenant:
+                    return Response(
+                        {'detail': 'This email is already registered to another tenant.'},
+                        status=http_status.HTTP_400_BAD_REQUEST,
+                    )
+                if user.tenant is None and user.is_staff:
+                    # Platform-level superadmin account — cannot be added as tenant staff.
+                    return Response(
+                        {'detail': 'This email is associated with a platform admin account and cannot be added as staff.'},
+                        status=http_status.HTTP_400_BAD_REQUEST,
+                    )
+                # user.tenant is None and not is_staff: platform customer — assign them to this
+                # tenant so the login view (user.tenant != request.tenant check) and
+                # get_effective_role() (user.tenant != tenant check) both pass correctly.
+                # Without this assignment the staff member is created in the DB and receives
+                # a credentials email, but every subsequent login attempt returns 403 because
+                # None != <Tenant>, making the invite silently useless.
+                if user.tenant is None:
+                    user.tenant = tenant
+                    user.save(update_fields=['tenant', 'updated_at'])
+
+            # `defaults` in get_or_create only applies on creation.
+            # An existing user re-invited with a different role (e.g. customer->manager,
+            # or staff re-invited as manager) retains their old User.role indefinitely,
+            # causing IsTenantOwner checks to fail for re-invited managers.
+            # Always sync User.role unless they are an owner (don't downgrade owners).
+            if not created and user.role not in ('owner',):
+                user.role = user_role
+                user.save(update_fields=['role', 'updated_at'])
+
+            # Defined here (not just inside `if created`) so it's never unbound
+            # if a future refactor separates this block from the `if created`
+            # block below that references it.
+            temp_password = None
+            if created:
+                # Generate and hash the temporary password while still inside the
+                # atomic block so a failure in the subsequent send_mail() call
+                # cannot leave the account without a usable password.
+                temp_password = secrets.token_urlsafe(10)
+                user.set_password(temp_password)
+                # Include 'updated_at' in update_fields to match the
+                # codebase-wide pattern of always stamping updated_at on any save()
+                # that mutates user state. Omitting it left updated_at stale when
+                # a new staff member's password was set at invite time.
+                user.save(update_fields=['password', 'updated_at'])
+
+            # Create or reactivate StaffMember — inside the same atomic block.
+            member, _ = StaffMember.objects.update_or_create(
+                tenant=tenant, user=user,
+                defaults={'role': role, 'is_active': True},
+            )
+    except (OperationalError, DatabaseError) as exc:
+        if 'lock' in str(exc).lower() or 'timeout' in str(exc).lower():
+            logger.info(
+                "Staff invite lock-timed-out for tenant=%s (resource contention): %s",
+                tenant, exc,
+            )
             return Response(
-                {'detail': f'Staff limit reached for your plan ({max_staff}).'},
-                status=http_status.HTTP_403_FORBIDDEN,
+                {'detail': 'Another staff change is in progress for this account. Please try again.'},
+                status=http_status.HTTP_409_CONFLICT,
             )
-
-        # Get or create User — still inside the atomic block so the count
-        # lock covers the StaffMember write below.
-        # FIX: email is intentionally not globally unique (a person can have
-        # a separate account on each tenant they interact with, enforced via
-        # UniqueConstraint(['email', 'tenant'])). get_or_create() runs an
-        # internal .get(email=email) that raises MultipleObjectsReturned if
-        # that email already has accounts on 2+ other tenants, 500ing the
-        # invite endpoint instead of returning the intended 400. Look the
-        # candidate up explicitly first (preferring this tenant, then a
-        # platform-level account, then any match — same tie-break already
-        # proven correct in accounts/auth_backends.py) and only create when
-        # nothing exists at all.
-        existing_candidate = (
-            User.objects.filter(email=email, tenant=tenant).order_by('id').first()
-            or User.objects.filter(email=email, tenant__isnull=True).order_by('id').first()
-            or User.objects.filter(email=email).order_by('id').first()
-        )
-        if existing_candidate is not None:
-            user, created = existing_candidate, False
-        else:
-            user, created = User.objects.get_or_create(
-                email=email,
-                defaults={
-                    'tenant': tenant,
-                    'role': user_role,
-                    # Do NOT pass a raw password string here — Django's ORM stores
-                    # the value directly in the password column, bypassing the
-                    # hasher. Use set_unusable_password() semantics by omitting the
-                    # field entirely; set_password() below is the sole place the
-                    # credential is ever written.
-                }
-            )
-        if not created:
-            if user.tenant is not None and user.tenant != tenant:
-                return Response(
-                    {'detail': 'This email is already registered to another tenant.'},
-                    status=http_status.HTTP_400_BAD_REQUEST,
-                )
-            if user.tenant is None and user.is_staff:
-                # Platform-level superadmin account — cannot be added as tenant staff.
-                return Response(
-                    {'detail': 'This email is associated with a platform admin account and cannot be added as staff.'},
-                    status=http_status.HTTP_400_BAD_REQUEST,
-                )
-            # user.tenant is None and not is_staff: platform customer — assign them to this
-            # tenant so the login view (user.tenant != request.tenant check) and
-            # get_effective_role() (user.tenant != tenant check) both pass correctly.
-            # Without this assignment the staff member is created in the DB and receives
-            # a credentials email, but every subsequent login attempt returns 403 because
-            # None != <Tenant>, making the invite silently useless.
-            if user.tenant is None:
-                user.tenant = tenant
-                user.save(update_fields=['tenant', 'updated_at'])
-
-        # `defaults` in get_or_create only applies on creation.
-        # An existing user re-invited with a different role (e.g. customer->manager,
-        # or staff re-invited as manager) retains their old User.role indefinitely,
-        # causing IsTenantOwner checks to fail for re-invited managers.
-        # Always sync User.role unless they are an owner (don't downgrade owners).
-        if not created and user.role not in ('owner',):
-            user.role = user_role
-            user.save(update_fields=['role', 'updated_at'])
-
-        # Defined here (not just inside `if created`) so it's never unbound
-        # if a future refactor separates this block from the `if created`
-        # block below that references it.
-        temp_password = None
-        if created:
-            # Generate and hash the temporary password while still inside the
-            # atomic block so a failure in the subsequent send_mail() call
-            # cannot leave the account without a usable password.
-            temp_password = secrets.token_urlsafe(10)
-            user.set_password(temp_password)
-            # Include 'updated_at' in update_fields to match the
-            # codebase-wide pattern of always stamping updated_at on any save()
-            # that mutates user state. Omitting it left updated_at stale when
-            # a new staff member's password was set at invite time.
-            user.save(update_fields=['password', 'updated_at'])
-
-        # Create or reactivate StaffMember — inside the same atomic block.
-        member, _ = StaffMember.objects.update_or_create(
-            tenant=tenant, user=user,
-            defaults={'role': role, 'is_active': True},
-        )
+        raise
 
     # Notify with the temporary password generated inside the atomic block
     if created:

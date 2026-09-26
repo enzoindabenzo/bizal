@@ -1,9 +1,12 @@
+import logging
+
 from rest_framework import generics, status as drf_status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from rest_framework.exceptions import PermissionDenied
-from django.db import transaction
+from django.db import connection, transaction, OperationalError
+from django.db.utils import DatabaseError
 from tenants.permissions import IsTenantOwner, HasTenantFeature
 from tenants.limits import enforce_max_listings
 from .models import RoomType, Room, SeasonalPrice, is_room_available
@@ -12,6 +15,8 @@ from .serializers import SeasonalPriceSerializer, RoomTypeSerializer, RoomSerial
 # Hotels are booking-heavy: RoomType/Room/SeasonalPrice management and the
 # booking endpoints all require the tenant's plan to include 'bookings'.
 BOOKINGS_FEATURE = HasTenantFeature('bookings')
+
+logger = logging.getLogger(__name__)
 
 
 class RoomTypeListView(generics.ListAPIView):
@@ -215,43 +220,65 @@ class RoomBookingListCreateView(generics.ListCreateAPIView):
 
         from bookings.models import Booking
 
-        with transaction.atomic():
-            try:
-                room = Room.objects.select_for_update().get(
-                    pk=d['room_id'], tenant=request.tenant,
-                )
-            except Room.DoesNotExist:
-                return Response(
-                    {'detail': 'Room not found.'}, status=404
-                )
+        # CONTENTION FIX (2026-09-12 load test): mirrors the lock_timeout
+        # guard applied to bookings/views.py (2026-09-11), appointments/
+        # views.py, orders/views.py and inventory/views.py (2026-09-12).
+        # The select_for_update() on Room below is the correct
+        # double-booking protection, but with no lock_timeout a request
+        # queued behind a popular room could block indefinitely and starve
+        # a gunicorn worker. SET LOCAL lock_timeout scopes a short,
+        # deterministic wait to just this transaction.
+        try:
+            with transaction.atomic():
+                with connection.cursor() as cursor:
+                    cursor.execute("SET LOCAL lock_timeout = '3s'")
+                try:
+                    room = Room.objects.select_for_update().get(
+                        pk=d['room_id'], tenant=request.tenant,
+                    )
+                except Room.DoesNotExist:
+                    return Response(
+                        {'detail': 'Room not found.'}, status=404
+                    )
 
-            if not is_room_available(room, d['start_date'], d['end_date']):
+                if not is_room_available(room, d['start_date'], d['end_date']):
+                    return Response(
+                        {'detail': 'Room is not available for the selected dates.'},
+                        status=409,
+                    )
+
+                nights      = (d['end_date'] - d['start_date']).days
+                total_price = room.room_type.base_price * nights
+
+                booking = Booking.objects.create(
+                    tenant=request.tenant,
+                    user=request.user if request.user.is_authenticated else None,
+                    booking_type='room_booking',
+                    status='pending',
+                    start_date=d['start_date'],
+                    end_date=d['end_date'],
+                    guest_name=d['guest_name'],
+                    guest_email=d['guest_email'],
+                    guest_phone=d.get('guest_phone', ''),
+                    guest_count=d.get('guest_count', 1),
+                    notes=d.get('notes', ''),
+                    total_price=total_price,
+                    resource_label=f"Room {room.room_number} — {room.room_type.name}",
+                    resource_type='room',
+                    resource_id=str(room.pk),
+                )
+                rb = RoomBooking.objects.create(room=room, booking=booking)
+        except (OperationalError, DatabaseError) as exc:
+            if 'lock' in str(exc).lower() or 'timeout' in str(exc).lower():
+                logger.info(
+                    "Room booking lock-timed-out for tenant=%s room=%s (resource contention): %s",
+                    request.tenant, d.get('room_id'), exc,
+                )
                 return Response(
-                    {'detail': 'Room is not available for the selected dates.'},
+                    {'detail': 'This room was just booked by someone else. Please try a different room or dates and try again.'},
                     status=409,
                 )
-
-            nights      = (d['end_date'] - d['start_date']).days
-            total_price = room.room_type.base_price * nights
-
-            booking = Booking.objects.create(
-                tenant=request.tenant,
-                user=request.user if request.user.is_authenticated else None,
-                booking_type='room_booking',
-                status='pending',
-                start_date=d['start_date'],
-                end_date=d['end_date'],
-                guest_name=d['guest_name'],
-                guest_email=d['guest_email'],
-                guest_phone=d.get('guest_phone', ''),
-                guest_count=d.get('guest_count', 1),
-                notes=d.get('notes', ''),
-                total_price=total_price,
-                resource_label=f"Room {room.room_number} — {room.room_type.name}",
-                resource_type='room',
-                resource_id=str(room.pk),
-            )
-            rb = RoomBooking.objects.create(room=room, booking=booking)
+            raise
 
         from notifications.tasks import send_booking_confirmation_email
         send_booking_confirmation_email.delay(str(booking.pk))

@@ -1,4 +1,7 @@
-from django.db import transaction
+import logging
+
+from django.db import connection, transaction, OperationalError
+from django.db.utils import DatabaseError
 from rest_framework import generics, filters
 from rest_framework.permissions import AllowAny
 from django.db.models import F
@@ -10,6 +13,8 @@ from .serializers import ProductCategorySerializer, ProductSerializer
 # Product/category management requires the tenant's plan to include
 # 'inventory' (public read stays open).
 INVENTORY_FEATURE = HasTenantFeature('inventory')
+
+logger = logging.getLogger(__name__)
 
 
 class ProductCategoryListView(generics.ListCreateAPIView):
@@ -163,17 +168,40 @@ def product_stock_adjust(request, pk):
     if delta == 0:
         return Response({'detail': '`delta` must be non-zero.'}, status=drf_status.HTTP_400_BAD_REQUEST)
 
-    with transaction.atomic():
-        # Add tenant= filter for defence-in-depth; mirrors the outer check.
-        locked = Product.objects.select_for_update().get(pk=pk, tenant=request.tenant)
-        new_stock = locked.stock + delta
-        if new_stock < 0:
-            return Response(
-                {'detail': f'Insufficient stock: current {locked.stock}, requested delta {delta}.'},
-                status=drf_status.HTTP_400_BAD_REQUEST,
+    # CONTENTION FIX (2026-09-12 load test): mirrors the lock_timeout guard
+    # applied to bookings/views.py (2026-09-11), appointments/views.py and
+    # orders/views.py (2026-09-12). This is a POS-style endpoint that can
+    # be hit rapidly for the same product (e.g. two staff terminals ringing
+    # up the same item); the select_for_update() below is the correct
+    # protection against a stock race, but with no lock_timeout a request
+    # queued behind a busy product row could block indefinitely and starve
+    # a gunicorn worker. SET LOCAL lock_timeout scopes a short,
+    # deterministic wait to just this transaction.
+    try:
+        with transaction.atomic():
+            with connection.cursor() as cursor:
+                cursor.execute("SET LOCAL lock_timeout = '3s'")
+            # Add tenant= filter for defence-in-depth; mirrors the outer check.
+            locked = Product.objects.select_for_update().get(pk=pk, tenant=request.tenant)
+            new_stock = locked.stock + delta
+            if new_stock < 0:
+                return Response(
+                    {'detail': f'Insufficient stock: current {locked.stock}, requested delta {delta}.'},
+                    status=drf_status.HTTP_400_BAD_REQUEST,
+                )
+            Product.objects.filter(pk=pk, tenant=request.tenant).update(stock=F('stock') + delta)
+            locked.refresh_from_db(fields=['stock'])
+    except (OperationalError, DatabaseError) as exc:
+        if 'lock' in str(exc).lower() or 'timeout' in str(exc).lower():
+            logger.info(
+                "Stock adjustment lock-timed-out for tenant=%s product=%s (resource contention): %s",
+                request.tenant, pk, exc,
             )
-        Product.objects.filter(pk=pk, tenant=request.tenant).update(stock=F('stock') + delta)
-        locked.refresh_from_db(fields=['stock'])
+            return Response(
+                {'detail': 'This product is being updated by someone else right now. Please try again.'},
+                status=409,
+            )
+        raise
 
     try:
         from activity.utils import log_activity

@@ -89,7 +89,7 @@ services:
       REDIS_RESULT_URL: redis://:${REDIS_PASSWORD}@redis:6379/2 # Result backend isolated from broker
       DEBUG: "True"
       FRONTEND_BASE_URL: http://localhost:8000
-      healthcheck: # nginx uses service_healthy condition on web/spa
+    healthcheck: # nginx uses service_healthy condition on web/spa
       test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
       interval: 10s
       timeout: 5s
@@ -147,7 +147,7 @@ services:
       # links that are unreachable outside the Docker host. The main domain
       # (port 8000) handles the reset-password route for both services.
       FRONTEND_BASE_URL: http://localhost:8000
-      healthcheck: #
+    healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8001/health/"]
       interval: 10s
       timeout: 5s
@@ -159,8 +159,8 @@ services:
       redis:
         condition: service_healthy
       web:
-                                    condition: service_healthy # guarantees web has run collectstatic
-                                    # and written staticfiles.json before spa starts.
+        condition: service_healthy # guarantees web has run collectstatic
+        # and written staticfiles.json before spa starts.
 
   celery:
     build:

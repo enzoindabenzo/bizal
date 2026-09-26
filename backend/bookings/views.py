@@ -1,6 +1,7 @@
 import logging
 
-from django.db import transaction
+from django.db import connection, transaction, OperationalError
+from django.db.utils import DatabaseError
 from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -81,8 +82,37 @@ class BookingListCreateView(generics.ListCreateAPIView):
         # the way through the INSERT. Previously the inner atomic() in validate()
         # released the lock before perform_create() ran, making TOCTOU
         # protection for room/rental double-booking completely ineffective.
-        with transaction.atomic():
-            return super().create(request, *args, **kwargs)
+        #
+        # CONTENTION FIX (2026-09-11 load test): under concurrent POSTs for
+        # the same resource, select_for_update() correctly serializes writers
+        # via a Postgres row lock -- that's the intended double-booking
+        # protection, not a bug. But with no lock_timeout set, a waiting
+        # request could sit blocked long enough to fall through PgBouncer's
+        # query_wait_timeout instead, surfacing to the client as a raw 502
+        # Bad Gateway (a connection-level failure) rather than a clean,
+        # expected "someone else booked this first" response. SET LOCAL
+        # lock_timeout scopes a short, deterministic wait to just this
+        # transaction (LOCAL = reset automatically at transaction end, never
+        # leaks to the next request reusing this PgBouncer-pooled
+        # connection). Postgres raises OperationalError (SQLSTATE 55P03,
+        # "lock_not_available") if the lock isn't acquired in time, which we
+        # catch and turn into a proper 409 Conflict.
+        try:
+            with transaction.atomic():
+                with connection.cursor() as cursor:
+                    cursor.execute("SET LOCAL lock_timeout = '3s'")
+                return super().create(request, *args, **kwargs)
+        except (OperationalError, DatabaseError) as exc:
+            if 'lock' in str(exc).lower() or 'timeout' in str(exc).lower():
+                logger.info(
+                    "Booking creation lock-timed-out for tenant=%s (resource contention): %s",
+                    getattr(request, 'tenant', None), exc,
+                )
+                return Response(
+                    {'detail': 'This item was just booked by someone else. Please try a different time or refresh and try again.'},
+                    status=status.HTTP_409_CONFLICT,
+                )
+            raise
 
     def perform_create(self, serializer):
         user = self.request.user if self.request.user.is_authenticated else None
@@ -141,17 +171,37 @@ class BookingListCreateView(generics.ListCreateAPIView):
 
         # In-app notification for tenant owner — dispatched async so the
         # DB query for owner/manager users doesn't block the HTTP response.
+        #
+        # FIX: this used to call .delay() directly here, which sends a
+        # synchronous enqueue request to the Celery broker (Redis) *while*
+        # still inside the outer transaction.atomic() from create() — the
+        # same transaction holding the select_for_update() lock on the
+        # room/rental/service row. Under load, a slow or contended broker
+        # stalled this call for many seconds, keeping that lock (and the
+        # underlying DB connection, held "idle in transaction") open the
+        # whole time. With enough concurrent bookings doing this at once,
+        # the DB connection pool was exhausted and every endpoint — not
+        # just bookings — started timing out. transaction.on_commit()
+        # defers the broker call until after the transaction (and lock)
+        # is released, so the broker can never hold the DB hostage.
         if self.request.tenant:
             from notifications.tasks import notify_owner_async
             guest = booking.guest_name or (user.display_name if user else 'Guest')
-            notify_owner_async.delay(
-                str(self.request.tenant.pk),
-                'booking_confirmed',
-                'New Booking',
-                f'{guest} made a {booking.get_booking_type_display()} booking.',
-                metadata={'booking_id': str(booking.id)},
-                idempotency_key=f'booking:{booking.id}',
-            )
+            tenant_id = str(self.request.tenant.pk)
+            booking_id = str(booking.id)
+            message = f'{guest} made a {booking.get_booking_type_display()} booking.'
+
+            def _dispatch_owner_notification():
+                notify_owner_async.delay(
+                    tenant_id,
+                    'booking_confirmed',
+                    'New Booking',
+                    message,
+                    metadata={'booking_id': booking_id},
+                    idempotency_key=f'booking:{booking_id}',
+                )
+
+            transaction.on_commit(_dispatch_owner_notification)
 
 
 class BookingDetailView(generics.RetrieveUpdateAPIView):

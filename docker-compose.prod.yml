@@ -21,6 +21,18 @@ services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
+    command: >
+      postgres
+      -c shared_buffers=768MB
+      -c effective_cache_size=1536MB
+      -c work_mem=16MB
+      -c maintenance_work_mem=128MB
+      -c max_connections=140
+      -c wal_buffers=16MB
+      -c random_page_cost=1.1
+      -c log_checkpoints=on
+      -c log_min_duration_statement=200
+      -c log_lock_waits=on
     environment:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
@@ -31,6 +43,53 @@ services:
       - "5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-bizal}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # PGBOUNCER FIX: sits between web/spa/celery and Postgres in transaction-
+  # pooling mode. Django+gunicorn workers each open their own DB connection;
+  # under concurrency that exceeds Postgres's usable connection slots and
+  # produces connection resets. PgBouncer multiplexes many client
+  # connections onto a small pool of real Postgres connections.
+  pgbouncer:
+    image: edoburu/pgbouncer:v1.24.1-p1
+    restart: unless-stopped
+    environment:
+      # This image reads DB_HOST/DB_USER/DB_PASSWORD/DB_NAME directly (not
+      # DATABASE_HOST etc — that was wrong in an earlier draft of this file).
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: "1000"
+      # 2026-09-14 CAPACITY FIX: the 300-user load test's Postgres slow-query
+      # log showed trivial queries (PK lookups, bare "SELECT 1") taking
+      # 700-2800ms — a sign Postgres itself was CPU-starved, not that any
+      # query plan was bad. Root cause: DEFAULT_POOL_SIZE=90 lets pgbouncer
+      # hand out up to 90 concurrent server-side connections to Postgres,
+      # which is far more than a laptop's real core count (Postgres's own
+      # scaling advice is roughly 2-4x cores for concurrently-*executing*
+      # backends — everything past that should queue in pgbouncer, not
+      # thrash for CPU inside Postgres). The previous note ("90 measured
+      # clean") was never actually confirmed against `docker stats` per its
+      # own caveat. Lowered to 20 as a safer default for local/laptop
+      # hardware; override via DEFAULT_POOL_SIZE in .env once you've
+      # confirmed the real deployment host's core count
+      # (docker compose exec db nproc) — 2-4x that number is the target.
+      DEFAULT_POOL_SIZE: "${PGBOUNCER_POOL_SIZE:-20}"
+      QUERY_WAIT_TIMEOUT: "20"
+      AUTH_TYPE: scram-sha-256
+      ADMIN_USERS: ${DB_USER}
+    expose:
+      - "5432"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "PGPASSWORD=${DB_PASSWORD} psql -h 127.0.0.1 -p 5432 -U ${DB_USER} -d ${DB_NAME} -c 'SELECT 1;'"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -52,6 +111,14 @@ services:
       context: .
       dockerfile: Dockerfile
     restart: unless-stopped
+    # DIAGNOSTIC: SYS_PTRACE added so py-spy can attach to gunicorn worker
+    # PIDs from inside this container (py-spy dump / py-spy top need ptrace
+    # access to inspect another process's stack, which Docker blocks by
+    # default). This is only needed for live CPU profiling during load
+    # tests — safe to remove once the health-only-run CPU investigation is
+    # done, since it does widen the container's syscall surface slightly.
+    cap_add:
+      - SYS_PTRACE
     entrypoint: ["/entrypoint.sh"]
     volumes:
       - media_data:/app/media
@@ -60,9 +127,17 @@ services:
     environment:
       TZ: Europe/Tirane
       DJANGO_SETTINGS_MODULE: bizal.settings.production
+      GUNICORN_WORKERS: ${GUNICORN_WORKERS:-4}
       SECRET_KEY: ${SECRET_KEY}
-      DB_HOST: db
+      DB_HOST: pgbouncer
       DB_PORT: "5432"
+      # Reverted to the default 60s. The 600s value was a one-off test to
+      # check whether the periodic reconnect storm at 1000 users (failures
+      # clustered at t=60s and t=120s) was caused by CONN_MAX_AGE. Keeping
+      # it at 60 here so the Postgres-tuning re-run only changes one
+      # variable (the db: command above) at a time — test CONN_MAX_AGE=600
+      # again later, as its own separate, isolated run.
+      DB_CONN_MAX_AGE: "60"
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
@@ -109,10 +184,13 @@ services:
       retries: 12
       start_period: 60s
     depends_on:
-      db:
+      pgbouncer:
         condition: service_healthy
       redis:
         condition: service_healthy
+    networks:
+      default:
+        ipv4_address: 172.28.0.10
 
   spa:
     build:
@@ -151,9 +229,9 @@ services:
       - "-c"
       - |-
         python manage.py collectstatic --noinput;
-        STATIC_EXIT=$?;
-        if [ $STATIC_EXIT -ne 0 ]; then
-          echo "CRITICAL: collectstatic exited with code $STATIC_EXIT -- static files may be stale or missing. Check STATICFILES_DIRS and volume mounts." >&2;
+        STATIC_EXIT=$$?;
+        if [ $$STATIC_EXIT -ne 0 ]; then
+          echo "CRITICAL: collectstatic exited with code $$STATIC_EXIT -- static files may be stale or missing. Check STATICFILES_DIRS and volume mounts." >&2;
           echo "COLLECTSTATIC_FAILED=1" >&2;
           python -c "
         import os, sys
@@ -170,7 +248,64 @@ services:
             pass
         " 2>/dev/null || true;
         fi;
-        exec gunicorn bizal.wsgi:application --bind 0.0.0.0:8001 --workers 2 --threads 2 --timeout 120
+        # LOGGING FIX: same reasoning as web's gunicorn command in
+        # entrypoint.sh — no access/error log or log-level was previously
+        # set here either, so spa's container logs were just as empty.
+        # CAPACITY FIX (200-user load test, 2026-09-10): spa was hardcoded to
+        # --workers 2 --threads 2 (4 request slots total). nginx.conf routes
+        # every tenant-subdomain request (Host: <slug>.bizal.al) to spa, not
+        # web — and the load test's own traffic mix (locustfile.py user
+        # weights: ReadHeavyTenantUser=8, WriteHeavyTenantUser=2,
+        # AuthenticatedCustomerUser=2, TenantOwnerUser=1 vs
+        # AdminPlatformUser=1 on main domain) puts ~90% of all requests on
+        # tenant subdomains. Measured split in
+        # backend/run_200u_docker_real_pgbouncer_stats.csv: 9,262 of 10,279
+        # tagged requests (90.1%) were [tenant] (-> spa), only 1,017 (9.9%)
+        # were [main domain] (-> web). With only 4 slots absorbing 90% of
+        # 200 concurrent users, gunicorn's listen backlog filled almost
+        # immediately and nginx got connection-refused from spa — that's
+        # why failures were FAST (5-8ms median) rather than slow timeouts:
+        # a 502 in single-digit ms is nginx failing to connect upstream, not
+        # a slow backend. This produced 10,288/11,227 failures (91.6%) in
+        # that run, concentrated almost entirely on [tenant] endpoints while
+        # [main domain] endpoints (served by web's dynamic nproc-based
+        # sizing) mostly succeeded. (The one main-domain exception,
+        # check-slug's 78 failures, is a separate, expected artifact: that
+        # view is rate-limited 10/min per IP and Locust hits it from a
+        # single source IP — not a capacity bug.)
+        # FIX: size spa the same way web already does (2×cores+1, since the
+        # workload is I/O-bound waiting on Postgres — see WORKER COUNT FIX
+        # comment in entrypoint.sh), instead of a number picked with no
+        # relation to spa's actual share of traffic. GUNICORN_SPA_WORKERS /
+        # GUNICORN_SPA_THREADS override this if real-hardware measurement
+        # (Railway dashboard -> Metrics, or a re-run of this same load test)
+        # shows spa needs a different ratio than web — given spa carries 9x
+        # web's request volume, it will very likely need MORE than 2×cores+1
+        # once tested on real multi-core hardware; treat this as the fix for
+        # the "4 slots total" bug, not a final tuned number.
+        # COMPOSE-ESCAPING FIX: every $$ below (and every $$ above, e.g.
+        # $$STATIC_EXIT/$$?) must be written doubled in this file. This
+        # command block is inline YAML in docker-compose.prod.yml, not a
+        # separate script file like entrypoint.sh — Compose runs its OWN
+        # variable interpolation over the whole file (matching $$VAR/$${VAR}
+        # patterns, including inside comments) before the shell ever sees
+        # this string. A single $ here gets silently replaced by Compose
+        # itself (with a "variable is not set, defaulting to blank string"
+        # warning), never reaches the shell as a $, and the shell then sees
+        # an empty string instead of the runtime value. That's what broke
+        # the first version of this fix: $$SPA_WORKERS / $$SPA_THREADS
+        # resolved to '' before gunicorn ever started, and the pre-existing
+        # $$STATIC_EXIT/$$? references above had the same problem (silently
+        # — STATIC_EXIT was always blank, so the collectstatic-failure check
+        # never actually fired; harmless before since the old gunicorn line
+        # used literal numbers, not a variable). Doubling the $ tells
+        # Compose "leave this dollar sign alone", producing a single real $
+        # in the string the shell receives.
+        SPA_WORKERS=$${GUNICORN_SPA_WORKERS:-$$(( $$(nproc) * 2 + 1 ))};
+        SPA_THREADS=$${GUNICORN_SPA_THREADS:-4};
+        exec gunicorn bizal.wsgi:application --preload --bind 0.0.0.0:8001 --workers "$$SPA_WORKERS" --threads "$$SPA_THREADS" --timeout 120 --keep-alive 75 \
+          --access-logfile - --error-logfile - --capture-output --log-level info \
+          --access-logformat '%(t)s %(h)s "%(r)s" %(s)s %(b)s %(D)sus'
     volumes:
       - media_data:/app/media
     expose:
@@ -179,7 +314,7 @@ services:
       TZ: Europe/Tirane
       DJANGO_SETTINGS_MODULE: bizal.settings.production
       SECRET_KEY: ${SECRET_KEY}
-      DB_HOST: db
+      DB_HOST: pgbouncer
       DB_PORT: "5432"
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
@@ -212,6 +347,20 @@ services:
       # Monitoring (same fix as web service above).
       SENTRY_DSN: ${SENTRY_DSN:-}
       APP_VERSION: ${APP_VERSION:-unknown}
+      # GUNICORN SIZING FIX: same "environment: block is a strict allowlist"
+      # gotcha documented above for GROQ_*/OPENROUTER_*/SENTRY_DSN — having
+      # GUNICORN_SPA_WORKERS/GUNICORN_SPA_THREADS in .env does nothing on
+      # its own; Compose only forwards variables explicitly listed here.
+      # Without this, spa's startup command (see command: block above)
+      # always falls through to its nproc-based default and the override
+      # silently never reaches the container — confirmed by a 200-user
+      # test where nproc*2+1 (17 workers) oversubscribed the Docker Desktop
+      # VM badly enough that even the Docker Engine API itself stopped
+      # responding. Defaulted to empty string (not a number) so the
+      # shell's own ${GUNICORN_SPA_WORKERS:-...} default still applies
+      # when unset, exactly like every other optional var in this block.
+      GUNICORN_SPA_WORKERS: ${GUNICORN_SPA_WORKERS:-}
+      GUNICORN_SPA_THREADS: ${GUNICORN_SPA_THREADS:-}
     healthcheck:
       # NOTE: ALLOWED_HOSTS must include 'localhost' and '127.0.0.1' for this to pass.
       test: ["CMD", "curl", "-f", "http://localhost:8001/health/"]
@@ -220,12 +369,15 @@ services:
       retries: 12
       start_period: 60s
     depends_on:
-      db:
+      pgbouncer:
         condition: service_healthy
       redis:
         condition: service_healthy
       web:
         condition: service_healthy
+    networks:
+      default:
+        ipv4_address: 172.28.0.11
 
   celery:
     build:
@@ -247,7 +399,7 @@ services:
       TZ: Europe/Tirane
       DJANGO_SETTINGS_MODULE: bizal.settings.production
       SECRET_KEY: ${SECRET_KEY}
-      DB_HOST: db
+      DB_HOST: pgbouncer
       DB_PORT: "5432"
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
@@ -279,7 +431,7 @@ services:
     depends_on:
       redis:
         condition: service_healthy
-      db:
+      pgbouncer:
         condition: service_healthy
       web:
         condition: service_healthy # guarantees migrate + sync_celery_schedule have run; not transitive via beat
@@ -300,7 +452,7 @@ services:
       TZ: Europe/Tirane
       DJANGO_SETTINGS_MODULE: bizal.settings.production
       SECRET_KEY: ${SECRET_KEY}
-      DB_HOST: db
+      DB_HOST: pgbouncer
       DB_PORT: "5432"
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
@@ -331,7 +483,7 @@ services:
     depends_on:
       redis:
         condition: service_healthy
-      db:
+      pgbouncer:
         condition: service_healthy
       # Celery-beat uses DatabaseScheduler, which reads the
       # django_celery_beat_periodictask table. The `web` service runs
@@ -396,3 +548,19 @@ volumes:
   pg_data:
   media_data:
   postgres_backups:
+
+networks:
+  # STATIC-IP FIX (network reliability): web/spa are pinned to fixed
+  # addresses below so nginx can use a real `upstream {}` block with
+  # `keepalive` (see nginx.conf) instead of resolving their hostname fresh
+  # on every single proxied request. Per-request DNS resolution was added
+  # earlier to survive container recreates changing the backend's IP, but
+  # it also meant nginx opened a brand-new TCP connection to spa/web for
+  # every proxied request instead of reusing a small pool — a large source
+  # of extra connection churn on the Docker bridge network under load.
+  # Pinning IPs gets both: recreate-safety (the IP never changes) and
+  # connection reuse (nginx can keep upstream sockets open via keepalive).
+  default:
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16

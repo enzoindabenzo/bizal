@@ -1399,7 +1399,44 @@ _seed_creds_lines = [
     "# Do NOT commit this file. Delete it (or unset the matching env var)",
     "# to force a fresh random password on the next seed run.",
 ] + [f"{_k}={_v}" for _k, _v in _new_seed_creds.items()]
-_seed_creds_file.write_text("\n".join(_seed_creds_lines) + "\n", encoding='utf-8')
+_seed_creds_text = "\n".join(_seed_creds_lines) + "\n"
+try:
+    _seed_creds_file.write_text(_seed_creds_text, encoding='utf-8')
+except (PermissionError, OSError) as _e:
+    # BUG FIX: _root = Path(__file__).resolve().parent.parent assumes the
+    # repo layout backend/seed.py -> parent.parent = repo root, which is
+    # correct when run locally but WRONG inside the Docker image: only
+    # backend/'s contents are copied to /app there, so seed.py lives at
+    # /app/seed.py and parent.parent resolves to '/' — the container
+    # filesystem root, which the image's non-root user correctly cannot
+    # write to. Previously this crashed the entire seed run via an
+    # uncaught PermissionError AFTER all the DB writes had already
+    # succeeded, silently discarding every password this run generated
+    # (they're deliberately never printed to stdout — see comment above
+    # _seed_creds_file's definition — so a failed write here meant the
+    # passwords were unrecoverable, not just inconvenient).
+    # Fall back to writing next to seed.py itself, which is writable in
+    # both environments (backend/ locally, /app in the container), rather
+    # than losing this run's passwords entirely.
+    _fallback_creds_file = Path(__file__).resolve().parent / '.env.seed'
+    try:
+        _fallback_creds_file.write_text(_seed_creds_text, encoding='utf-8')
+        print(
+            f"  [seed] WARNING: could not write {_seed_creds_file} ({_e}). "
+            f"Wrote credentials to {_fallback_creds_file} instead — check "
+            "there for this run's passwords."
+        )
+        _seed_creds_file = _fallback_creds_file
+    except (PermissionError, OSError) as _e2:
+        # Even the fallback failed — don't lose the passwords silently.
+        # Print them once, explicitly, with a loud warning, rather than
+        # crashing with no record of what was just set in the DB.
+        print(
+            f"  [seed] ERROR: could not write credentials to {_seed_creds_file} "
+            f"or {_fallback_creds_file} ({_e2}). Printing them once instead — "
+            "copy these now, they will not be shown again:"
+        )
+        print(_seed_creds_text)
 try:
     os.chmod(_seed_creds_file, 0o600)  # owner read/write only, where the OS supports it
 except OSError:

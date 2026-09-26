@@ -307,9 +307,24 @@ REST_FRAMEWORK = {
         # stricter 'anon_sensitive' scope explicitly via throttle_classes.
         'anon': '1000/hour',
         'anon_sensitive': '60/hour',
-        'public_read': '3000/hour',
+        # TEMP for load testing: Locust's simulated users all share one
+        # source IP, so the real 3000/hour budget gets exhausted almost
+        # instantly under load (and further eaten by earlier test runs in
+        # the same hour), producing 429s that don't reflect real capacity
+        # (real traffic comes from many distinct visitor IPs). Revert to
+        # '3000/hour' after load testing is done.
+        'public_read': '1000000/hour',
         'admin_write': '5000/hour',
-        'user': '1000/hour',
+        # Platform-admin READ endpoints (webhook-event audit log, platform-
+        # review moderation list) — see bizal/throttles.py's
+        # PlatformAdminReadThrottle docstring. These used to fall back to
+        # the default 'user' scope below and share its 1000/hour budget
+        # with every other authenticated call the same account makes,
+        # which a 500-user load test soak exhausted in a few minutes by
+        # simulating far more concurrent admin sessions than the 1-2 real
+        # admin accounts will ever actually run.
+        'admin_read': '100000/hour',
+        'user': '1000000/hour',  # TEMP for load testing -- revert after
     },
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,

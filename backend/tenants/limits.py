@@ -44,7 +44,19 @@ def enforce_max_listings(tenant, model_cls, extra_filter=None):
     `max_listings` Rooms. This matches the existing product behavior where
     each vertical's inventory is capped independently per plan.
     """
+    from django.db import connection
     from tenants.models import Tenant as TenantModel
+
+    # CONTENTION FIX (2026-09-12 load test): mirrors the lock_timeout guard
+    # applied across bookings/appointments/orders/inventory/hotels/staff.
+    # This is called inside the caller's own transaction.atomic() (see the
+    # module docstring), so SET LOCAL here applies to that same top-level
+    # transaction regardless of nesting -- it bounds the wait on a busy
+    # Tenant row to a deterministic OperationalError after 3s instead of an
+    # unbounded block that can starve a gunicorn worker under concurrent
+    # create requests for the same tenant.
+    with connection.cursor() as cursor:
+        cursor.execute("SET LOCAL lock_timeout = '3s'")
 
     # Lock the Tenant row so concurrent create requests for this tenant are
     # serialized through this single point, closing the phantom-insert race.

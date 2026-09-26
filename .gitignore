@@ -21,3 +21,25 @@ media/
 staticfiles/
 
 .DS_Store
+
+venv/
+.venv/
+docker-compose.override.yml
+Docker compose.override.yml
+results/
+evidence/
+backend/loadtest/results/
+backend/loadtest/.token_cache.json
+run_*.csv
+backend/run_*.csv
+stats_log.csv
+backend/stats_log.csv
+*.log
+web_logs*.txt
+nginx_log*.txt
+nginx_logs*.txt
+db_full.log
+py-spy_dumps_*.txt
+lock.diff
+container.env.seed
+backend/container.env.seed

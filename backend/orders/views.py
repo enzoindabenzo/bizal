@@ -1,7 +1,8 @@
 import logging
 
-from django.db import transaction
+from django.db import connection, transaction, OperationalError
 from django.db.models import F
+from django.db.utils import DatabaseError
 from rest_framework import generics
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -58,6 +59,40 @@ class OrderListCreateView(generics.ListCreateAPIView):
         if not (user.is_superuser or get_effective_role(user, self.request.tenant) is not None):
             qs = qs.filter(user=user)
         return qs
+
+    def create(self, request, *args, **kwargs):
+        # CONTENTION FIX (2026-09-12 load test): mirrors the fix applied to
+        # bookings/views.py (2026-09-11) and appointments/views.py
+        # (2026-09-12). OrderSerializer.create() takes a
+        # select_for_update() lock on the ordered Product rows to keep
+        # concurrent orders from both passing the same last-unit stock
+        # check. That lock is the correct double-sell protection, not a
+        # bug -- but with no lock_timeout, a request waiting behind a busy
+        # product row could block indefinitely and starve a gunicorn
+        # worker until --timeout kills it, taking unrelated requests on
+        # that worker down with it. SET LOCAL lock_timeout scopes a short,
+        # deterministic wait to just this transaction (LOCAL = reset
+        # automatically at transaction end); the serializer's own nested
+        # atomic() block (a savepoint) inherits it since both share the
+        # same top-level transaction. Postgres raises OperationalError
+        # (SQLSTATE 55P03, "lock_not_available") if the lock isn't acquired
+        # in time, which we catch and turn into a proper 409 Conflict.
+        try:
+            with transaction.atomic():
+                with connection.cursor() as cursor:
+                    cursor.execute("SET LOCAL lock_timeout = '3s'")
+                return super().create(request, *args, **kwargs)
+        except (OperationalError, DatabaseError) as exc:
+            if 'lock' in str(exc).lower() or 'timeout' in str(exc).lower():
+                logger.info(
+                    "Order creation lock-timed-out for tenant=%s (resource contention): %s",
+                    getattr(request, 'tenant', None), exc,
+                )
+                return Response(
+                    {'detail': 'One or more items just sold out or are being ordered by someone else. Please refresh and try again.'},
+                    status=409,
+                )
+            raise
 
     def perform_create(self, serializer):
         user = self.request.user if self.request.user.is_authenticated else None
@@ -153,7 +188,30 @@ def admin_update_order(request, pk):
 
     update_fields.append('updated_at') # Always bump updated_at on any field change
 
-    with transaction.atomic():
+    # CONTENTION FIX (2026-09-12 load test): same lock_timeout guard as
+    # OrderListCreateView.create() above, for the restock-on-cancel path's
+    # select_for_update() on Product rows further down.
+    try:
+        with transaction.atomic():
+            with connection.cursor() as cursor:
+                cursor.execute("SET LOCAL lock_timeout = '3s'")
+            _admin_update_order_body(request, order, new_status, update_fields)
+    except (OperationalError, DatabaseError) as exc:
+        if 'lock' in str(exc).lower() or 'timeout' in str(exc).lower():
+            logger.info(
+                "Order update lock-timed-out for tenant=%s order=%s (resource contention): %s",
+                request.tenant, order.pk, exc,
+            )
+            return Response(
+                {'detail': 'This order is being updated by someone else right now. Please try again.'},
+                status=409,
+            )
+        raise
+
+    return Response(OrderSerializer(order).data)
+
+
+def _admin_update_order_body(request, order, new_status, update_fields):
         order.save(update_fields=update_fields)
 
         if new_status == 'delivered':  # check transition, not current status
@@ -213,5 +271,3 @@ def admin_update_order(request, pk):
                         )
                 except Exception:
                     pass  # activity log failure must never block cancellation
-
-    return Response(OrderSerializer(order).data)

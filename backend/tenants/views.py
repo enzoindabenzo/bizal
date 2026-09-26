@@ -396,6 +396,24 @@ def check_slug(request):
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def business_types(request):
+    """
+    LOAD-TEST FIX (2026-09-14): this hit the DB on every single call with an
+    identical query (no params, same result for every visitor) and showed up
+    repeatedly in the 300-user load test's slow-query log as one of the
+    queries competing for CPU-starved Postgres backends. The result only
+    changes when a tenant's business_type or marketplace listing status
+    changes — nothing a public homepage visitor needs to see within seconds
+    of it happening. Cached for 60s; worst case is a new/changed listing's
+    category count is up to a minute stale, which is an acceptable trade for
+    removing a per-request DB hit from the platform's highest-traffic public
+    page. No manual invalidation on tenant save — see marketplace_list()
+    below for the same reasoning applied to the listing itself.
+    """
+    cache_key = 'marketplace:business_types:v1'
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return Response(cached)
+
     from django.db.models import Count
     from .business_type_meta import business_types_payload
 
@@ -404,7 +422,9 @@ def business_types(request):
         .values_list('business_type')
         .annotate(n=Count('id'))
     )
-    return Response({'results': business_types_payload(counts)})
+    payload = {'results': business_types_payload(counts)}
+    cache.set(cache_key, payload, 60)
+    return Response(payload)
 
 
 # ── Marketplace directory ─────────────────────────────────────────────────────
@@ -428,7 +448,26 @@ def marketplace_list(request):
       ?city=Tirane       — filter by city (case-insensitive)
       ?q=text            — search name / tagline
       ?page=2            — pagination (30 per page, max 100 via page_size=)
+
+    LOAD-TEST FIX (2026-09-14): this was the single query that showed up most
+    often in the 300-user test's slow-query log — the same "tenants_tenant
+    WHERE is_active AND listed_on_marketplace ORDER BY name" statement,
+    identical bind params, repeated dozens of times a second across
+    different backend PIDs, with no caching. It's also used as the homepage's
+    "featured businesses" widget (?page_size=8), so it's on the platform's
+    single highest-traffic page. Cached per distinct query string (type/city/
+    q/page/page_size) for 30s — short enough that a business going live or
+    toggling marketplace visibility shows up within half a minute, long
+    enough to collapse the repeat-request storm a real traffic spike (or a
+    load test) produces. No manual cache invalidation on tenant save;
+    30s staleness is an acceptable trade here, same reasoning as
+    business_types() above.
     """
+    cache_key = 'marketplace:list:' + request.get_full_path()
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return Response(cached)
+
     qs = Tenant.objects.filter(is_active=True, listed_on_marketplace=True)
 
     btype = request.query_params.get('type', '').strip()
@@ -446,7 +485,9 @@ def marketplace_list(request):
     paginator = MarketplacePagination()
     page = paginator.paginate_queryset(qs.order_by('name'), request)
     serializer = MarketplaceTenantSerializer(page, many=True, context={'request': request})
-    return paginator.get_paginated_response(serializer.data)
+    response = paginator.get_paginated_response(serializer.data)
+    cache.set(cache_key, response.data, 30)
+    return response
 
 
 # ── Locations (multi-branch) ──────────────────────────────────────────────────
