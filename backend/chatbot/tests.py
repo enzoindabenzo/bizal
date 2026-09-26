@@ -55,6 +55,24 @@ def expired_bearer_header(user):
     return f'Bearer {token}'
 
 
+# Test settings default CACHES to DummyCache (a no-op store — see
+# bizal/settings/test.py), so any test that relies on cache.set()/cache.get()
+# actually persisting between calls needs this override. Defined here, above
+# its first use, rather than further down near the other test classes that
+# use it — a forward reference from a class decorator would raise a
+# module-level NameError and abort test collection entirely.
+LOCMEM = override_settings(CACHES={'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}})
+
+
+# BUGFIX: was missing @LOCMEM. test_poll_authenticated_allowed calls
+# _bind_session_owner() (a plain cache.set()) and poll() calls
+# _session_owned_by() (a cache.get()) in the same test — under the default
+# DummyCache neither call does anything, so the ownership check always saw
+# "no recorded owner" and poll() returned 400 "invalid session" even for a
+# freshly-bound, correctly-signed session. Every sibling test class that
+# exercises this same ownership mechanism (see HandoffEndpointTests and
+# others below) is already decorated with @LOCMEM for exactly this reason.
+@LOCMEM
 class ChatbotAuthGateTests(TestCase):
     """
     Covers the auth gate added to chat/handoff/poll: anonymous visitors must be
@@ -294,9 +312,6 @@ def make_tenant__views_extra(slug='chatbiz', **kwargs):
 
 def make_user__views_extra(email, tenant=None, role='customer', **kwargs):
     return User.objects.create_user(email=email, password='pass1234', tenant=tenant, role=role, **kwargs)
-
-
-LOCMEM = override_settings(CACHES={'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}})
 
 
 class IsTrivialTests(TestCase):

@@ -1204,6 +1204,13 @@
                 <div style="text-align:right;margin-top:-4px"><a href="#" id="forgot-link" style="font-size:.78rem;color:var(--red)">Keni harruar fjalëkalimin?</a></div>
                 <button class="btn btn-red btn-bl" id="li-btn">Hyr →</button>
                 <div class="fb" id="li-fb"></div>
+                <!-- Shown only after a business-owner login succeeds, so the
+                     owner can choose where to go next instead of being
+                     redirected automatically (see li-btn handler below). -->
+                <div id="li-dest-choice" class="fcol" style="display:none;margin-top:6px;gap:10px">
+                  <button type="button" class="btn btn-out btn-bl" id="li-stay-btn">Qëndro në BizAL</button>
+                  <button type="button" class="btn btn-red btn-bl" id="li-goto-btn">Shko te Faqja e Biznesit tuaj →</button>
+                </div>
               </div>
               <p style="margin-top:22px;font-size:.83rem;color:var(--muted);text-align:center;font-weight:400">Nuk keni
                 llogari? <a href="#" data-pg="signup" style="color:var(--red);font-weight:700">Regjistrohuni falas</a>
@@ -1393,7 +1400,18 @@
 // before the "real" domain (e.g. a Railway *.up.railway.app host), since
 // naively taking the last two dot-separated segments yields a domain the
 // deployment doesn't actually control.
-window.BIZAL_ALLOW_TENANT_QUERY_PARAM = {{ allow_tenant_query_param|yesno:"true,false" }};
+// BUGFIX: {{ }} rendered raw (unquoted) here, so this line's *source text*
+// — not just its rendered output — is what any editor's JS/TS language
+// service parses. Raw `{{ allow_tenant_query_param|yesno:"true,false" }}`
+// sitting right of `=` looks like a JS object literal to that parser and
+// fails to parse (surfaces in VS Code as "Property assignment expected" /
+// "';' expected" / "Declaration or statement expected" on this line) — this
+// was already broken before this session's edits, unrelated to them.
+// Quoting the templated value turns it into a plain string literal as far
+// as any static JS parser is concerned (no syntax error either way), and
+// the === "true" comparison still recovers the correct boolean once Django
+// renders it server-side to "true" or "false".
+window.BIZAL_ALLOW_TENANT_QUERY_PARAM = "{{ allow_tenant_query_param|yesno:'true,false' }}" === "true";
 </script>
 <script src="{% static 'js/ui.js' %}"></script>
 <script src="{% static 'js/auth.js' %}"></script>
@@ -1868,6 +1886,36 @@ window.BIZAL_ALLOW_TENANT_QUERY_PARAM = {{ allow_tenant_query_param|yesno:"true,
       if (btn) btn.textContent = this.value === 'trial' ? 'Fillo 14 Ditë Falas →' : 'Regjistro Biznesin →';
     });
 
+    // Populated right before #li-dest-choice is revealed; consumed by the
+    // "Shko te Faqja e Biznesit" button below. Kept outside the click
+    // handler so it survives across the async login call and isn't
+    // recreated per-click.
+    let _pendingBizDest = null;
+
+    function _resetLoginForm(fb, btn) {
+      document.getElementById('li-dest-choice').style.display = 'none';
+      btn.style.display = '';
+      btn.disabled = false;
+      btn.textContent = 'Hyr →';
+      _pendingBizDest = null;
+    }
+
+    document.getElementById('li-stay-btn').addEventListener('click', () => {
+      const fb = document.getElementById('li-fb');
+      const btn = document.getElementById('li-btn');
+      _resetLoginForm(fb, btn);
+      fb.textContent = ''; fb.className = 'fb';
+      // Tokens are already stored (Auth.login() ran at click time), so no
+      // re-auth needed — just refresh the nav into its logged-in state and
+      // hop to the in-page profile section.
+      checkAuth();
+      go('profile');
+    });
+
+    document.getElementById('li-goto-btn').addEventListener('click', () => {
+      if (_pendingBizDest) window.location.replace(_pendingBizDest);
+    });
+
     document.getElementById('li-btn').addEventListener('click', async () => {
       const em = document.getElementById('li-em').value.trim();
       const pw = document.getElementById('li-pw').value;
@@ -1889,24 +1937,32 @@ window.BIZAL_ALLOW_TENANT_QUERY_PARAM = {{ allow_tenant_query_param|yesno:"true,
                   setTimeout(() => window.location.href = '/onboarding/', 800);
               } else if (tenantSlug) {
                   localStorage.setItem('tenant_slug', tenantSlug);
-                  fb.textContent = '✅ Mirë se vini! Duke ju ridrejtuar...';
+                  fb.textContent = '✅ Mirë se vini! Ku dëshironi të vazhdoni?';
                   fb.className = 'fb ok';
-                  setTimeout(() => {
-                      // Auth.getTenantAdminUrl() already handles local dev
-                      // (?tenant= on :8001), the ALLOW_TENANT_QUERY_PARAM
-                      // staging case (?tenant= on the current host — e.g. a
-                      // bare Railway domain with no wildcard DNS), and real
-                      // production (slug.MAIN_DOMAIN). Reusing it here
-                      // avoids a second, unsynced copy of that logic that
-                      // silently reverts to a hardcoded ".bizal.al" domain
-                      // this deployment doesn't actually own DNS for.
-                      // Product decision: owner login lands on the tenant's
-                      // own storefront first, not straight into /admin/ —
-                      // hence stripping the trailing /admin/ off the URL
-                      // getTenantAdminUrl() returns.
-                      const dest = Auth.getTenantAdminUrl(tenantSlug).replace(/\/admin\/$/, '/');
-                      window.location.replace(dest);
-                  }, 800);
+                  // Product decision (updated): owner login no longer
+                  // auto-redirects to the tenant's storefront — the owner
+                  // picks via #li-dest-choice (li-stay-btn / li-goto-btn
+                  // handlers above) instead of being yanked away from
+                  // BizAL 800ms after logging in.
+                  //
+                  // BUGFIX: the access token lives in memory only and the
+                  // refresh token in localStorage — both scoped to THIS
+                  // origin (bizal.al / :8000). Navigating to the tenant's
+                  // own origin (slug.bizal.al, or :8001 in local dev) with a
+                  // bare URL landed the owner there with no tokens at all,
+                  // so index.html/tenant_admin.html saw them as logged out
+                  // and made them log in a second time. Fixed the same way
+                  // the signup→onboarding handoff above already does it:
+                  // carry access_token/refresh_token across as URL params
+                  // for Auth.pickupTokensFromUrl() to consume on arrival
+                  // (now wired up in index.html's init() and
+                  // tenant_admin.html's boot IIFE).
+                  const destUrl = new URL(Auth.getTenantAdminUrl(tenantSlug).replace(/\/admin\/$/, '/'), window.location.href);
+                  destUrl.searchParams.set('access_token', d.access);
+                  if (d.refresh) destUrl.searchParams.set('refresh_token', d.refresh);
+                  _pendingBizDest = destUrl.toString();
+                  btn.style.display = 'none';
+                  document.getElementById('li-dest-choice').style.display = 'flex';
               } else {
                   fb.textContent = '✅ Mirë se vini!';
                   fb.className = 'fb ok';

@@ -1925,6 +1925,13 @@ document.getElementById('ord-submit').addEventListener('click', async () => {
    MAIN INIT
 ═══════════════════════════════════════ */
 async function init() {
+  // Consume ?access_token=&refresh_token= when arriving cross-origin from
+  // main.html's post-login redirect (owner login lands here first, before
+  // /admin/) — see auth.js's pickupTokensFromUrl() and main.html's li-btn
+  // handler. Without this, an owner redirected here from the main domain
+  // (bizal.al) had no tokens on this origin (slug.bizal.al / :8001) and
+  // updateAuthUI() below rendered them as logged out, forcing a re-login.
+  Auth.pickupTokensFromUrl();
   updateAuthUI();
   if (!slug) {
     document.getElementById('mh-name').textContent = 'Zgjidh një biznes me ?tenant=slug';

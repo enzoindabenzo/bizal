@@ -359,7 +359,10 @@
 // falls back to guessing a subdomain from window.location.hostname, which
 // on a bare Railway-provided domain produces an unreachable
 // <slug>.railway.app URL instead of the working ?tenant=<slug> route.
-window.BIZAL_ALLOW_TENANT_QUERY_PARAM = {{ allow_tenant_query_param|yesno:"true,false" }};
+// BUGFIX: same raw-{{ }} editor-parse issue as main.html's copy of this
+// line (quoting it keeps any static JS parser happy; === "true" recovers
+// the boolean after Django renders it server-side).
+window.BIZAL_ALLOW_TENANT_QUERY_PARAM = "{{ allow_tenant_query_param|yesno:'true,false' }}" === "true";
 </script>
 <script src="{% static 'js/auth.js' %}"></script>
 <script>

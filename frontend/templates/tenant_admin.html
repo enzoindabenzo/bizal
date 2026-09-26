@@ -4611,10 +4611,25 @@ document.getElementById('item-modal').querySelector('.modal-backdrop').addEventL
 
 // ── Auto-login if token saved ─────────────────────────────────
 (async () => {
-  const saved = Auth.getAccess();
+  // Consume ?access_token=&refresh_token= when arriving cross-origin from
+  // main.html's post-login redirect (main.html/auth.js store tokens scoped
+  // to bizal.al; this page lives on a different origin — slug.bizal.al, or
+  // :8001 in local dev — so it needs its own copy handed to it explicitly).
+  Auth.pickupTokensFromUrl();
+
+  // BUGFIX: this used to gate on `Auth.getAccess()` alone. The access token
+  // is memory-only and is wiped on every full navigation (including a plain
+  // reload of this very page), so on ANY fresh page load `getAccess()` is
+  // always null even when a perfectly valid refresh token is sitting in
+  // localStorage — silently dropping every already-logged-in owner back to
+  // the login screen. `Auth.isLoggedIn()` also checks the refresh token;
+  // `Auth.get()` below (→ apiFetch) already knows how to trade a refresh
+  // token for a fresh access token on demand, so no extra refresh call is
+  // needed here.
+  const saved = Auth.isLoggedIn();
   if (saved) {
-    TOKEN = saved;
     const r = await Auth.get('/auth/me/').catch(()=>null);
+    TOKEN = Auth.getAccess();
     if (r?.ok) {
       USER = await r.json();
       await loadTenantInfo();
