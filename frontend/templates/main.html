@@ -1400,7 +1400,7 @@
 // before the "real" domain (e.g. a Railway *.up.railway.app host), since
 // naively taking the last two dot-separated segments yields a domain the
 // deployment doesn't actually control.
-// BUGFIX: {{ }} rendered raw (unquoted) here, so this line's *source text*
+// BUGFIX: the templated value rendered raw (unquoted) here, so this line's *source text*
 // — not just its rendered output — is what any editor's JS/TS language
 // service parses. Raw `{{ allow_tenant_query_param|yesno:"true,false" }}`
 // sitting right of `=` looks like a JS object literal to that parser and
