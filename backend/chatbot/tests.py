@@ -186,8 +186,10 @@ class ChatbotAuthGateTests(TestCase):
 
     def test_poll_authenticated_allowed(self):
         self.client.force_authenticate(user=self.user)
-        from chatbot.views import _make_session_token
-        session_token = _make_session_token('22222222-2222-2222-2222-222222222222')
+        from chatbot.views import _make_session_token, _bind_session_owner
+        session_key = '22222222-2222-2222-2222-222222222222'
+        _bind_session_owner(session_key, self.user.pk)
+        session_token = _make_session_token(session_key)
         resp = self.client.get(f'/api/chatbot/poll/{session_token}/')
         self.assertEqual(resp.status_code, 200, resp.data if hasattr(resp, 'data') else resp.content)
         self.assertIn('staff_reply', resp.json())
@@ -821,7 +823,8 @@ class ChatEndpointTests(TestCase):
 
     def test_main_domain_daily_cap_exceeded_returns_429(self):
         session_key = 'daily-cap-session'
-        from chatbot.views import _make_session_token
+        from chatbot.views import _make_session_token, _bind_session_owner
+        _bind_session_owner(session_key, self.user.pk)
         token = _make_session_token(session_key)
         cache.set(f'bb:main:{session_key}:daily', 20, 86400)
         with patch('chatbot.views._rotate_call', return_value=('reply', 'groq_1', False)):
@@ -846,8 +849,12 @@ class ChatEndpointTests(TestCase):
 
     @patch('chatbot.views._rotate_call', return_value=('welcome back', 'groq_1', False))
     def test_reengaging_visitor_clears_active_handoff(self, mock_rotate):
-        from chatbot.views import _make_session_token, _set_handoff_active, _is_handoff_active
+        from chatbot.views import (
+            _make_session_token, _bind_session_owner,
+            _set_handoff_active, _is_handoff_active,
+        )
         session_key = 'reengage-session'
+        _bind_session_owner(session_key, self.user.pk)
         token = _make_session_token(session_key)
         _set_handoff_active(session_key)
         self.assertTrue(_is_handoff_active(session_key))
@@ -1082,16 +1089,23 @@ class PollEndpointTests(TestCase):
         self.assertIn('required', resp.json()['error'])
 
     def test_no_pending_reply_returns_null(self):
-        from chatbot.views import _make_session_token
-        token = _make_session_token('poll-sess-1')
+        from chatbot.views import _make_session_token, _bind_session_owner
+        session_key = 'poll-sess-1'
+        _bind_session_owner(session_key, self.user.pk)
+        token = _make_session_token(session_key)
         resp = self.client.get(f'/api/chatbot/poll/{token}/')
         self.assertEqual(resp.status_code, 200)
         self.assertIsNone(resp.json()['staff_reply'])
 
     def test_pending_reply_returned_and_cleared(self):
-        from chatbot.views import _make_session_token, _set_pending_staff_reply, _get_pending_staff_reply
-        token = _make_session_token('poll-sess-2')
-        _set_pending_staff_reply('poll-sess-2', 'Ana', 'Manager', 'Hello!')
+        from chatbot.views import (
+            _make_session_token, _bind_session_owner,
+            _set_pending_staff_reply, _get_pending_staff_reply,
+        )
+        session_key = 'poll-sess-2'
+        _bind_session_owner(session_key, self.user.pk)
+        token = _make_session_token(session_key)
+        _set_pending_staff_reply(session_key, 'Ana', 'Manager', 'Hello!')
         resp = self.client.get(f'/api/chatbot/poll/{token}/')
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.json()['staff_reply']['message'], 'Hello!')

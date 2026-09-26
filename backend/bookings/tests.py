@@ -22,6 +22,30 @@ from django.contrib.admin.sites import AdminSite
 
 from unittest.mock import patch
 
+from django.utils import timezone
+
+
+def _fd(days_ahead):
+    """Return an ISO date string `days_ahead` days after "today" (the date
+    the test suite is actually run on). The serializer rejects any
+    start_date before today, so tests can't use dates hardcoded to a fixed
+    calendar day — those eventually age into the past. Using an offset from
+    the real run date keeps every date in the future while preserving the
+    original relative day-gaps between dates in the same test (e.g. a
+    4-day rental, an end-before-start check), since the mapping is linear."""
+    return (timezone.now().date() + datetime.timedelta(days=days_ahead)).isoformat()
+
+
+def _next_weekday_date(weekday, min_days_ahead=1):
+    """Return the ISO date string of the next date matching `weekday`
+    (Monday=0 ... Sunday=6) that is at least `min_days_ahead` days ahead
+    of today. Used for the business-hours tests that need an actual
+    Saturday/Sunday/Monday rather than just "some future date"."""
+    d = timezone.now().date() + datetime.timedelta(days=min_days_ahead)
+    while d.weekday() != weekday:
+        d += datetime.timedelta(days=1)
+    return d.isoformat()
+
 
 def make_tenant(slug, plan='pro', active=True):
     return Tenant.objects.create(
@@ -58,7 +82,7 @@ class BookingCreateTest(TestCase):
     def test_anonymous_can_create_booking(self):
         resp = self.client.post('/api/bookings/', {
             'booking_type': 'table_reservation',
-            'start_date': '2026-09-10',
+            'start_date': _fd(10),
             'guest_name': 'Besmir Koci',
             'guest_email': 'besmir@test.com',
             'guest_count': 3,
@@ -74,7 +98,7 @@ class BookingCreateTest(TestCase):
     def test_booking_defaults_to_pending(self):
         resp = self.client.post('/api/bookings/', {
             'booking_type': 'table_reservation',
-            'start_date': '2026-09-11',
+            'start_date': _fd(11),
             'guest_name': 'Lira Gashi',
             'guest_email': 'lira@test.com',
             'total_price': '800.00',
@@ -88,7 +112,7 @@ class BookingCreateTest(TestCase):
         """booking_type is optional — the serializer fills it in based on
         the tenant's business_type (restaurant -> table_reservation)."""
         resp = self.client.post('/api/bookings/', {
-            'start_date': '2026-09-12',
+            'start_date': _fd(12),
             'guest_name': 'Test', 'guest_email': 'test@test.com',
         })
         self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
@@ -283,28 +307,28 @@ class BookingBusinessHoursTest(TestCase):
         })
 
     def test_saturday_within_weekday_hours_accepted(self):
-        resp = self._post('2026-09-05', '19:00')  # Saturday, within 09:00-20:00
+        resp = self._post(_next_weekday_date(5), '19:00')  # Saturday, within 09:00-20:00
         self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
 
     def test_sunday_within_weekday_hours_but_after_sunday_close_rejected(self):
         """19:00 is inside the Mon-Sat window but the tenant closes at 16:00
         on Sunday — this is exactly the case the old merged min/max check
         used to get wrong."""
-        resp = self._post('2026-09-06', '19:00')  # Sunday
+        resp = self._post(_next_weekday_date(6), '19:00')  # Sunday
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_sunday_within_sunday_hours_accepted(self):
-        resp = self._post('2026-09-06', '11:00')  # Sunday, within 10:00-16:00
+        resp = self._post(_next_weekday_date(6), '11:00')  # Sunday, within 10:00-16:00
         self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
 
     def test_monday_before_open_rejected(self):
-        resp = self._post('2026-09-07', '07:00')  # Monday, before 09:00
+        resp = self._post(_next_weekday_date(0), '07:00')  # Monday, before 09:00
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_day_with_no_entry_treated_as_closed(self):
         self.tenant.business_hours = {'E Hënë - E Premte': '09:00 - 18:00'}
         self.tenant.save()
-        resp = self._post('2026-09-06', '11:00')  # Sunday, not in business_hours at all
+        resp = self._post(_next_weekday_date(6), '11:00')  # Sunday, not in business_hours at all
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
 
 
@@ -324,7 +348,7 @@ class BookingPriceComputationTest(TestCase):
             'booking_type': 'appointment',
             'resource_type': 'service',
             'resource_id': str(service.id),
-            'start_date': '2026-09-10',
+            'start_date': _fd(10),
             'guest_name': 'Pacient Test',
             'guest_email': 'pacient@test.com',
             'total_price': '99999.00',  # attempted override — must be ignored
@@ -351,8 +375,8 @@ class BookingPriceComputationTest(TestCase):
             'booking_type': 'rental',
             'resource_type': 'rental_item',
             'resource_id': str(item.id),
-            'start_date': '2026-09-10',
-            'end_date': '2026-09-13',
+            'start_date': _fd(10),
+            'end_date': _fd(13),
             'guest_name': 'Klient Test',
             'guest_email': 'klient@test.com',
             'total_price': '1.00',  # attempted override — must be ignored
@@ -373,8 +397,8 @@ class BookingPriceComputationTest(TestCase):
             'booking_type': 'room_booking',
             'resource_type': 'room_type',
             'resource_id': str(rt.id),
-            'start_date': '2026-09-10',
-            'end_date': '2026-09-12',  # 2 nights
+            'start_date': _fd(10),
+            'end_date': _fd(12),  # 2 nights
             'guest_name': 'Mysafir Test',
             'guest_email': 'mysafir@test.com',
             'total_price': '1.00',  # attempted override — must be ignored
@@ -397,8 +421,8 @@ class BookingPriceComputationTest(TestCase):
             'booking_type': 'room_booking',
             'resource_type': 'room_type',
             'resource_id': str(rt.id),
-            'start_date': '2026-09-10',
-            'end_date': '2026-09-12',
+            'start_date': _fd(10),
+            'end_date': _fd(12),
             'guest_name': 'Mysafir Test',
             'guest_email': 'mysafir2@test.com',
         })
@@ -409,7 +433,7 @@ class BookingPriceComputationTest(TestCase):
         self.client.defaults['HTTP_HOST'] = 'restobiz.bizal.al'
         resp = self.client.post('/api/bookings/', {
             'booking_type': 'table_reservation',
-            'start_date': '2026-09-10',
+            'start_date': _fd(10),
             'guest_name': 'Test',
             'guest_email': 'test@test.com',
             'total_price': '5000.00',  # attempted override — must be ignored
@@ -471,8 +495,8 @@ class StaffCreateTotalPriceTest(TestCase):
     def _post(self, price):
         return self.client.post('/api/bookings/', {
             'guest_name': 'Walk-in Guest',
-            'start_date': '2026-09-15',
-            'end_date': '2026-09-15',
+            'start_date': _fd(15),
+            'end_date': _fd(15),
             'guest_count': 4,
             'total_price': price,
         })
@@ -515,8 +539,8 @@ class StaffCreateTotalPriceTest(TestCase):
             'booking_type': 'rental',
             'resource_type': 'rental_item',
             'resource_id': str(item.pk),
-            'start_date': '2026-09-20',
-            'end_date': '2026-09-20',
+            'start_date': _fd(20),
+            'end_date': _fd(20),
             'guest_name': 'Guest',
             'total_price': 1,  # attempted override — must be ignored
         })
@@ -598,8 +622,8 @@ class DateValidationGapsTests(TestCase):
     def test_end_date_before_start_date_rejected(self):
         resp = self.client.post('/api/bookings/', {
             'booking_type': 'table_reservation',
-            'start_date': '2026-09-10',
-            'end_date': '2026-09-05',
+            'start_date': _fd(10),
+            'end_date': _fd(5),
             'guest_name': 'Test',
             'guest_email': 'test@test.com',
         })
@@ -638,17 +662,17 @@ class RoomBookingOverlapGapsTests(TestCase):
 
     def test_room_not_found_rejected(self):
         import uuid
-        resp = self._post(uuid.uuid4(), '2026-09-10', '2026-09-12')
+        resp = self._post(uuid.uuid4(), _fd(10), _fd(12))
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('resource_id', resp.data)
 
     def test_room_available_booking_succeeds(self):
-        resp = self._post(self.room.pk, '2026-09-10', '2026-09-12')
+        resp = self._post(self.room.pk, _fd(10), _fd(12))
         self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
 
     def test_overlapping_room_booking_rejected(self):
-        self._post(self.room.pk, '2026-09-10', '2026-09-12')
-        resp = self._post(self.room.pk, '2026-09-11', '2026-09-13')
+        self._post(self.room.pk, _fd(10), _fd(12))
+        resp = self._post(self.room.pk, _fd(11), _fd(13))
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('not available', str(resp.data))
 
@@ -658,8 +682,8 @@ class RoomBookingOverlapGapsTests(TestCase):
             'booking_type': 'room_booking',
             'resource_type': 'room_type',
             'resource_id': str(uuid.uuid4()),
-            'start_date': '2026-09-10',
-            'end_date': '2026-09-12',
+            'start_date': _fd(10),
+            'end_date': _fd(12),
             'guest_name': 'Guest',
             'guest_email': 'guest@test.com',
         })
@@ -695,20 +719,20 @@ class RentalOverlapGapsTests(TestCase):
 
     def test_rental_item_not_found_rejected(self):
         import uuid
-        resp = self._post(uuid.uuid4(), '2026-09-10', '2026-09-12')
+        resp = self._post(uuid.uuid4(), _fd(10), _fd(12))
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('resource_id', resp.data)
 
     def test_overlapping_rental_booking_rejected(self):
-        self._post(self.item.pk, '2026-09-10', '2026-09-13')
-        resp = self._post(self.item.pk, '2026-09-12', '2026-09-15')
+        self._post(self.item.pk, _fd(10), _fd(13))
+        resp = self._post(self.item.pk, _fd(12), _fd(15))
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('not available', str(resp.data))
 
     def test_rental_long_stay_gets_ten_percent_discount(self):
         # 7+ days -> 10% discount branch (only 3-6 day / <3 day brackets
         # were previously exercised elsewhere).
-        resp = self._post(self.item.pk, '2026-09-10', '2026-09-16')  # 7 days inclusive
+        resp = self._post(self.item.pk, _fd(10), _fd(16))  # 7 days inclusive
         self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
         # 4000 * 7 = 28000, 10% off = 25200
         self.assertEqual(Decimal(str(resp.data['total_price'])), Decimal('25200.00'))
@@ -748,30 +772,30 @@ class AppointmentOverlapTests(TestCase):
 
     def test_service_not_found_rejected(self):
         import uuid
-        resp = self._post(uuid.uuid4(), '2026-09-10', '10:00')
+        resp = self._post(uuid.uuid4(), _fd(10), '10:00')
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('resource_id', resp.data)
 
     def test_overlapping_appointment_rejected(self):
         # 60-minute service starting 10:00 occupies 10:00-11:00.
-        resp1 = self._post(self.service.pk, '2026-09-10', '10:00')
+        resp1 = self._post(self.service.pk, _fd(10), '10:00')
         self.assertEqual(resp1.status_code, status.HTTP_201_CREATED)
         # 10:30 start overlaps the first booking's 10:00-11:00 window.
-        resp2 = self._post(self.service.pk, '2026-09-10', '10:30')
+        resp2 = self._post(self.service.pk, _fd(10), '10:30')
         self.assertEqual(resp2.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('no longer available', str(resp2.data))
 
     def test_back_to_back_appointments_allowed(self):
         # 10:00-11:00 then 11:00-12:00 — adjacent, not overlapping.
-        resp1 = self._post(self.service.pk, '2026-09-10', '10:00')
+        resp1 = self._post(self.service.pk, _fd(10), '10:00')
         self.assertEqual(resp1.status_code, status.HTTP_201_CREATED)
-        resp2 = self._post(self.service.pk, '2026-09-10', '11:00')
+        resp2 = self._post(self.service.pk, _fd(10), '11:00')
         self.assertEqual(resp2.status_code, status.HTTP_201_CREATED)
 
     def test_same_slot_different_day_allowed(self):
-        resp1 = self._post(self.service.pk, '2026-09-10', '10:00')
+        resp1 = self._post(self.service.pk, _fd(10), '10:00')
         self.assertEqual(resp1.status_code, status.HTTP_201_CREATED)
-        resp2 = self._post(self.service.pk, '2026-09-11', '10:00')
+        resp2 = self._post(self.service.pk, _fd(11), '10:00')
         self.assertEqual(resp2.status_code, status.HTTP_201_CREATED)
 
 
@@ -789,7 +813,7 @@ class ResourceIdUuidGapsTests(TestCase):
             'booking_type': 'table_reservation',
             'resource_type': 'table',
             'resource_id': 'not-a-uuid',
-            'start_date': '2026-09-10',
+            'start_date': _fd(10),
             'guest_name': 'Test',
             'guest_email': 'test@test.com',
         })
@@ -813,7 +837,7 @@ class ComputeTotalPriceServiceGapsTests(TestCase):
             'booking_type': 'appointment',
             'resource_type': 'service',
             'resource_id': str(uuid.uuid4()),
-            'start_date': '2026-09-10',
+            'start_date': _fd(10),
             'guest_name': 'Pacient',
             'guest_email': 'pacient@test.com',
         })
@@ -891,8 +915,8 @@ class RentalShortStayNoDiscountGapsTests(TestCase):
             'booking_type': 'rental',
             'resource_type': 'rental_item',
             'resource_id': str(item.id),
-            'start_date': '2026-09-10',
-            'end_date': '2026-09-10',  # 1 day inclusive
+            'start_date': _fd(10),
+            'end_date': _fd(10),  # 1 day inclusive
             'guest_name': 'Guest',
             'guest_email': 'guest@test.com',
         })
@@ -919,8 +943,8 @@ class RoomBookingLinkageDoesNotExistGapsTests(TestCase):
                 'booking_type': 'room_booking',
                 'resource_type': 'room',
                 'resource_id': str(room.pk),
-                'start_date': '2026-09-10',
-                'end_date': '2026-09-12',
+                'start_date': _fd(10),
+                'end_date': _fd(12),
                 'guest_name': 'Guest',
                 'guest_email': 'guest@test.com',
             })
@@ -1018,7 +1042,7 @@ class BookingListViewGapsTests(TestCase):
         self.client.defaults['HTTP_HOST'] = 'bizal.al'
         resp = self.client.post('/api/bookings/', {
             'booking_type': 'table_reservation',
-            'start_date': '2026-09-10',
+            'start_date': _fd(10),
             'guest_name': 'Test',
             'guest_email': 'test@test.com',
         })
@@ -1035,7 +1059,7 @@ class BookingListViewGapsTests(TestCase):
         self.client.defaults['HTTP_HOST'] = 'starterlistbiz.bizal.al'
         resp = self.client.post('/api/bookings/', {
             'booking_type': 'table_reservation',
-            'start_date': '2026-09-10',
+            'start_date': _fd(10),
             'guest_name': 'Test',
             'guest_email': 'test@test.com',
         })
@@ -1053,8 +1077,8 @@ class BookingListViewGapsTests(TestCase):
             'booking_type': 'room_booking',
             'resource_type': 'room',
             'resource_id': str(room.pk),
-            'start_date': '2026-09-10',
-            'end_date': '2026-09-12',
+            'start_date': _fd(10),
+            'end_date': _fd(12),
             'guest_name': 'Guest',
             'guest_email': 'guest@test.com',
         })
@@ -1074,8 +1098,8 @@ class BookingListViewGapsTests(TestCase):
                 'booking_type': 'room_booking',
                 'resource_type': 'room',
                 'resource_id': str(room.pk),
-                'start_date': '2026-09-10',
-                'end_date': '2026-09-12',
+                'start_date': _fd(10),
+                'end_date': _fd(12),
                 'guest_name': 'Guest',
                 'guest_email': 'guest@test.com',
             })
@@ -1172,7 +1196,7 @@ class BookingPaymentMethodTests(TestCase):
     def test_payment_method_defaults_to_online(self):
         resp = self.client.post('/api/bookings/', {
             'booking_type': 'table_reservation',
-            'start_date': '2026-09-10',
+            'start_date': _fd(10),
             'guest_name': 'Ana Kola',
             'guest_email': 'ana@test.com',
         })
@@ -1182,7 +1206,7 @@ class BookingPaymentMethodTests(TestCase):
     def test_customer_can_choose_cash(self):
         resp = self.client.post('/api/bookings/', {
             'booking_type': 'table_reservation',
-            'start_date': '2026-09-10',
+            'start_date': _fd(10),
             'guest_name': 'Dritan Leka',
             'guest_email': 'dritan@test.com',
             'payment_method': 'cash',
@@ -1193,7 +1217,7 @@ class BookingPaymentMethodTests(TestCase):
     def test_customer_can_choose_bank_transfer(self):
         resp = self.client.post('/api/bookings/', {
             'booking_type': 'table_reservation',
-            'start_date': '2026-09-10',
+            'start_date': _fd(10),
             'guest_name': 'Elira Mema',
             'guest_email': 'elira@test.com',
             'payment_method': 'bank_transfer',
@@ -1204,7 +1228,7 @@ class BookingPaymentMethodTests(TestCase):
     def test_invalid_payment_method_rejected(self):
         resp = self.client.post('/api/bookings/', {
             'booking_type': 'table_reservation',
-            'start_date': '2026-09-10',
+            'start_date': _fd(10),
             'guest_name': 'Test User',
             'guest_email': 'test@test.com',
             'payment_method': 'crypto',
