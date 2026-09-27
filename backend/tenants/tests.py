@@ -2029,6 +2029,41 @@ class MiddlewareGapsTests(TestCase):
         mw = self._mw()
         self.assertIsNone(mw._get_tenant(''))
 
+    # ── Single-origin (Railway/no-wildcard-DNS) fallback ──────────────
+    # BUGFIX regression: '/' and '/admin/' are BOTH used for two different
+    # things depending on request.tenant (main site vs. tenant portal), so a
+    # bare page visit with no explicit ?tenant= must always resolve to "no
+    # tenant" here, even if an earlier request in the same browser session
+    # set a tenant slug on this host. Only /api/... calls are allowed to
+    # fall back to that remembered session value.
+    @override_settings(ALLOW_TENANT_QUERY_PARAM=True, MAIN_DOMAIN='bizal.al')
+    def test_bringup_fallback_page_ignores_stale_session_tenant(self):
+        Tenant.objects.create(name='Bizal', slug='sess-biz', business_type='retail', plan='pro', is_active=True)
+        mw = self._mw()
+        session = _FakeSession({'bizal_tenant_slug': 'sess-biz'})
+        req = _req('web-production-1234.up.railway.app', path='/', get={}, session=session)
+        result = mw._resolve_tenant(req)
+        self.assertIsNone(result)
+
+    @override_settings(ALLOW_TENANT_QUERY_PARAM=True, MAIN_DOMAIN='bizal.al')
+    def test_bringup_fallback_page_with_explicit_param_still_resolves(self):
+        Tenant.objects.create(name='Bizal', slug='sess-biz', business_type='retail', plan='pro', is_active=True)
+        mw = self._mw()
+        session = _FakeSession()
+        req = _req('web-production-1234.up.railway.app', path='/', get={'tenant': 'sess-biz'}, session=session)
+        result = mw._resolve_tenant(req)
+        self.assertEqual(result.slug, 'sess-biz')
+        self.assertEqual(session['bizal_tenant_slug'], 'sess-biz')
+
+    @override_settings(ALLOW_TENANT_QUERY_PARAM=True, MAIN_DOMAIN='bizal.al')
+    def test_bringup_fallback_api_call_still_uses_session_tenant(self):
+        Tenant.objects.create(name='Bizal', slug='sess-biz', business_type='retail', plan='pro', is_active=True)
+        mw = self._mw()
+        session = _FakeSession({'bizal_tenant_slug': 'sess-biz'})
+        req = _req('web-production-1234.up.railway.app', path='/api/tenants/info/', get={}, session=session)
+        result = mw._resolve_tenant(req)
+        self.assertEqual(result.slug, 'sess-biz')
+
     def test_trial_with_no_trial_ends_at_returns_early(self):
         mw = self._mw()
         tenant = Tenant.objects.create(

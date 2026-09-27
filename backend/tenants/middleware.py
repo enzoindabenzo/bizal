@@ -224,7 +224,44 @@ class TenantMiddleware:
         # previewed during bring-up.
         if settings.ALLOW_TENANT_QUERY_PARAM:
             explicit = request.GET.get('tenant', '').strip()
-            slug = explicit or request.session.get(SESSION_KEY, '').strip()
+            # BUGFIX: on a single-origin deployment (no subdomain to tell
+            # "main site" and "tenant portal" apart), '/' and '/admin/' are
+            # BOTH used for two different things depending on request.tenant
+            # (see bizal/views.py home()/tenant_spa() and admin_panel()) — a
+            # bare visit to '/' with no ?tenant= must mean "the main site",
+            # exactly like the is_main_local MAIN_PORT branch above always
+            # returns None regardless of session state.
+            #
+            # Previously this branch fell back to request.session[SESSION_KEY]
+            # for EVERY request type, including page loads. Session data
+            # persists for the whole browser session, so once a visitor had
+            # opened any tenant page even once (e.g. clicking "Shko te
+            # portali juaj" to ?tenant=<slug>), the SAME session cookie made
+            # every later bare '/' request — including the main-site login
+            # page and its /api/auth/login/ POST — silently resolve as that
+            # tenant again. CustomTokenObtainPairView's main-domain owner
+            # block (`if request.tenant is None: ...`) then never triggered
+            # on those later attempts, so login sometimes 403'd (fresh
+            # session) and sometimes silently succeeded (stale session),
+            # while /admin/ still needed the explicit query param — which
+            # from the user's side looked exactly like a login that
+            # "loops": same credentials, same click, different result
+            # depending on browsing history nobody could see.
+            #
+            # Only /api/... calls made BY an already-loaded tenant page are
+            # allowed to fall back to the remembered session tenant (mirrors
+            # the local-dev TENANT_PORT branch, and matches how index.html's
+            # own fetches already pass ?tenant= explicitly on the calls that
+            # matter — see auth.js's _devTenantSlug()/apiFetch comments).
+            # Page-rendering routes always require an explicit ?tenant= or
+            # get treated as the main site, so browsing history can never
+            # silently change which page/account a plain '/' or '/admin/'
+            # visit resolves to.
+            session_fallback_allowed = request.path.startswith('/api/')
+            slug = explicit or (
+                request.session.get(SESSION_KEY, '').strip()
+                if session_fallback_allowed else ''
+            )
             if explicit:
                 request.session[SESSION_KEY] = explicit
                 request.session.modified = True
