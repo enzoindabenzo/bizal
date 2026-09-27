@@ -1281,6 +1281,38 @@ async function loadMe() {
       if (fn && !fn.value) fn.value = user.full_name || '';
       const ph = document.getElementById('prof-phone');
       if (ph && !ph.value) ph.value = user.phone || '';
+
+      // BUGFIX: main.html's owner-login flow (li-goto-btn) now lands the
+      // owner on THIS page — the public storefront — instead of /admin/
+      // (product decision to not yank them straight into the dashboard).
+      // But index.html never offered any link back to /admin/ for a
+      // logged-in owner/manager/staff account, so the only way to actually
+      // reach their portal was to type /admin/ into the URL bar by hand —
+      // which, without the query-param-fallback ?tenant= carried along,
+      // could itself 404 back to a login screen. From the owner's side this
+      // read as "the button doesn't log me in, it just loops": they land
+      // here already authenticated as their own customer-facing storefront
+      // account, with no visible way into the dashboard they actually
+      // wanted, so they'd go back and log in again expecting a different
+      // result. Surface an explicit "Paneli i Biznesit" link for any
+      // non-customer role so this dead end has an obvious way out. Tokens
+      // don't need to be re-passed here: /admin/ is same-origin (subdomain
+      // or same query-param host) and tenant_admin.html's own boot IIFE
+      // already restores the session from the refresh token already sitting
+      // in localStorage under this same key.
+      if (user.role && user.role !== 'customer') {
+        const area = document.getElementById('nav-auth-area');
+        if (area && !document.getElementById('btn-admin-panel')) {
+          const adminBtn = document.createElement('button');
+          adminBtn.id = 'btn-admin-panel';
+          adminBtn.className = 'btn-out-sm';
+          adminBtn.textContent = 'Paneli i Biznesit';
+          adminBtn.addEventListener('click', () => {
+            window.location.href = Auth.getTenantAdminUrl(slug || user.tenant_slug || localStorage.getItem('tenant_slug') || '');
+          });
+          area.insertBefore(adminBtn, area.firstChild);
+        }
+      }
     }
   } catch {}
 }
