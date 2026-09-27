@@ -1320,6 +1320,9 @@
                   <div id="prof-email" style="font-size:.82rem;color:var(--muted);font-weight:400"></div>
                 </div>
               </div>
+              <div style="border-top:1px solid var(--border);padding-top:26px;margin-bottom:26px;display:none" id="prof-goto-business-row">
+                <button class="btn btn-red" id="prof-goto-business-btn" style="width:100%;justify-content:center">Shko tek Biznesi Yt →</button>
+              </div>
               <div style="border-top:1px solid var(--border);padding-top:26px;margin-bottom:26px">
                 <div class="lbl" style="margin-bottom:18px">Ndrysho fjalëkalimin</div>
                 <div class="fcol">
@@ -1442,6 +1445,12 @@ window.BIZAL_ALLOW_TENANT_QUERY_PARAM = "{{ allow_tenant_query_param|yesno:'true
       const payload = parseJWT(token); if (!payload) return;
       if (payload.exp && payload.exp * 1000 < Date.now()) { localStorage.removeItem('bizal_access'); localStorage.removeItem('bizal_refresh'); localStorage.removeItem('access'); localStorage.removeItem('refresh'); return; }
       _authedEmail = payload.email || '';
+      // Populate/toggle the profile page's "Shko tek Biznesi Yt" button —
+      // only business owners (and managers/staff with a tenant) have
+      // anywhere to go; a plain customer account has no tenant_slug.
+      CURRENT_OWNER_TENANT_SLUG = payload.tenant_slug || null;
+      const gotoBizRow = document.getElementById('prof-goto-business-row');
+      if (gotoBizRow) gotoBizRow.style.display = CURRENT_OWNER_TENANT_SLUG ? '' : 'none';
       updateBizFormAuthState();
       const email = payload.email || ''; const first = (payload.first_name || '').trim(); const last = (payload.last_name || '').trim(); const name = first || email.split('@')[0] || 'U';
       const initials = (first && last) ? (first[0] + last[0]).toUpperCase() : name.substring(0, 2).toUpperCase();
@@ -1732,6 +1741,9 @@ window.BIZAL_ALLOW_TENANT_QUERY_PARAM = "{{ allow_tenant_query_param|yesno:'true
     statsObserver.observe(document.querySelector('.stats'));
 
     let _authedEmail = '';
+    // Set/cleared by checkAuth() from the JWT's tenant_slug claim; read by
+    // the profile page's "Shko tek Biznesi Yt" button handler below.
+    let CURRENT_OWNER_TENANT_SLUG = null;
     function updateBizFormAuthState() {
       const loggedIn = Auth.isLoggedIn();
       const note = document.getElementById('su-loggedin-note');
@@ -2209,6 +2221,37 @@ Nëse nuk jeni të sigurt, filloni me provën falas 14-ditore të planit Pro —
     if (fl) fl.innerHTML = FAQS.map(f => `<div class="fq"><button class="fq-q" onclick="this.closest('.fq').classList.toggle('open')"><span>${f.q}</span><span class="fq-ic">▼</span></button><div class="fq-a">${f.a}</div></div>`).join('');
 
     document.getElementById('logout-btn')?.addEventListener('click', doLogout);
+
+    // "Shko tek Biznesi Yt" — lets an owner who chose "Qëndro në BizAL" at
+    // login (or who's just browsing later) reach their tenant admin at any
+    // time from the profile page, instead of only right after logging in.
+    // Same token-handoff pattern as li-goto-btn/_pendingBizDest above: the
+    // tenant's own origin can't see this origin's tokens, so a fresh
+    // access/refresh pair is carried across as URL params for
+    // Auth.pickupTokensFromUrl() to consume on arrival. Refreshing first
+    // (rather than reusing whatever's in memory) matters here specifically
+    // because, unlike the login-time handoff, this button may be clicked
+    // long after login, when the in-memory access token has expired.
+    document.getElementById('prof-goto-business-btn')?.addEventListener('click', async function () {
+      if (!CURRENT_OWNER_TENANT_SLUG) return;
+      const btn = this;
+      const original = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'Duke ju çuar...';
+      try {
+        const access = await Auth.refreshAccess();
+        const refresh = Auth.getRefresh();
+        localStorage.setItem('tenant_slug', CURRENT_OWNER_TENANT_SLUG);
+        const destUrl = new URL(Auth.getTenantAdminUrl(CURRENT_OWNER_TENANT_SLUG).replace(/\/admin\/$/, '/'), window.location.href);
+        destUrl.searchParams.set('access_token', access);
+        if (refresh) destUrl.searchParams.set('refresh_token', refresh);
+        window.location.href = destUrl.toString();
+      } catch {
+        btn.disabled = false;
+        btn.textContent = original;
+        toast('Ndodhi një gabim. Provoni përsëri.', 'error');
+      }
+    });
     document.getElementById('cp-btn')?.addEventListener('click', async () => {
       const old = document.getElementById('cp-old').value; const nw = document.getElementById('cp-new').value; const nw2 = document.getElementById('cp-new2').value; const fb = document.getElementById('cp-fb'); const btn = document.getElementById('cp-btn');
       if (!old || !nw) { fb.textContent = '⚠ Plotësoni të dyja fushat.'; fb.className = 'fb err'; return; }
