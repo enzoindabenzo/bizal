@@ -65,10 +65,6 @@
       <div class="hero-orb hero-orb-3"></div>
       <div class="hero-grid"></div>
       <div class="wrap">
-        <div class="hero-badge fi">
-          <span class="hero-badge-dot"><span class="pulse"></span> Live</span>
-          500+ biznese aktive &nbsp;·&nbsp; 🇦🇱 Ndërtuar për Shqipëri
-        </div>
         <h1 class="fi fi1">Sistemi operativ<br><em>për biznesin tuaj.</em></h1>
         <p class="hero-sub fi fi2">Menaxhoni rezervimet, inventarin, stafin dhe klientët — gjithçka nga një platformë me
           subdomainin tuaj.</p>
@@ -83,11 +79,11 @@
           <span class="ti"><span class="tick">✓</span>Support 24/7</span>
         </div>
         <div class="stats fi fi4">
-          <div class="st"><span class="st-n" data-count="500">0</span><span class="st-l">Biznese aktive</span></div>
-          <div class="st"><span class="st-n" data-count="25" data-sfx="+">0</span><span class="st-l">Tipologji</span>
+          <div class="st"><span class="st-n" data-count="500" data-stat="active_businesses">0</span><span class="st-l">Biznese aktive</span></div>
+          <div class="st"><span class="st-n" data-count="51" data-sfx="+" data-stat="business_types_total">0</span><span class="st-l">Tipologji</span>
           </div>
-          <div class="st"><span class="st-n" data-count="12000">0</span><span class="st-l">Rezervime / muaj</span></div>
-          <div class="st"><span class="st-n" data-count="4.9" data-dec>0</span><span class="st-l">Vlerësim ⭐</span>
+          <div class="st"><span class="st-n" data-count="12000" data-stat="bookings_last_30_days">0</span><span class="st-l">Rezervime / muaj</span></div>
+          <div class="st"><span class="st-n" data-count="4.8" data-dec data-stat="average_rating">0</span><span class="st-l">Vlerësim ⭐</span>
           </div>
         </div>
         <div class="demos fi fi4">
@@ -569,7 +565,7 @@
         <div class="wrap">
           <div class="lbl">Vlerësimet</div>
           <h1>Çfarë thonë klientët</h1>
-          <p>Mbi 500 biznese shqiptare besojnë BizAL çdo ditë</p>
+          <p>Mbi <span id="vlereismet-biz-count">500+</span> biznese shqiptare besojnë BizAL çdo ditë</p>
         </div>
       </div>
       <section class="sect">
@@ -729,13 +725,13 @@
               <div class="lbl">Misioni ynë</div>
               <h2 style="margin-bottom:22px">Digjitalizimi i<br><span class="italic">biznesit shqiptar</span></h2>
               <p>BizAL lindi nga nevoja reale — mijëra biznese shqiptare menaxhonin gjithçka me fletore dhe telefon.
-                Sot, ne u ofrojmë atyre një platformë profesionale.</p>
-              <p>Ndërtuar me teknologjinë më të fundit, BizAL vë bizneset tuaja në qendër të çdo vendimi.</p>
+                Sot, u ofrojmë atyre një platformë profesionale.</p>
+              <p>Ndërtuar dhe mirëmbajtur nga një zhvillues i vetëm në Shqipëri, BizAL vë bizneset tuaja në qendër të çdo vendimi.</p>
               <div class="vals">
                 <div class="vi"><span class="vi-ic">🏗️</span>
                   <div>
                     <h4>Ndërtuar lokal</h4>
-                    <p>Ekipi ynë është në Tiranë — kuptojmë sfidat reale</p>
+                    <p>Zhvilluar në Tiranë — kuptoj sfidat reale të bizneseve shqiptare</p>
                   </div>
                 </div>
                 <div class="vi"><span class="vi-ic">🔒</span>
@@ -767,9 +763,9 @@
                 <div style="font-size:.82rem;color:var(--muted);position:relative;font-weight:400">Ndërtuar me ❤️ në
                   Tiranë</div>
                 <div class="ab-sts">
-                  <div class="as"><span class="as-n">2023</span><span class="as-l">Themelimi</span></div>
-                  <div class="as"><span class="as-n">12+</span><span class="as-l">Ekipi</span></div>
-                  <div class="as"><span class="as-n">500+</span><span class="as-l">Biznese</span></div>
+                  <div class="as"><span class="as-n">2025</span><span class="as-l">Themelimi</span></div>
+                  <div class="as"><span class="as-n">1</span><span class="as-l">Zhvillues</span></div>
+                  <div class="as"><span class="as-n" id="ab-biz-count" data-stat="active_businesses">500+</span><span class="as-l">Biznese</span></div>
                   <div class="as"><span class="as-n">99.9%</span><span class="as-l">Uptime</span></div>
                 </div>
               </div>
@@ -780,27 +776,12 @@
       <section class="sect-sm" style="background:var(--surface);border-top:1px solid var(--border)">
         <div class="wrap tc">
           <div class="lbl" style="justify-content:center">Ekipi</div>
-          <h2>Njerëzit pas BizAL</h2>
+          <h2>Njeriu pas BizAL</h2>
           <div class="team">
             <div class="tc2">
-              <div class="tav" style="background:linear-gradient(135deg,#C0251B,#d42e23)">AK</div>
-              <div class="tnm">Artan K.</div>
-              <div class="trl">CEO & Founder</div>
-            </div>
-            <div class="tc2">
-              <div class="tav" style="background:linear-gradient(135deg,#1A6B42,#00b894)">SB</div>
-              <div class="tnm">Sara B.</div>
-              <div class="trl">Head of Design</div>
-            </div>
-            <div class="tc2">
-              <div class="tav" style="background:linear-gradient(135deg,#553285,#6c5ce7)">DM</div>
-              <div class="tnm">Denis M.</div>
-              <div class="trl">Lead Engineer</div>
-            </div>
-            <div class="tc2">
-              <div class="tav" style="background:linear-gradient(135deg,#B8860B,#e6a817)">EH</div>
-              <div class="tnm">Elira H.</div>
-              <div class="trl">Customer Success</div>
+              <div class="tav" style="background:linear-gradient(135deg,#C0251B,#d42e23)">GJ</div>
+              <div class="tnm">Gjon</div>
+              <div class="trl">Themelues & Zhvillues i vetëm</div>
             </div>
           </div>
         </div>
@@ -1721,6 +1702,30 @@ window.BIZAL_ALLOW_TENANT_QUERY_PARAM = "{{ allow_tenant_query_param|yesno:'true
     document.getElementById('hbg').addEventListener('click', () => { const d = document.getElementById('drawer'); const open = d.classList.toggle('open'); document.body.style.overflow = open ? 'hidden' : ''; });
     document.getElementById('dbg').addEventListener('click', () => { document.getElementById('drawer').classList.remove('open'); document.body.style.overflow = ''; });
 
+    // Real platform numbers (active businesses, business types actually in the
+    // backend's 51-type catalog, last-30-days bookings, average rating) from
+    // /api/tenants/platform-stats/ — replaces the hardcoded marketing copy
+    // that used to live in the markup and drift out of sync with reality
+    // (and with the Vlerësimet page's own, separately-computed average).
+    // Every element carrying [data-stat="<key>"] anywhere on the page — the
+    // hero counters, the Rreth Nesh stat strip, the Vlerësimet business
+    // count — gets updated from this one response, so every page agrees.
+    async function loadPlatformStats() {
+      try {
+        const r = await fetch('/api/tenants/platform-stats/');
+        if (!r.ok) return;
+        const d = await r.json();
+        document.querySelectorAll('[data-stat]').forEach(el => {
+          const val = d[el.dataset.stat];
+          if (val === undefined || val === null) return;
+          if (el.hasAttribute('data-count')) { el.dataset.count = val; }
+          else { el.textContent = el.dataset.stat === 'active_businesses' ? Math.floor(val).toLocaleString('sq') + '+' : val; }
+        });
+        const bizHdr = document.getElementById('vlereismet-biz-count');
+        if (bizHdr && d.active_businesses != null) bizHdr.textContent = Math.floor(d.active_businesses).toLocaleString('sq') + '+';
+      } catch { /* leave the static fallback numbers already in the markup */ }
+    }
+
     function animCounters() {
       document.querySelectorAll('[data-count]').forEach(el => {
         const target = parseFloat(el.dataset.count); const dec = el.hasAttribute('data-dec'); const sfx = el.dataset.sfx || '';
@@ -1738,7 +1743,10 @@ window.BIZAL_ALLOW_TENANT_QUERY_PARAM = "{{ allow_tenant_query_param|yesno:'true
         }
       });
     }, { threshold: .3 });
-    statsObserver.observe(document.querySelector('.stats'));
+    // Fetch real numbers first (fast — cached 60s server-side), then start
+    // observing so the count-up animation lands on real data, not the static
+    // fallback, on a normal first paint.
+    loadPlatformStats().finally(() => statsObserver.observe(document.querySelector('.stats')));
 
     let _authedEmail = '';
     // Set/cleared by checkAuth() from the JWT's tenant_slug claim; read by
@@ -2194,13 +2202,43 @@ Nëse nuk jeni të sigurt, filloni me provën falas 14-ditore të planit Pro —
 
     function strs(n, sz = '1rem') { return Array.from({ length: 5 }, (_, i) => `<span class="str" style="font-size:${sz};opacity:${i < n ? 1 : .18}">⭐</span>`).join(''); }
 
+    // Fallback only: used if /api/platform-reviews/summary/ (the real,
+    // server-computed aggregate) can't be reached. Computes from whatever
+    // review list ended up loaded (real ones, or MOCK_REVS as a last resort).
     function buildRevSummary(revs) { if (!revs.length) return; const avg = (revs.reduce((s, r) => s + r.rating, 0) / revs.length).toFixed(1); document.getElementById('avg-sc').textContent = avg; document.getElementById('avg-stars-el').innerHTML = strs(Math.round(avg), '1.2rem'); document.getElementById('sc-tot').textContent = `bazuar në ${revs.length} vlerësime`; document.getElementById('bar-rows').innerHTML = [5, 4, 3, 2, 1].map(n => { const c = revs.filter(r => r.rating === n).length; return `<div class="br"><span style="font-size:.72rem">${n}⭐</span><div class="bt"><div class="bf" style="width:${revs.length ? (c / revs.length * 100).toFixed(1) : 0}%"></div></div><span class="bc">${c}</span></div>`; }).join(''); }
+
+    // Real average/total/star-distribution straight from the backend
+    // aggregate — the same number the hero and Rreth Nesh stat strips use
+    // (via /api/tenants/platform-stats/), so this page can never disagree
+    // with them again.
+    function renderRevSummary(summary) {
+      const avg = (summary.average || 0).toFixed(1);
+      document.getElementById('avg-sc').textContent = avg;
+      document.getElementById('avg-stars-el').innerHTML = strs(Math.round(summary.average || 0), '1.2rem');
+      document.getElementById('sc-tot').textContent = `bazuar në ${summary.total || 0} vlerësime`;
+      const dist = summary.distribution || {};
+      document.getElementById('bar-rows').innerHTML = [5, 4, 3, 2, 1].map(n => {
+        const c = dist[String(n)] || 0;
+        const pct = summary.total ? (c / summary.total * 100).toFixed(1) : 0;
+        return `<div class="br"><span style="font-size:.72rem">${n}⭐</span><div class="bt"><div class="bf" style="width:${pct}%"></div></div><span class="bc">${c}</span></div>`;
+      }).join('');
+    }
 
     // escHtml() is provided by ui.js (window.escHtml = esc)
     function renderRevs(revs) { const g = document.getElementById('revs-grid'); if (!revs.length) { g.innerHTML = '<div class="empty"><span>⭐</span><p>Nuk ka vlerësime ende.</p></div>'; return; } const COLS = ['#C03028', '#C17B2A', '#1A7A4A', '#6c3483', '#1a5276']; g.innerHTML = revs.map((r, i) => { const in2 = escHtml((r.reviewer_name || 'K').substring(0, 2).toUpperCase()); const col = r.color || COLS[i % COLS.length]; const dt = escHtml((r.created_at || '').substring(0, 10)); return `<div class="rv"><div class="rv-hd"><div style="display:flex;align-items:center;gap:10px"><div class="rv-av" style="background:${col}">${in2}</div><div><div class="rv-nm">${escHtml(r.reviewer_name || 'Klient')}</div><div class="rv-bz">${escHtml(r.business_name || '')}</div></div></div><div class="rv-st">${strs(r.rating)}</div></div><div class="rv-body">"${escHtml(r.comment || '')}"</div><div class="rv-dt">${dt}</div></div>`; }).join(''); }
 
     let revDone = false;
-    async function loadReviews() { if (revDone) return; revDone = true; let revs = MOCK_REVS; try { const r = await fetch('/api/platform-reviews/'); if (r.ok) { const d = await r.json(); const l = d.results || d || []; if (l.length) revs = l; } } catch { } buildRevSummary(revs); renderRevs(revs); }
+    async function loadReviews() {
+      if (revDone) return; revDone = true;
+      let revs = MOCK_REVS;
+      try { const r = await fetch('/api/platform-reviews/'); if (r.ok) { const d = await r.json(); const l = d.results || d || []; if (l.length) revs = l; } } catch { }
+      renderRevs(revs);
+      try {
+        const rs = await fetch('/api/platform-reviews/summary/');
+        if (rs.ok) { const summary = await rs.json(); if (summary.total > 0) { renderRevSummary(summary); return; } }
+      } catch { }
+      buildRevSummary(revs);
+    }
 
     let sel = 0;
     const SL = ['', 'E keqe', 'E dobët', 'E mirë', 'Shumë e mirë', 'E shkëlqyer!'];

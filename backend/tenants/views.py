@@ -427,6 +427,61 @@ def business_types(request):
     return Response(payload)
 
 
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def platform_stats(request):
+    """
+    Real numbers for the homepage hero / about-page stat strips — these used
+    to be hardcoded copy ("500+ biznese aktive", "25+ Tipologji", "4.9
+    Vlerësim") that silently drifted from what the platform actually has,
+    and disagreed with the Vlerësimet page's own (also hardcoded/MOCK_REVS-
+    derived) average. Single endpoint so every page that shows these numbers
+    reads the same source of truth. Same short-TTL cache pattern as
+    business_types()/marketplace_list() above, since this sits on the
+    highest-traffic public page and does a handful of aggregate queries.
+    """
+    cache_key = 'marketplace:platform_stats:v1'
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return Response(cached)
+
+    from datetime import timedelta
+    from django.db.models import Avg, Count
+    from .business_type_meta import business_types_payload
+    from bookings.models import Booking
+    from appointments.models import Appointment
+    from reviews.platform_models import PlatformReview
+
+    active_tenants_qs = Tenant.objects.filter(is_active=True, listed_on_marketplace=True)
+    active_businesses = active_tenants_qs.count()
+
+    counts = dict(active_tenants_qs.values_list('business_type').annotate(n=Count('id')))
+    type_rows = business_types_payload(counts)
+    business_types_total = len(type_rows)
+    business_types_in_use = sum(1 for row in type_rows if row['tenant_count'] > 0)
+
+    since = timezone.now() - timedelta(days=30)
+    bookings_last_30_days = (
+        Booking.objects.filter(created_at__gte=since).exclude(status='cancelled').count()
+        + Appointment.objects.filter(created_at__gte=since).exclude(status='cancelled').count()
+    )
+
+    review_agg = PlatformReview.objects.filter(is_approved=True).aggregate(
+        average=Avg('rating'), total=Count('id')
+    )
+
+    payload = {
+        'active_businesses': active_businesses,
+        'business_types_total': business_types_total,
+        'business_types_in_use': business_types_in_use,
+        'bookings_last_30_days': bookings_last_30_days,
+        'average_rating': round(review_agg['average'] or 0, 1),
+        'total_reviews': review_agg['total'] or 0,
+    }
+    cache.set(cache_key, payload, 60)
+    return Response(payload)
+
+
 # ── Marketplace directory ─────────────────────────────────────────────────────
 
 from rest_framework.pagination import PageNumberPagination

@@ -8,6 +8,7 @@ urlpatterns = [
     path('create/',                                     views.create_tenant,                            name='tenant-create'),
     path('check-slug/',                                 views.check_slug,                               name='check-slug'),
     path('business-types/',                             views.business_types,                           name='business-types'),
+    path('platform-stats/',                             views.platform_stats,                           name='platform-stats'),
     path('marketplace/',                                views.marketplace_list,                         name='marketplace-list'),
 
     # Tenant owner (requires auth)
