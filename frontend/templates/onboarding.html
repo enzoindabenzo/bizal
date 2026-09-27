@@ -317,7 +317,7 @@
           <div class="upload-area">
             <input type="file" id="f-logo" accept="image/*">
             <div class="upload-icon">📁</div>
-            <div class="upload-text">Klikoni ose tërhiqni logon këtu<br><strong>PNG, JPG, SVG</strong> deri 2MB</div>
+            <div class="upload-text">Klikoni ose tërhiqni logon këtu<br><strong>PNG, JPG, SVG</strong> — mbi 2MB ngjeshet automatikisht (PNG/JPG)</div>
             <img id="logo-preview" src="" alt="Logo preview">
             <div id="logo-file-info" style="font-size:.78rem;color:var(--muted);margin-top:6px;display:none"></div>
             <button type="button" id="logo-remove-btn" class="btn-skip" style="display:none;margin-top:6px" data-action="remove-logo">Hiq logon</button>
@@ -860,43 +860,142 @@ function syncHex(type){
 
 const LOGO_MAX_BYTES = 2 * 1024 * 1024; // matches the "deri 2MB" copy shown to the user
 const LOGO_ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/svg+xml'];
+// PNG/JPEG can be safely re-encoded (quality + dimensions) client-side to
+// bring them under the limit — mirrors Tenant._compress_logo_if_needed() on
+// the backend. SVG is vector markup, not a bitmap: there's no "quality" to
+// lower, and rasterizing it to shrink the file would silently replace a
+// scalable logo with a fixed-size raster, so an oversized SVG is still
+// rejected and left for the user to simplify by hand.
+const LOGO_COMPRESSIBLE_TYPES = ['image/png', 'image/jpeg'];
 
 function formatFileSize(bytes){
   return bytes < 1024*1024 ? `${Math.round(bytes/1024)} KB` : `${(bytes/(1024*1024)).toFixed(1)} MB`;
 }
 
-function previewLogo(input){
+// What actually gets uploaded in patchTenant() — set at the end of
+// previewLogo() once the chosen file (possibly a compressed replacement)
+// is known. Kept separate from #f-logo's own FileList because that
+// FileList can't be reassigned to hold the compressed Blob; a browser
+// only lets script clear a file input, never set it to synthetic data.
+let _pendingLogoFile = null;
+
+function _loadImageFromFile(file){
+  return new Promise((resolve,reject)=>{
+    const url=URL.createObjectURL(file);
+    const img=new Image();
+    img.onload=()=>{URL.revokeObjectURL(url);resolve(img);};
+    img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('Skedari nuk mund të lexohet si imazh.'));};
+    img.src=url;
+  });
+}
+
+function _canvasToBlob(canvas,mimeType,quality){
+  return new Promise((resolve,reject)=>{
+    canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('Kompresimi dështoi.')),mimeType,quality);
+  });
+}
+
+// Re-encodes an over-limit PNG/JPEG down under maxBytes: first by lowering
+// JPEG quality in steps (canvas.toBlob ignores the quality argument for
+// image/png — same "no meaningful quality knob" reason the backend skips
+// straight to dimension-shrinking for PNGs), then, if still too big,
+// shrinking dimensions by 15% per pass until it fits or the short side
+// hits 64px. Same two-stage approach as the backend so a logo that's
+// already been through this client-side pass won't get mangled again by
+// the server-side compression it may still also hit.
+async function compressLogoFile(file, maxBytes){
+  const img = await _loadImageFromFile(file);
+  let width = img.naturalWidth, height = img.naturalHeight;
+  const mimeType = file.type;
+  const lossy = mimeType === 'image/jpeg';
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+
+  async function renderAt(w, h, quality){
+    canvas.width = w; canvas.height = h;
+    ctx.clearRect(0, 0, w, h);
+    ctx.drawImage(img, 0, 0, w, h);
+    return _canvasToBlob(canvas, mimeType, quality);
+  }
+
+  let quality = 0.92;
+  let blob = await renderAt(width, height, quality);
+  if (lossy) {
+    while (blob.size > maxBytes && quality > 0.3) {
+      quality -= 0.1;
+      blob = await renderAt(width, height, quality);
+    }
+  }
+  while (blob.size > maxBytes && Math.min(width, height) > 64) {
+    width = Math.round(width * 0.85);
+    height = Math.round(height * 0.85);
+    blob = await renderAt(width, height, lossy ? Math.max(quality, 0.4) : undefined);
+  }
+  return blob;
+}
+
+async function previewLogo(input){
   const file=input.files[0];
   if(!file)return;
   // accept="image/*" is only a browser hint, not real validation — check
-  // the advertised 2MB limit and file type explicitly before previewing.
+  // the advertised type restriction explicitly before previewing.
   if(!LOGO_ALLOWED_TYPES.includes(file.type)){
     showError(5,'Formati i skedarit nuk mbështetet. Përdorni PNG, JPG ose SVG.');
     input.value='';
-    return;
-  }
-  if(file.size > LOGO_MAX_BYTES){
-    showError(5,`Skedari është shumë i madh (${formatFileSize(file.size)}). Madhësia maksimale është 2MB.`);
-    input.value='';
+    _pendingLogoFile=null;
     return;
   }
   hideError(5);
+  const info=document.getElementById('logo-file-info');
+  let uploadFile=file;
+  if(file.size > LOGO_MAX_BYTES){
+    if(!LOGO_COMPRESSIBLE_TYPES.includes(file.type)){
+      showError(5,`Skedari SVG është shumë i madh (${formatFileSize(file.size)}). Kufiri është 2MB — thjeshtojeni skedarin (p.sh. hiqni imazhe raster të ngulitura në të), pasi SVG nuk ngjeshet automatikisht si PNG/JPG.`);
+      input.value='';
+      _pendingLogoFile=null;
+      return;
+    }
+    info.style.display='block';
+    info.textContent=`Duke ngjeshur automatikisht logon (${formatFileSize(file.size)} → nën 2MB)...`;
+    try{
+      const compressed=await compressLogoFile(file, LOGO_MAX_BYTES);
+      if(compressed.size > LOGO_MAX_BYTES){
+        showError(5,`Nuk arritëm ta ngjeshim nën 2MB (rezultati mbeti ${formatFileSize(compressed.size)}). Provoni një imazh me përmasa më të vogla.`);
+        info.style.display='none';
+        input.value='';
+        _pendingLogoFile=null;
+        return;
+      }
+      const ext=file.type==='image/png'?'png':'jpg';
+      const newName=file.name.replace(/\.[^.]+$/,'')+'.'+ext;
+      uploadFile=new File([compressed], newName, {type:file.type});
+    }catch(err){
+      showError(5,'Ngjeshja automatike dështoi. Provoni një skedar tjetër.');
+      info.style.display='none';
+      input.value='';
+      _pendingLogoFile=null;
+      return;
+    }
+  }
+  _pendingLogoFile=uploadFile;
   const reader=new FileReader();
   reader.onload=e=>{
     const img=document.getElementById('logo-preview');
     img.src=e.target.result;
     img.style.display='block';
-    const info=document.getElementById('logo-file-info');
-    info.textContent=`${file.name} · ${formatFileSize(file.size)}`;
+    info.textContent = uploadFile===file
+      ? `${file.name} · ${formatFileSize(file.size)}`
+      : `${uploadFile.name} · ${formatFileSize(uploadFile.size)} (ngjeshur automatikisht, origjinali ishte ${formatFileSize(file.size)})`;
     info.style.display='block';
     document.getElementById('logo-remove-btn').style.display='inline-block';
   };
-  reader.readAsDataURL(file);
+  reader.readAsDataURL(uploadFile);
 }
 
 function removeLogo(){
   const input=document.getElementById('f-logo');
   input.value='';
+  _pendingLogoFile=null;
   const img=document.getElementById('logo-preview');
   img.src='';
   img.style.display='none';
@@ -966,7 +1065,11 @@ async function skipStep(step){
 }
 
 async function patchTenant(payload,step){
-  const logoFile=step===5?document.getElementById('f-logo').files[0]:null;
+  // Use _pendingLogoFile (set by previewLogo(), possibly a client-side
+  // compressed replacement), not #f-logo's raw FileList — the input still
+  // holds the original oversized file after auto-compression, since a
+  // file input can't be reassigned to synthetic data.
+  const logoFile=step===5?_pendingLogoFile:null;
   let res;
   if(logoFile){
     // FormData upload — auth.js v3 detects FormData and omits Content-Type
@@ -1076,15 +1179,15 @@ function goToAdminPanel(){
 // ── SUS pilot survey (research/usability_survey_sus.md) ──────────────────
 const SUS_QUESTIONS=[
   'Do të doja ta përdorja këtë platformë shpesh.',
-  'E gjeta platformën më komplekse nga sa duhej të ishte.',
+  'E gjeta platformën më të ndërlikuar nga sa duhej të ishte.',
   'E gjeta platformën të lehtë për t\u2019u përdorur.',
-  'Do të kisha nevojë për ndihmën e një personi teknik për ta përdorur këtë platformë.',
-  'Funksionet e platformës ishin të integruara mirë me njëra-tjetrën.',
-  'Gjeta shumë mospërputhje në platformë.',
-  'Mendoj se shumica e njerëzve do ta mësonin ta përdornin këtë platformë shumë shpejt.',
-  'E gjeta platformën shumë të vështirë për t\u2019u përdorur.',
-  'U ndjeva shumë i/e sigurt gjatë përdorimit të platformës.',
-  'Më duhej të mësoja shumë gjëra përpara se të mund ta përdorja platformën.',
+  'Do të kisha nevojë për ndihmën e një personi me njohuri teknike për ta përdorur këtë platformë.',
+  'I gjeta funksionet e platformës mirë të integruara mes tyre.',
+  'Ndjeva se kishte shumë mospërputhje (inkonsistencë) në këtë platformë.',
+  'Mendoj se shumica e njerëzve do ta mësonin ta përdorin këtë platformë shumë shpejt.',
+  'E gjeta platformën shumë të rëndë (të vështirë) për t\u2019u përdorur.',
+  'U ndjeva shumë i/e sigurt duke përdorur platformën.',
+  'Pata nevojë të mësoja shumë gjëra përpara se të mund ta përdorja këtë platformë.',
 ];
 
 function buildSusQuestions(){
