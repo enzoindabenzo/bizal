@@ -132,10 +132,24 @@ class CustomTokenObtainPairView(TokenObtainPairView):
         # their business portal like every other tenant user.
         user_onboarding_incomplete = user.tenant is not None and not user.tenant.onboarding_complete
         if request.tenant is None and not user.is_staff and user.tenant is not None and not user_onboarding_incomplete:
+            # BUGFIX: this used to return ONLY detail/redirect_slug, discarding
+            # the access/refresh tokens already sitting in serializer.validated_data
+            # even though the credentials were fully valid — the user proved who
+            # they are, they're just blocked from using a MAIN-DOMAIN session for
+            # a tenant-scoped account. The frontend's "Shko te portali juaj"
+            # button had no tokens to carry over, so it could only bare-navigate
+            # the visitor to their tenant's own login screen and make them type
+            # their password in a second time — which read as a broken/looping
+            # login rather than a redirect. Including the tokens here lets the
+            # frontend hand them to the tenant origin the same way the
+            # already-working owner-login success path does (see main.html's
+            # li-goto-btn / li-goto-existing-tenant handlers), so one correct
+            # login is actually enough.
             return Response(
                 {
                     'detail': 'Please log in from your business portal.',
                     'redirect_slug': user.tenant.slug,
+                    **serializer.validated_data,
                 },
                 status=status.HTTP_403_FORBIDDEN
             )

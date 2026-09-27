@@ -290,6 +290,15 @@ const Auth = (() => {
       // instead of discarding it, so the caller can send them to the right
       // place instead of showing a generic "try again" message.
       if (d.redirect_slug) err.redirectSlug = d.redirect_slug;
+      // BUGFIX: the backend now includes access/refresh in this same 403
+      // body (the credentials WERE valid — the tenant-owning account is
+      // just blocked from a main-domain session). Previously these were
+      // discarded here, so the "Shko te portali juaj" button had nothing to
+      // carry over and could only bare-navigate the visitor to their
+      // tenant's login screen, forcing a second manual login that read as
+      // a broken loop. Attach them so the caller can hand them to the
+      // tenant origin exactly like the normal owner-login success path does.
+      if (d.access) { err.access = d.access; err.refresh = d.refresh || null; }
       throw err;
     }
     const d = await r.json();

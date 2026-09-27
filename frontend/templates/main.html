@@ -2037,7 +2037,22 @@ window.BIZAL_ALLOW_TENANT_QUERY_PARAM = "{{ allow_tenant_query_param|yesno:'true
               btn.textContent = 'Hyr →';
               document.getElementById('li-goto-existing-tenant').addEventListener('click', () => {
                   localStorage.setItem('tenant_slug', e.redirectSlug);
-                  window.location.href = dest;
+                  // BUGFIX: auth.js now surfaces e.access/e.refresh from this
+                  // same 403 (credentials were valid, just blocked on the
+                  // main domain) — carry them over as URL params exactly like
+                  // the normal owner-login success path (li-goto-btn above),
+                  // instead of bare-navigating with no tokens. Without this,
+                  // the visitor landed on their tenant's storefront still
+                  // logged out and had to type their password in a second
+                  // time, which read as the login looping back on itself.
+                  if (e.access) {
+                      const destUrl = new URL(dest, window.location.href);
+                      destUrl.searchParams.set('access_token', e.access);
+                      if (e.refresh) destUrl.searchParams.set('refresh_token', e.refresh);
+                      window.location.href = destUrl.toString();
+                  } else {
+                      window.location.href = dest;
+                  }
               });
               document.getElementById('li-stay-existing-tenant').addEventListener('click', () => {
                   fb.textContent = '';
