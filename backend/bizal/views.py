@@ -25,7 +25,9 @@ def home(request):
     - Tenant subdomain / port 8001        → SPA shell   (index.html)
     """
     if request.tenant:
-        return render(request, 'index.html')
+        return render(request, 'index.html', {
+            'allow_tenant_query_param': getattr(_s, 'ALLOW_TENANT_QUERY_PARAM', False),
+        })
     return render(request, 'main.html', {
         'demo_base_url': getattr(_s, 'DEMO_BASE_URL', ''),
         'allow_tenant_query_param': getattr(_s, 'ALLOW_TENANT_QUERY_PARAM', False),
@@ -40,7 +42,10 @@ def tenant_spa(request):
     - Main domain      → main.html   (JS router handles /login/, /signup/ etc.)
     """
     if request.tenant:
-        return render(request, 'index.html', {'tenant': request.tenant})
+        return render(request, 'index.html', {
+            'tenant': request.tenant,
+            'allow_tenant_query_param': getattr(_s, 'ALLOW_TENANT_QUERY_PARAM', False),
+        })
     return render(request, 'main.html', {
         'demo_base_url': getattr(_s, 'DEMO_BASE_URL', ''),
         'allow_tenant_query_param': getattr(_s, 'ALLOW_TENANT_QUERY_PARAM', False),

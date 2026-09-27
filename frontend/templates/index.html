@@ -555,7 +555,7 @@
   <div class="wrap">
     <div class="footer-grid">
       <div>
-        <a class="f-logo" href="/">Biz<b>AL</b></a>
+        <a class="f-logo" id="footer-logo-link" href="/">Biz<b>AL</b></a>
         <p class="f-tagline" id="footer-tagline-text">Platforma SaaS #1 për bizneset shqiptare.</p>
       </div>
       <div id="footer-social-col">
@@ -592,6 +592,19 @@
      Pinned to the exact version (3.1.6) the CDN was serving. -->
 <script src="{% static 'js/vendor/dompurify/purify.min.js' %}"></script>
 <script src="{% static 'js/ui.js' %}"></script>
+<script>
+// Mirrors settings.ALLOW_TENANT_QUERY_PARAM (see bizal/settings/base.py) —
+// same flag main.html and onboarding.html already set before loading auth.js.
+// BUGFIX: this template never set it at all, so on a single-origin (?tenant=)
+// deployment window.BIZAL_ALLOW_TENANT_QUERY_PARAM was always undefined here,
+// which made auth.js's _tenantStorageSuffix() silently return '' on the
+// storefront page — the one page where cross-tenant localStorage namespacing
+// (see the BUGFIX comment above _tenantStorageSuffix() in auth.js) matters
+// most, since it's what a visitor actually loads when browsing a tenant.
+// Quoting the templated value (see auth.js/main.html for the full rationale)
+// keeps this line valid JS/TS regardless of what Django renders it to.
+window.BIZAL_ALLOW_TENANT_QUERY_PARAM = "{{ allow_tenant_query_param|yesno:'true,false' }}" === "true";
+</script>
 <script src="{% static 'js/auth.js' %}"></script>
 <script>
 
@@ -739,6 +752,18 @@ function toggleTheme() {
   if (LAST_BRAND_ARGS) applyBrand(...LAST_BRAND_ARGS);
 }
 document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+
+/* ── "BizAL" LOGO LINKS (topbar + footer) ──
+   BUGFIX: both links were href="/" with the topbar one titled "Kthehu te
+   BizAL" (Return to BizAL) — but "/" is same-origin, so on real subdomain
+   hosting (slug.bizal.al) it just reloads this tenant's own root and never
+   actually reaches the BizAL platform the title/footer tagline promise.
+   getMainSiteUrl() (auth.js) resolves the correct URL per deployment. */
+(() => {
+  const url = getMainSiteUrl();
+  document.getElementById('topbar-logo-link')?.setAttribute('href', url);
+  document.getElementById('footer-logo-link')?.setAttribute('href', url);
+})();
 
 /* ── TOAST ── */
 const TOAST_ICON = { tok:'check-circle', twarn:'warning', warning:'warning', error:'warning', star:'star', cart:'cart' };

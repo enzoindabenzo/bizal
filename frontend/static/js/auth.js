@@ -86,6 +86,28 @@ function getTenantAdminUrl(slug) {
   return `https://${slug}.${baseDomain}/admin/`;
 }
 
+// The inverse of getTenantAdminUrl(): "what's the URL of the main BizAL
+// platform site", used by a tenant storefront's own topbar/footer "BizAL"
+// logo link (index.html) — that link's title ("Kthehu te BizAL" / "Return
+// to BizAL") promises taking the visitor to the platform, but a plain
+// href="/" is same-origin and, on real subdomain hosting, just reloads the
+// tenant's own root instead of ever leaving the subdomain.
+function getMainSiteUrl() {
+  const h = window.location.hostname;
+  const isLocalDev = h === 'localhost' || h === '127.0.0.1';
+  // Local dev: tenant pages run on :8001, the main site on :8000.
+  if (isLocalDev) return `http://${h}:8000/`;
+  // Single-origin (?tenant=) fallback deployment: the main site IS this
+  // same origin with no ?tenant= param, which a plain '/' already gives.
+  if (window.BIZAL_ALLOW_TENANT_QUERY_PARAM) return `${window.location.origin}/`;
+  // Real subdomain production: strip the tenant's leading subdomain,
+  // reusing the same baseDomain derivation as getTenantAdminUrl() above so
+  // this also works on a non-bizal.al deployment (e.g. staging).
+  const parts = h.split('.');
+  const baseDomain = parts.length > 2 ? parts.slice(-2).join('.') : h;
+  return `${window.location.protocol}//${baseDomain}/`;
+}
+
 // BUGFIX: On a single-origin deployment — Railway's ?tenant= fallback, or
 // local dev where every tenant shares one host:port — localStorage is
 // shared across ALL tenants, because it's scoped by browser *origin*, not
