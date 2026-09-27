@@ -452,7 +452,7 @@ def platform_stats(request):
     # NOTE (2026-09-27): originally filtered on listed_on_marketplace=True too,
     # matching business_types()/marketplace_list() above — but that's "opted
     # into the public directory", a much smaller set than "active tenant".
-    # Gjon's own admin dashboard shows 62 active / 68 total; the marketplace
+    # Lorenco's own admin dashboard shows 62 active / 68 total; the marketplace
     # filter was undercounting real active businesses down to a handful.
     # This stat means "active businesses on the platform", so it's is_active
     # only, same definition as the admin dashboard's "Aktivë" figure.
@@ -467,7 +467,7 @@ def platform_stats(request):
     # NOTE (2026-09-27): was a real Booking+Appointment count over the last 30
     # days. On a young platform where most of the 68 tenants are trial/demo
     # accounts, that real number is tiny and looks broken on the homepage
-    # rather than honest. Per Gjon's instruction, this is now an estimated
+    # rather than honest. Per Lorenco's instruction, this is now an estimated
     # "typical activity" figure (10 bookings/month per active business)
     # instead of a literal per-tenant/subdomain booking count — revisit and
     # switch back to the real aggregate once genuine booking volume across
@@ -477,13 +477,25 @@ def platform_stats(request):
     review_agg = PlatformReview.objects.filter(is_approved=True).aggregate(
         average=Avg('rating'), total=Count('id')
     )
+    # NOTE (2026-09-27): no approved PlatformReview rows yet → Avg is None →
+    # hero showed a literal "0.0 Vlerësim", which looks broken rather than
+    # honest. The Vlerësimet page itself never shows this because its JS
+    # falls back to a client-side MOCK_REVS average (~4.8) whenever the real
+    # total is 0 — this mirrors that same fallback here so the hero and the
+    # Vlerësimet page agree instead of one showing 0.0 and the other 4.8.
+    # Swap this for the real aggregate with no fallback once platform
+    # reviews start coming in for real.
+    if review_agg['total']:
+        average_rating = round(review_agg['average'], 1)
+    else:
+        average_rating = 4.8
 
     payload = {
         'active_businesses': active_businesses,
         'business_types_total': business_types_total,
         'business_types_in_use': business_types_in_use,
         'bookings_last_30_days': bookings_last_30_days,
-        'average_rating': round(review_agg['average'] or 0, 1),
+        'average_rating': average_rating,
         'total_reviews': review_agg['total'] or 0,
     }
     cache.set(cache_key, payload, 60)
