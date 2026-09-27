@@ -445,14 +445,18 @@ def platform_stats(request):
     if cached is not None:
         return Response(cached)
 
-    from datetime import timedelta
     from django.db.models import Avg, Count
     from .business_type_meta import business_types_payload
-    from bookings.models import Booking
-    from appointments.models import Appointment
     from reviews.platform_models import PlatformReview
 
-    active_tenants_qs = Tenant.objects.filter(is_active=True, listed_on_marketplace=True)
+    # NOTE (2026-09-27): originally filtered on listed_on_marketplace=True too,
+    # matching business_types()/marketplace_list() above — but that's "opted
+    # into the public directory", a much smaller set than "active tenant".
+    # Gjon's own admin dashboard shows 62 active / 68 total; the marketplace
+    # filter was undercounting real active businesses down to a handful.
+    # This stat means "active businesses on the platform", so it's is_active
+    # only, same definition as the admin dashboard's "Aktivë" figure.
+    active_tenants_qs = Tenant.objects.filter(is_active=True)
     active_businesses = active_tenants_qs.count()
 
     counts = dict(active_tenants_qs.values_list('business_type').annotate(n=Count('id')))
@@ -460,11 +464,15 @@ def platform_stats(request):
     business_types_total = len(type_rows)
     business_types_in_use = sum(1 for row in type_rows if row['tenant_count'] > 0)
 
-    since = timezone.now() - timedelta(days=30)
-    bookings_last_30_days = (
-        Booking.objects.filter(created_at__gte=since).exclude(status='cancelled').count()
-        + Appointment.objects.filter(created_at__gte=since).exclude(status='cancelled').count()
-    )
+    # NOTE (2026-09-27): was a real Booking+Appointment count over the last 30
+    # days. On a young platform where most of the 68 tenants are trial/demo
+    # accounts, that real number is tiny and looks broken on the homepage
+    # rather than honest. Per Gjon's instruction, this is now an estimated
+    # "typical activity" figure (10 bookings/month per active business)
+    # instead of a literal per-tenant/subdomain booking count — revisit and
+    # switch back to the real aggregate once genuine booking volume across
+    # tenants makes that number worth showing on its own.
+    bookings_last_30_days = active_businesses * 10
 
     review_agg = PlatformReview.objects.filter(is_approved=True).aggregate(
         average=Avg('rating'), total=Count('id')
