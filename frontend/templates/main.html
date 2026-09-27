@@ -1984,18 +1984,40 @@ window.BIZAL_ALLOW_TENANT_QUERY_PARAM = "{{ allow_tenant_query_param|yesno:'true
           if (e?.redirectSlug) {
               // Backend recognized this login as belonging to a tenant whose
               // setup is already complete — it must be logged into from that
-              // business's own portal, not the main site. Send them there
-              // instead of leaving them stuck on a "try again" message.
-              fb.textContent = '↪ Ky email i përket një biznesi tashmë të konfiguruar. Duke ju çuar te portali juaj...';
+              // business's own portal, not the main site.
+              //
+              // BUGFIX: this used to auto-navigate on a setTimeout(...,1200)
+              // and write tenant_slug to localStorage immediately, with no
+              // confirmation — the exact "yanked away without being asked"
+              // behavior the li-dest-choice buttons above were introduced to
+              // eliminate for the success path. That auto-redirect was
+              // missed here. It's worse in this branch than in the success
+              // path: this fires on a *failed* login (wrong password, or an
+              // email the visitor doesn't actually own), so a mistyped or
+              // guessed email could silently carry an unrelated visitor onto
+              // a stranger's tenant portal. Require an explicit click, and
+              // don't touch localStorage until they make it.
+              // Self-contained button in the feedback area, rather than
+              // reusing #li-dest-choice/#li-stay-btn/#li-goto-btn: those are
+              // shared, persistent DOM nodes wired for the success path
+              // above, and hiding/relabeling them here would leave them in
+              // the wrong state for a later successful login in the same
+              // page session.
+              fb.innerHTML = '↪ Ky email i përket një biznesi tashmë të konfiguruar.<br>' +
+                  '<button type="button" id="li-goto-existing-tenant" class="btn btn-red btn-bl" style="margin-top:8px">Shko te portali juaj →</button>';
               fb.className = 'fb ok';
-              localStorage.setItem('tenant_slug', e.redirectSlug);
               // See the getTenantAdminUrl() call above — same reasoning
               // applies here: don't duplicate the local-dev/staging/
               // production branching a third time in this file. Same
               // product decision as above: land on the storefront, not
               // /admin/, directly.
               const dest = Auth.getTenantAdminUrl(e.redirectSlug).replace(/\/admin\/$/, '/');
-              setTimeout(() => window.location.href = dest, 1200);
+              btn.disabled = false;
+              btn.textContent = 'Hyr →';
+              document.getElementById('li-goto-existing-tenant').addEventListener('click', () => {
+                  localStorage.setItem('tenant_slug', e.redirectSlug);
+                  window.location.href = dest;
+              });
           } else {
               fb.textContent = e?.message || 'Gabim rrjeti. Provoni përsëri.';
               fb.className = 'fb err';
