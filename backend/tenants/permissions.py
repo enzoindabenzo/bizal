@@ -181,6 +181,47 @@ class IsOwnTenantStaff(BasePermission):
         return get_effective_role(request.user, tenant) is not None
 
 
+class MatchesRequestTenant(BasePermission):
+    """
+    For customer-facing "my account" endpoints (MeView, MeBookingsView,
+    MeOrdersView, MeAppointmentsView, MeReviewsView, MeNotificationPrefsView,
+    etc). IsAuthenticated alone only proves the JWT is valid — it says
+    nothing about which tenant the token's owner actually registered on.
+
+    A registered user's User.tenant is fixed at registration
+    (accounts/views.py RegisterView.perform_create). If the request is
+    tenant-scoped (hit via <slug>.bizal.al, or ?tenant=<slug> on a
+    deployment using ALLOW_TENANT_QUERY_PARAM) but the authenticated
+    user's own tenant doesn't match request.tenant, the token should be
+    treated as not-logged-in *here* — not silently accepted as if the
+    person had an account on this tenant.
+
+    This closes a real leak: a JWT/refresh token is portable JS state.
+    On subdomain-based tenancy each tenant is a separate browser origin,
+    so localStorage/memory naturally keeps sessions apart — but nothing
+    on the API itself enforced that separation. Any request that carries
+    a token — including a leftover refresh token shared across tenants on
+    a single-origin deployment (e.g. the Railway ?tenant= fallback, where
+    every tenant shares one origin and therefore one localStorage) — was
+    silently authenticated as whichever account the token belonged to,
+    regardless of which tenant it was issued for.
+
+    Superusers are exempt (needed for superadmin tooling that legitimately
+    inspects any tenant). A request with no tenant at all (main-domain
+    account page) passes through unchanged.
+    """
+    message = 'This account is not registered on this business.'
+
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        if request.user.is_superuser:
+            return True
+        if request.tenant is None:
+            return True
+        return getattr(request.user, 'tenant_id', None) == request.tenant.id
+
+
 class IsOwnTenantOwnerOrManager(BasePermission):
     """Like IsOwnTenantStaff, but restricted to owner/manager."""
     def has_permission(self, request, view):

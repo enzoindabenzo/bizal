@@ -23,6 +23,7 @@ from reviews.models import Review
 import functools
 from .models import User
 from .serializers import RegisterSerializer, UserProfileSerializer, CustomTokenObtainPairSerializer
+from tenants.permissions import MatchesRequestTenant
 
 # Cache the dummy password hash so the bcrypt work only runs once.
 # NOTE: @lru_cache is lazy — the hash is computed on the first not-found
@@ -184,7 +185,9 @@ class LogoutView(APIView):
 
 class MeView(generics.RetrieveUpdateAPIView):
     serializer_class = UserProfileSerializer
-    permission_classes = [IsAuthenticated]
+    # MatchesRequestTenant: don't authenticate someone here as "logged in"
+    # using a token issued for a different tenant — see permissions.py.
+    permission_classes = [IsAuthenticated, MatchesRequestTenant]
 
     def get_object(self):
         # Return user with select_related('staff_profile', 'tenant')
@@ -203,7 +206,7 @@ class MeView(generics.RetrieveUpdateAPIView):
 
 class ChangePasswordView(APIView):
     """Authenticated user changes their own password."""
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, MatchesRequestTenant]
 
     @method_decorator(csrf_exempt)
     def dispatch(self, *args, **kwargs):
@@ -415,7 +418,7 @@ class _StandardPagination(PageNumberPagination):
 
 
 class MeBookingsView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, MatchesRequestTenant]
 
     # FIX #10: Use proper pagination instead of [:50] hardcoded slice
     def get(self, request):
@@ -437,7 +440,7 @@ class MeBookingsView(APIView):
 
 
 class MeOrdersView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, MatchesRequestTenant]
 
     def get(self, request):
         from django.db.utils import ProgrammingError as _ProgrammingError
@@ -472,7 +475,7 @@ class MeOrdersView(APIView):
             return Response({'detail': 'Gabim gjatë ngarkimit të porosive.'}, status=500)
 
 class MeReviewsView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, MatchesRequestTenant]
 
     # FIX #10: Paginate reviews — previously returned all with no limit
     def get(self, request):
@@ -504,7 +507,7 @@ class MeReviewsView(APIView):
 
 
 class MeAppointmentsView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, MatchesRequestTenant]
 
     def get(self, request):
         from django.db.utils import ProgrammingError as _ProgrammingError
@@ -549,7 +552,11 @@ class MeExportDataView(APIView):
     this is a one-shot export a user downloads once, not something rendered
     incrementally in an interface.
     """
-    permission_classes = [IsAuthenticated]
+    # MatchesRequestTenant passes through when request.tenant is None (the
+    # normal main-domain access path for this endpoint), so it doesn't
+    # affect the cross-tenant export itself — it only blocks the case
+    # where a mismatched-tenant token reaches this via a tenant subdomain.
+    permission_classes = [IsAuthenticated, MatchesRequestTenant]
 
     def get(self, request):
         user = request.user
@@ -644,7 +651,7 @@ class MeExportDataView(APIView):
 
 
 class MeDeleteView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, MatchesRequestTenant]
 
     def delete(self, request):
         user = request.user
@@ -728,7 +735,7 @@ class MeNotificationPrefsView(APIView):
     Values must be booleans. To add a new channel, add it to ALLOWED_KEYS
     in the patch() method below AND update this docstring.
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, MatchesRequestTenant]
 
     def get(self, request):
         return Response(request.user.notification_prefs or {})

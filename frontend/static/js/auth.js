@@ -86,8 +86,25 @@ function getTenantAdminUrl(slug) {
   return `https://${slug}.${baseDomain}/admin/`;
 }
 
+// BUGFIX: On a single-origin deployment — Railway's ?tenant= fallback, or
+// local dev where every tenant shares one host:port — localStorage is
+// shared across ALL tenants, because it's scoped by browser *origin*, not
+// by which ?tenant= is in the URL. A refresh token stored while testing
+// Tenant A therefore gets silently picked up the moment you visit Tenant
+// B's URL, and the frontend shows you "logged in" as an account that was
+// never registered on Tenant B at all. (Subdomain-based production is
+// naturally immune: <slug>.bizal.al is a distinct origin per tenant, so
+// this suffix is a no-op there — window.BIZAL_ALLOW_TENANT_QUERY_PARAM is
+// only set on the query-param-fallback deployment.)
+function _tenantStorageSuffix() {
+  if (!window.BIZAL_ALLOW_TENANT_QUERY_PARAM) return '';
+  const slug = new URLSearchParams(window.location.search).get('tenant') || '_main';
+  return `__${slug}`;
+}
+
 const Auth = (() => {
-  const REFRESH_KEY = 'bizal_refresh';
+  const REFRESH_KEY_BASE = 'bizal_refresh';
+  function _refreshKey() { return REFRESH_KEY_BASE + _tenantStorageSuffix(); }
 
   // Access token lives only in memory — never in localStorage.
   // It is re-issued from the refresh token on every page load via
@@ -102,19 +119,41 @@ const Auth = (() => {
   // need it to restore the session.
   ['bizal_access', 'access', 'bizal-admin-token'].forEach(k => localStorage.removeItem(k));
 
+  // On a query-param-fallback deployment, also scrub the OLD, un-namespaced
+  // refresh keys — they're exactly the cross-tenant leak described above,
+  // so they can't be trusted regardless of which tenant wrote them. This
+  // forces a one-time re-login per tenant on that deployment, which is the
+  // correct, safe outcome (see MatchesRequestTenant on the backend for the
+  // matching server-side fix — this is defense in depth, not a substitute
+  // for it).
+  if (_tenantStorageSuffix()) {
+    ['bizal_refresh', 'refresh'].forEach(k => localStorage.removeItem(k));
+  }
+
   /* ── Token storage ──────────────────────────────────── */
   function getAccess()  { return _accessToken; }
-  function getRefresh() { return localStorage.getItem(REFRESH_KEY) || localStorage.getItem('refresh') || null; }
+  function getRefresh() {
+    const key = _refreshKey();
+    // Legacy 'refresh' fallback only applies when there's no tenant
+    // namespacing in play (subdomain deployment) — on the namespaced
+    // deployment, falling back to an un-namespaced key would just
+    // reintroduce the cross-tenant leak this fix exists to close.
+    if (_tenantStorageSuffix()) return localStorage.getItem(key) || null;
+    return localStorage.getItem(key) || localStorage.getItem('refresh') || null;
+  }
   function setTokens(access, refresh) {
     _accessToken = access;                          // memory only
     if (refresh) {
-      localStorage.setItem(REFRESH_KEY, refresh);
-      localStorage.setItem('refresh', refresh);    // keep legacy key in sync
+      const key = _refreshKey();
+      localStorage.setItem(key, refresh);
+      if (!_tenantStorageSuffix()) {
+        localStorage.setItem('refresh', refresh);    // keep legacy key in sync (subdomain deployment only)
+      }
     }
   }
   function clearTokens() {
     _accessToken = null;
-    ['bizal_refresh', 'refresh', 'bizal-admin-token'].forEach(k => localStorage.removeItem(k));
+    [_refreshKey(), 'bizal_refresh', 'refresh', 'bizal-admin-token'].forEach(k => localStorage.removeItem(k));
   }
   function isLoggedIn() { return !!(_accessToken || getRefresh()); }
 
