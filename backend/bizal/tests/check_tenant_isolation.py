@@ -68,6 +68,7 @@ TENANT_AWARE_NAMES = {
     "MainDomainOnly",
     "HasTenantRole",
     "HasTenantFeature",
+    "MatchesRequestTenant",
 }
 
 PUBLIC_NAMES = {"AllowAny"}
