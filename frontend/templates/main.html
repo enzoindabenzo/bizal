@@ -2015,8 +2015,17 @@ window.BIZAL_ALLOW_TENANT_QUERY_PARAM = "{{ allow_tenant_query_param|yesno:'true
               // above, and hiding/relabeling them here would leave them in
               // the wrong state for a later successful login in the same
               // page session.
+              //
+              // Give this branch the same "Qëndro në BizAL" escape hatch as
+              // the success-path #li-dest-choice above — without it, this
+              // message left the visitor with the tenant portal as the only
+              // way forward and no way to just keep browsing bizal.al (the
+              // blog, marketplace, etc.) from here.
               fb.innerHTML = '↪ Ky email i përket një biznesi tashmë të konfiguruar.<br>' +
-                  '<button type="button" id="li-goto-existing-tenant" class="btn btn-red btn-bl" style="margin-top:8px">Shko te portali juaj →</button>';
+                  '<div class="fcol" style="margin-top:8px;gap:8px">' +
+                  '<button type="button" id="li-goto-existing-tenant" class="btn btn-red btn-bl">Shko te portali juaj →</button>' +
+                  '<button type="button" id="li-stay-existing-tenant" class="btn btn-out btn-bl">Qëndro në BizAL</button>' +
+                  '</div>';
               fb.className = 'fb ok';
               // See the getTenantAdminUrl() call above — same reasoning
               // applies here: don't duplicate the local-dev/staging/
@@ -2029,6 +2038,10 @@ window.BIZAL_ALLOW_TENANT_QUERY_PARAM = "{{ allow_tenant_query_param|yesno:'true
               document.getElementById('li-goto-existing-tenant').addEventListener('click', () => {
                   localStorage.setItem('tenant_slug', e.redirectSlug);
                   window.location.href = dest;
+              });
+              document.getElementById('li-stay-existing-tenant').addEventListener('click', () => {
+                  fb.textContent = '';
+                  fb.className = 'fb';
               });
           } else {
               fb.textContent = e?.message || 'Gabim rrjeti. Provoni përsëri.';
