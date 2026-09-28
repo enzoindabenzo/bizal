@@ -86,6 +86,18 @@ function getTenantAdminUrl(slug) {
   return `https://${slug}.${baseDomain}/admin/`;
 }
 
+// Storefront (home) URL of a tenant. Same host/param logic as
+// getTenantAdminUrl(), but with /admin/ swapped for / via the URL object.
+// The old `.replace(/\/admin\/$/, '/')` on the raw string silently did
+// nothing whenever the URL ended in "?tenant=<slug>" (Railway/single-origin),
+// so "go to your portal" landed on /admin/ — customers saw the admin login
+// screen and owners hit the same page: it read as a login loop.
+function getTenantHomeUrl(slug) {
+  const u = new URL(getTenantAdminUrl(slug), window.location.href);
+  u.pathname = u.pathname.replace(/\/admin\/?$/, '/');
+  return u.toString();
+}
+
 // The inverse of getTenantAdminUrl(): "what's the URL of the main BizAL
 // platform site", used by a tenant storefront's own topbar/footer "BizAL"
 // logo link (index.html) — that link's title ("Kthehu te BizAL" / "Return
@@ -363,6 +375,7 @@ const Auth = (() => {
     refreshAccess,
     pickupTokensFromUrl,
     getTenantAdminUrl,
+    getTenantHomeUrl,
     // legacy aliases
     save, clear, headers,
   };

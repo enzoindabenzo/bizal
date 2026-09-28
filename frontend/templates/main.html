@@ -1835,7 +1835,7 @@ window.BIZAL_ALLOW_TENANT_QUERY_PARAM = "{{ allow_tenant_query_param|yesno:'true
               return;
             }
             if (nextParam && nextParam.startsWith('/')) { window.location.href = nextParam; }
-            else { const slug = localStorage.getItem('tenant_slug') || ''; window.location.href = slug ? Auth.getTenantAdminUrl(slug).replace(/\/admin\/$/, '/') : '/'; }
+            else { const slug = localStorage.getItem('tenant_slug') || ''; window.location.href = slug ? Auth.getTenantHomeUrl(slug) : '/'; }
           }, 1200);
         }
         else { fb.textContent = Object.values(d).flat().join(' ') || 'Gabim gjatë regjistrimit.'; fb.className = 'fb err'; }
@@ -1981,7 +1981,7 @@ window.BIZAL_ALLOW_TENANT_QUERY_PARAM = "{{ allow_tenant_query_param|yesno:'true
                   // for Auth.pickupTokensFromUrl() to consume on arrival
                   // (now wired up in index.html's init() and
                   // tenant_admin.html's boot IIFE).
-                  const destUrl = new URL(Auth.getTenantAdminUrl(tenantSlug).replace(/\/admin\/$/, '/'), window.location.href);
+                  const destUrl = new URL(Auth.getTenantHomeUrl(tenantSlug), window.location.href);
                   destUrl.searchParams.set('access_token', d.access);
                   if (d.refresh) destUrl.searchParams.set('refresh_token', d.refresh);
                   _pendingBizDest = destUrl.toString();
@@ -2044,7 +2044,7 @@ window.BIZAL_ALLOW_TENANT_QUERY_PARAM = "{{ allow_tenant_query_param|yesno:'true
               // production branching a third time in this file. Same
               // product decision as above: land on the storefront, not
               // /admin/, directly.
-              const dest = Auth.getTenantAdminUrl(e.redirectSlug).replace(/\/admin\/$/, '/');
+              const dest = Auth.getTenantHomeUrl(e.redirectSlug);
               btn.disabled = false;
               btn.textContent = 'Hyr →';
               document.getElementById('li-goto-existing-tenant').addEventListener('click', () => {
@@ -2067,8 +2067,16 @@ window.BIZAL_ALLOW_TENANT_QUERY_PARAM = "{{ allow_tenant_query_param|yesno:'true
                   }
               });
               document.getElementById('li-stay-existing-tenant').addEventListener('click', () => {
+                  // The 403 carried valid tokens (credentials were correct),
+                  // so save them and continue on BizAL logged in, exactly
+                  // like the success-path "Qëndro" button does.
+                  if (e.access) Auth.setTokens(e.access, e.refresh || null);
                   fb.textContent = '';
                   fb.className = 'fb';
+                  if (e.access) {
+                      checkAuth();
+                      go('profile');
+                  }
               });
           } else {
               fb.textContent = e?.message || 'Gabim rrjeti. Provoni përsëri.';
@@ -2312,7 +2320,7 @@ Nëse nuk jeni të sigurt, filloni me provën falas 14-ditore të planit Pro —
         const access = await Auth.refreshAccess();
         const refresh = Auth.getRefresh();
         localStorage.setItem('tenant_slug', CURRENT_OWNER_TENANT_SLUG);
-        const destUrl = new URL(Auth.getTenantAdminUrl(CURRENT_OWNER_TENANT_SLUG).replace(/\/admin\/$/, '/'), window.location.href);
+        const destUrl = new URL(Auth.getTenantHomeUrl(CURRENT_OWNER_TENANT_SLUG), window.location.href);
         destUrl.searchParams.set('access_token', access);
         if (refresh) destUrl.searchParams.set('refresh_token', refresh);
         window.location.href = destUrl.toString();
