@@ -1445,6 +1445,9 @@ window.BIZAL_ALLOW_TENANT_QUERY_PARAM = "{{ allow_tenant_query_param|yesno:'true
       const el = document.getElementById('prof-av'); if (el) el.textContent = initials;
       const nm = document.getElementById('prof-name'); if (nm) nm.textContent = [payload.first_name, payload.last_name].filter(Boolean).join(' ') || payload.email || 'Përdoruesi';
       const em = document.getElementById('prof-email'); if (em) em.textContent = payload.email || '';
+      // The chatbot widget locks itself at page load if nobody is logged in;
+      // tell it we are now, so it unlocks without a manual refresh.
+      if (window.BizBot && BizBot.refreshAuth) BizBot.refreshAuth();
     }
 
 

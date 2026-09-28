@@ -330,6 +330,24 @@
     setStatus('🔒 Kërkohet identifikimi');
   }
 
+  // The gate is decided once, when the widget is built at page load. On
+  // main.html the visitor can log in afterwards WITHOUT a page reload (login
+  // form -> "Qëndro në BizAL" / owner login), so a widget that was locked at
+  // load stayed locked until a manual refresh even though the visitor was
+  // now logged in. Re-check here (on open, and when the host page calls
+  // BizBot.refreshAuth() after a login) and unlock in place.
+  function refreshAuth() {
+    if (!$msgs || !_authGated || _stopped || !isAuthed()) return;
+    _authGated = false;
+    $msgs.innerHTML = '';
+    _history = [];
+    $input.disabled = false;
+    $input.placeholder = 'Shkruaj këtu…';
+    $send.disabled = false;
+    setStatus(_slug ? '🟢 Online' : 'AI • Online');
+    showWelcome({ slug: _slug, name: _bizName });
+  }
+
   function showAuthGate() {
     lockForAuth();
     addBot(
@@ -344,6 +362,7 @@
 
   function openWindow() {
     _isOpen = true;
+    refreshAuth();
     $win.classList.remove('bb-hide');
     document.getElementById('bb-badge').classList.remove('show');
     $input.focus();
@@ -823,6 +842,6 @@
   }
 
   // ── Public ─────────────────────────────────────────────────────────────────
-  window.BizBot = { init: init };
+  window.BizBot = { init: init, refreshAuth: refreshAuth };
 
 })();
