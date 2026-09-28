@@ -287,6 +287,15 @@ const Auth = (() => {
     let loginUrl = API_BASE + '/api/auth/login/';
     if (devSlug && window.location.port === '8001') {
       loginUrl += '?tenant=' + encodeURIComponent(devSlug);
+    } else {
+      // Single-origin (Railway) deployment: /api/auth/login is deliberately
+      // excluded from the middleware's session-tenant fallback, so a login
+      // issued from a tenant page (admin panel / storefront at ?tenant=slug)
+      // was treated as a MAIN-site login and 403'd for business users.
+      // Pass the page's explicit ?tenant= so the portal login resolves
+      // (not gated on the flag: tenant_admin.html doesn't define it).
+      const qt = new URLSearchParams(window.location.search).get('tenant');
+      if (qt) loginUrl += '?tenant=' + encodeURIComponent(qt);
     }
     const r = await fetch(loginUrl, {
       method: 'POST',

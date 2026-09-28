@@ -465,7 +465,7 @@ async function doLogin() {
     if (typeof window.__initStaffReply === 'function') window.__initStaffReply();
     const hash = window.location.hash.slice(1);
     loadView(VALID_ADMIN_VIEWS.includes(hash) ? hash : 'dashboard');
-  } catch { showFb('l-error','Gabim rrjeti.','error'); document.getElementById('l-error').classList.remove('hidden'); }
+  } catch (e) { showFb('l-error', e?.message || 'Gabim rrjeti.', 'error'); document.getElementById('l-error').classList.remove('hidden'); }
   finally { btn.disabled=false; btn.textContent='Kyçu →'; }
 }
 
