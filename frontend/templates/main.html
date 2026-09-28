@@ -2382,7 +2382,18 @@ Nëse nuk jeni të sigurt, filloni me provën falas 14-ditore të planit Pro —
     (function () {
       const path = window.location.pathname.replace(/\//g, '');
       const valid = ['login', 'signup', 'bizneset', 'vecorite', 'cmimet', 'vlereismet', 'blog', 'about', 'contact', 'kushte', 'privatesia'];
-      if (path === 'signup' && Auth.isLoggedIn()) { window.location.href = '/onboarding/'; return; }
+      // A refresh token in localStorage only means "was logged in at some
+      // point" — it may be expired/revoked (DB reset, re-registered, old
+      // test session). Forwarding on that alone bounced people through
+      // /onboarding/ and back. Confirm the session actually refreshes first;
+      // if it doesn't, refreshAccess() clears the dead tokens and we show
+      // the normal signup form instead.
+      if (path === 'signup' && Auth.isLoggedIn()) {
+        Auth.refreshAccess()
+          .then(() => { window.location.href = '/onboarding/'; })
+          .catch(() => { go('signup'); });
+        return;
+      }
       // /account/ used to serve a dedicated account.html; it now redirects
       // (server-side) to '/', so this keeps old bookmarks/links landing on
       // the in-page profile instead of the marketing homepage.

@@ -424,6 +424,14 @@ document.addEventListener('DOMContentLoaded',async ()=>{
     window.location.href = '/signup/?next=/onboarding/';
     return;
   }
+  // isLoggedIn() is true for any refresh token in localStorage, including an
+  // expired/revoked one. Verify it now: otherwise the first API call 401s and
+  // auth.js's apiFetch dumps the person on the marketing home page ('/'),
+  // which reads as "onboarding won't open". Send them to signup instead.
+  if (!Auth.getAccess()) {
+    try { await Auth.refreshAccess(); }
+    catch { window.location.href = '/signup/?next=/onboarding/'; return; }
+  }
   // Show which account this business will be tied to. parseJWT() is a
   // client-side-only decode (no signature check, just reads the payload) —
   // fine here since it's purely for display, not an auth decision.
