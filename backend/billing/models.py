@@ -1,6 +1,7 @@
 from decimal import Decimal
 from django.db import models
 from bizal.base_models import TenantScopedUUIDModel
+from bizal.db_utils import set_lock_timeout
 
 INVOICE_STATUS = [
     ('draft', 'Draft'),
@@ -72,7 +73,7 @@ class LoyaltyAccount(TenantScopedUUIDModel):
         # bookings/views.py etc. do.
         with transaction.atomic():
             with connection.cursor() as cursor:
-                cursor.execute("SET LOCAL lock_timeout = '3s'")
+                set_lock_timeout(cursor)
             # Lock this row for the duration of the transaction and read the
             # current balance under the lock, so the below-zero check can't
             # race with a concurrent debit.
@@ -215,7 +216,7 @@ class InvoiceLine(TenantScopedUUIDModel):
         # Invoice row instead of an unbounded block.
         with transaction.atomic():
             with connection.cursor() as cursor:
-                cursor.execute("SET LOCAL lock_timeout = '3s'")
+                set_lock_timeout(cursor)
             super().save(*args, **kwargs)
             locked_invoice = Invoice.objects.select_for_update().get(pk=self.invoice_id)
             locked_invoice.recompute_total()
@@ -227,7 +228,7 @@ class InvoiceLine(TenantScopedUUIDModel):
         # save() above.
         with transaction.atomic():
             with connection.cursor() as cursor:
-                cursor.execute("SET LOCAL lock_timeout = '3s'")
+                set_lock_timeout(cursor)
             invoice_id = self.invoice_id
             super().delete(*args, **kwargs)
             locked_invoice = Invoice.objects.select_for_update().get(pk=invoice_id)

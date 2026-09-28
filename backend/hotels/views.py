@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from rest_framework.exceptions import PermissionDenied
 from django.db import connection, transaction, OperationalError
+from bizal.db_utils import set_lock_timeout
 from django.db.utils import DatabaseError
 from tenants.permissions import IsTenantOwner, HasTenantFeature
 from tenants.limits import enforce_max_listings
@@ -231,7 +232,7 @@ class RoomBookingListCreateView(generics.ListCreateAPIView):
         try:
             with transaction.atomic():
                 with connection.cursor() as cursor:
-                    cursor.execute("SET LOCAL lock_timeout = '3s'")
+                    set_lock_timeout(cursor)
                 try:
                     room = Room.objects.select_for_update().get(
                         pk=d['room_id'], tenant=request.tenant,

@@ -6,6 +6,7 @@ from django.conf import settings
 from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured
 from django.db import connection, models, transaction, OperationalError
+from bizal.db_utils import set_lock_timeout
 from django.db.utils import DatabaseError
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
@@ -503,7 +504,7 @@ def refund_booking_payment(request, pk):
     try:
         with transaction.atomic():
             with connection.cursor() as cursor:
-                cursor.execute("SET LOCAL lock_timeout = '3s'")
+                set_lock_timeout(cursor)
             payment = Payment.objects.select_for_update().get(pk=payment_id)
 
             already_refunded = _refunded_so_far(payment)
@@ -1108,7 +1109,7 @@ class RecordManualPaymentView(APIView):
         try:
             with transaction.atomic():
                 with connection.cursor() as cursor:
-                    cursor.execute("SET LOCAL lock_timeout = '3s'")
+                    set_lock_timeout(cursor)
                 payment = serializer.save(
                     tenant=request.tenant,
                     status='completed',

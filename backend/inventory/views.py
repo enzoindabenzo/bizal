@@ -1,6 +1,7 @@
 import logging
 
 from django.db import connection, transaction, OperationalError
+from bizal.db_utils import set_lock_timeout
 from django.db.utils import DatabaseError
 from rest_framework import generics, filters
 from rest_framework.permissions import AllowAny
@@ -180,7 +181,7 @@ def product_stock_adjust(request, pk):
     try:
         with transaction.atomic():
             with connection.cursor() as cursor:
-                cursor.execute("SET LOCAL lock_timeout = '3s'")
+                set_lock_timeout(cursor)
             # Add tenant= filter for defence-in-depth; mirrors the outer check.
             locked = Product.objects.select_for_update().get(pk=pk, tenant=request.tenant)
             new_stock = locked.stock + delta

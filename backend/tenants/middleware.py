@@ -51,6 +51,27 @@ STRICT_BYPASS_PATHS = (
 # rebuilding it on every HTTP request inside _resolve_tenant().
 _BYPASS_SET = {p.rstrip('/') for p in STRICT_BYPASS_PATHS}
 
+# BUGFIX (single-origin/Railway session-fallback leak): paths that decide
+# WHICH ACCOUNT a browser session belongs to must never inherit a remembered
+# tenant slug from an earlier, unrelated page visit. The STAGING/BRING-UP
+# FALLBACK branch below lets any '/api/...' call fall back to
+# request.session[SESSION_KEY] when it doesn't pass an explicit ?tenant=,
+# so that tenant-scoped API calls made BY an already-loaded tenant page
+# (bookings, orders, etc. — which explicitly pass ?tenant= anyway) don't
+# spuriously 404 if that param is ever missing. Login/register are not one
+# of those calls: they're issued from the MAIN site's own login form, and a
+# visitor who earlier clicked into any tenant demo (?tenant=<slug>) on this
+# same bare *.up.railway.app origin keeps that slug in their session
+# indefinitely. Without this exclusion, submitting the main-site login form
+# silently attaches that stale tenant to the request, and
+# CustomTokenObtainPairView correctly (but confusingly) rejects a
+# superadmin/staff login with "Superadmins must use the admin panel, not a
+# tenant portal." — even though the credentials were completely correct.
+# This does not affect tenant customer logins on a real subdomain: those
+# resolve request.tenant directly from the host earlier in _resolve_tenant()
+# and never reach this fallback branch at all.
+AUTH_PATHS_EXCLUDE_SESSION_FALLBACK = {'/api/auth/login', '/api/auth/register'}
+
 
 class TenantMiddleware:
     def __init__(self, get_response):
@@ -257,7 +278,10 @@ class TenantMiddleware:
             # get treated as the main site, so browsing history can never
             # silently change which page/account a plain '/' or '/admin/'
             # visit resolves to.
-            session_fallback_allowed = request.path.startswith('/api/')
+            session_fallback_allowed = (
+                request.path.startswith('/api/')
+                and request.path.rstrip('/') not in AUTH_PATHS_EXCLUDE_SESSION_FALLBACK
+            )
             slug = explicit or (
                 request.session.get(SESSION_KEY, '').strip()
                 if session_fallback_allowed else ''

@@ -106,6 +106,7 @@ def _perform_staff_invite(request):
     # the TOCTOU race.
     from django.db import transaction, connection, OperationalError
     from django.db.utils import DatabaseError
+    from bizal.db_utils import set_lock_timeout
     max_staff = tenant.get_limit('max_staff')
     user_role = role if role == 'manager' else 'staff'
     # CONTENTION FIX (2026-09-12 load test): mirrors the lock_timeout guard
@@ -117,7 +118,7 @@ def _perform_staff_invite(request):
     try:
         with transaction.atomic():
             with connection.cursor() as cursor:
-                cursor.execute("SET LOCAL lock_timeout = '3s'")
+                set_lock_timeout(cursor)
             # Lock the Tenant row itself rather than the existing
             # StaffMember rows.  SELECT FOR UPDATE on a COUNT() only locks rows
             # that already exist — it cannot block a concurrent INSERT of a new

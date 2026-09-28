@@ -1,6 +1,7 @@
 import logging
 
 from django.db import connection, transaction, OperationalError
+from bizal.db_utils import set_lock_timeout
 from django.db.utils import DatabaseError
 from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes
@@ -100,7 +101,7 @@ class BookingListCreateView(generics.ListCreateAPIView):
         try:
             with transaction.atomic():
                 with connection.cursor() as cursor:
-                    cursor.execute("SET LOCAL lock_timeout = '3s'")
+                    set_lock_timeout(cursor)
                 return super().create(request, *args, **kwargs)
         except (OperationalError, DatabaseError) as exc:
             if 'lock' in str(exc).lower() or 'timeout' in str(exc).lower():

@@ -842,13 +842,14 @@ class TenantLocation(models.Model):
         # save from a third writer. Locking all rows upfront fully serialises every
         # concurrent save for this tenant's locations.
         from django.db import transaction, connection
+        from bizal.db_utils import set_lock_timeout
         # CONTENTION FIX (2026-09-12 load test): mirrors the lock_timeout
         # guard applied across bookings/appointments/orders/inventory/
         # hotels/staff/tenants.limits -- bounds the wait on this tenant's
         # location rows instead of an unbounded block.
         with transaction.atomic():
             with connection.cursor() as cursor:
-                cursor.execute("SET LOCAL lock_timeout = '3s'")
+                set_lock_timeout(cursor)
             # Acquire a row-level lock on all locations for this tenant before
             # any write, regardless of is_primary direction.
             list(TenantLocation.objects.select_for_update().filter(tenant=self.tenant))
@@ -884,12 +885,13 @@ class TenantReferral(models.Model):
         # save would leave referral_credits incremented but applied=False, causing
         # double-crediting on the next daily task run.
         from django.db import transaction, connection
+        from bizal.db_utils import set_lock_timeout
         from django.db.models import F
         # CONTENTION FIX (2026-09-12 load test): same lock_timeout guard as
         # TenantLocation.save above.
         with transaction.atomic():
             with connection.cursor() as cursor:
-                cursor.execute("SET LOCAL lock_timeout = '3s'")
+                set_lock_timeout(cursor)
             locked = TenantReferral.objects.select_for_update().filter(
                 pk=self.pk, applied=False
             ).first()
@@ -989,8 +991,9 @@ class CreditLedger(models.Model):
         # TenantLocation.save / TenantReferral.apply_credit above.
         with transaction.atomic():
             from django.db import connection
+            from bizal.db_utils import set_lock_timeout
             with connection.cursor() as cursor:
-                cursor.execute("SET LOCAL lock_timeout = '3s'")
+                set_lock_timeout(cursor)
             # Lock the tenant row to serialize concurrent spend_credits calls
             locked = Tenant.objects.select_for_update().get(pk=tenant.pk)
             if locked.referral_credits < amount:

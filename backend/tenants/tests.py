@@ -2064,6 +2064,35 @@ class MiddlewareGapsTests(TestCase):
         result = mw._resolve_tenant(req)
         self.assertEqual(result.slug, 'sess-biz')
 
+    @override_settings(ALLOW_TENANT_QUERY_PARAM=True, MAIN_DOMAIN='bizal.al')
+    def test_bringup_fallback_login_ignores_stale_session_tenant(self):
+        # BUGFIX regression: a visitor who previously clicked into a tenant
+        # demo (?tenant=sess-biz) on this same bare Railway origin keeps that
+        # slug in their session. Without this exclusion, submitting the
+        # MAIN SITE's own login form silently attached that stale tenant to
+        # the /api/auth/login/ POST, and CustomTokenObtainPairView rejected
+        # an otherwise-correct superadmin/staff login with "Superadmins must
+        # use the admin panel, not a tenant portal." Unlike other /api/...
+        # calls, login/register must always resolve as "no tenant" here
+        # unless THIS request explicitly asks for one.
+        Tenant.objects.create(name='Bizal', slug='sess-biz', business_type='retail', plan='pro', is_active=True)
+        mw = self._mw()
+        session = _FakeSession({'bizal_tenant_slug': 'sess-biz'})
+        req = _req('web-production-1234.up.railway.app', path='/api/auth/login/', get={}, session=session)
+        result = mw._resolve_tenant(req)
+        self.assertIsNone(result)
+
+    @override_settings(ALLOW_TENANT_QUERY_PARAM=True, MAIN_DOMAIN='bizal.al')
+    def test_bringup_fallback_login_with_explicit_param_still_resolves(self):
+        # Explicit intent on THIS request still works — only the silent
+        # inheritance of an old session value is disabled for login/register.
+        Tenant.objects.create(name='Bizal', slug='sess-biz', business_type='retail', plan='pro', is_active=True)
+        mw = self._mw()
+        session = _FakeSession()
+        req = _req('web-production-1234.up.railway.app', path='/api/auth/login/', get={'tenant': 'sess-biz'}, session=session)
+        result = mw._resolve_tenant(req)
+        self.assertEqual(result.slug, 'sess-biz')
+
     def test_trial_with_no_trial_ends_at_returns_early(self):
         mw = self._mw()
         tenant = Tenant.objects.create(

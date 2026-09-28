@@ -45,6 +45,7 @@ def enforce_max_listings(tenant, model_cls, extra_filter=None):
     each vertical's inventory is capped independently per plan.
     """
     from django.db import connection
+    from bizal.db_utils import set_lock_timeout
     from tenants.models import Tenant as TenantModel
 
     # CONTENTION FIX (2026-09-12 load test): mirrors the lock_timeout guard
@@ -56,7 +57,7 @@ def enforce_max_listings(tenant, model_cls, extra_filter=None):
     # unbounded block that can starve a gunicorn worker under concurrent
     # create requests for the same tenant.
     with connection.cursor() as cursor:
-        cursor.execute("SET LOCAL lock_timeout = '3s'")
+        set_lock_timeout(cursor)
 
     # Lock the Tenant row so concurrent create requests for this tenant are
     # serialized through this single point, closing the phantom-insert race.
