@@ -29,6 +29,12 @@
   <link rel="stylesheet" href="{% static 'css/onboarding-fonts-core.css' %}" />
   <link rel="preload" href="{% static 'css/onboarding-fonts-picker.css' %}" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <noscript><link rel="stylesheet" href="{% static 'css/onboarding-fonts-picker.css' %}"></noscript>
+  <!-- Preview-only: Cormorant Garamond, DM Sans, Merriweather, Space Grotesk and
+       Nunito aren't self-hosted, so their picker buttons need this to show in
+       their own typeface. Non-blocking; if a CSP blocks it the buttons just
+       fall back to a system font — the saved choice is unaffected, and the
+       storefront loads these fonts itself. -->
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=DM+Sans:wght@500&family=Merriweather:wght@400&family=Space+Grotesk:wght@500&family=Nunito:wght@600&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <link rel="stylesheet" href="{% static 'css/onboarding.css' %}" />
   <!-- brand.css intentionally NOT loaded here: it defines its own :root design
        tokens (--bg, --text, --border, --hint, --surface2, --green, --green-s,
@@ -301,16 +307,32 @@
           </div>
         </div>
         <div class="field full">
-          <label id="lbl-font">Fonti</label>
-          <div class="font-options" id="font-options" role="group" aria-labelledby="lbl-font">
-            <button class="font-btn selected" data-font="Inter" style="font-family:Inter">Inter</button>
-            <button class="font-btn" data-font="Roboto" style="font-family:Roboto">Roboto</button>
-            <button class="font-btn" data-font="Montserrat" style="font-family:Montserrat">Montserrat</button>
-            <button class="font-btn" data-font="Poppins" style="font-family:Poppins">Poppins</button>
-            <button class="font-btn" data-font="Lato" style="font-family:Lato">Lato</button>
-            <button class="font-btn" data-font="Playfair Display" style="font-family:'Playfair Display'">Playfair</button>
+          <label id="lbl-font-heading">Fonti i titujve</label>
+          <div class="font-options" id="font-options-heading" data-target="f-font-heading" role="group" aria-labelledby="lbl-font-heading">
+            <button type="button" class="font-btn selected" data-font="Cormorant Garamond" style="font-family:'Cormorant Garamond'">Cormorant</button>
+            <button type="button" class="font-btn" data-font="DM Sans" style="font-family:'DM Sans'">DM Sans</button>
+            <button type="button" class="font-btn" data-font="Inter" style="font-family:Inter">Inter</button>
+            <button type="button" class="font-btn" data-font="Poppins" style="font-family:Poppins">Poppins</button>
+            <button type="button" class="font-btn" data-font="Playfair Display" style="font-family:'Playfair Display'">Playfair</button>
+            <button type="button" class="font-btn" data-font="Merriweather" style="font-family:Merriweather">Merriweather</button>
+            <button type="button" class="font-btn" data-font="Space Grotesk" style="font-family:'Space Grotesk'">Space Grotesk</button>
+            <button type="button" class="font-btn" data-font="Nunito" style="font-family:Nunito">Nunito</button>
           </div>
-          <input type="hidden" id="f-font" value="Inter">
+          <input type="hidden" id="f-font-heading" value="Cormorant Garamond">
+        </div>
+        <div class="field full">
+          <label id="lbl-font-body">Fonti i tekstit</label>
+          <div class="font-options" id="font-options-body" data-target="f-font-body" role="group" aria-labelledby="lbl-font-body">
+            <button type="button" class="font-btn" data-font="Cormorant Garamond" style="font-family:'Cormorant Garamond'">Cormorant</button>
+            <button type="button" class="font-btn selected" data-font="DM Sans" style="font-family:'DM Sans'">DM Sans</button>
+            <button type="button" class="font-btn" data-font="Inter" style="font-family:Inter">Inter</button>
+            <button type="button" class="font-btn" data-font="Poppins" style="font-family:Poppins">Poppins</button>
+            <button type="button" class="font-btn" data-font="Playfair Display" style="font-family:'Playfair Display'">Playfair</button>
+            <button type="button" class="font-btn" data-font="Merriweather" style="font-family:Merriweather">Merriweather</button>
+            <button type="button" class="font-btn" data-font="Space Grotesk" style="font-family:'Space Grotesk'">Space Grotesk</button>
+            <button type="button" class="font-btn" data-font="Nunito" style="font-family:Nunito">Nunito</button>
+          </div>
+          <input type="hidden" id="f-font-body" value="DM Sans">
         </div>
         <div class="field full">
           <label for="f-logo">Logo <span class="opt">(opsional)</span></label>
@@ -506,11 +528,12 @@ function applyTenantDataToForm(t){
   set('f-tiktok', t.tiktok);
   if(t.primary_color){document.getElementById('f-primary-color').value=t.primary_color;updateColor('primary');}
   if(t.accent_color){document.getElementById('f-accent-color').value=t.accent_color;updateColor('accent');}
-  if(t.font_family){
-    document.getElementById('f-font').value=t.font_family;
-    document.querySelectorAll('.font-btn').forEach(b=>
-      b.classList.toggle('selected', b.dataset.font===t.font_family));
-  }
+  [['font_heading','f-font-heading'],['font_body','f-font-body']].forEach(([key,id])=>{
+    if(!t[key]) return;
+    document.getElementById(id).value=t[key];
+    document.querySelectorAll('.font-options[data-target="'+id+'"] .font-btn').forEach(b=>
+      b.classList.toggle('selected', b.dataset.font===t[key]));
+  });
 }
 
 // Sets a time input's value when restoring previously-saved business hours.
@@ -678,11 +701,17 @@ function initPlanGrid(){
 }
 
 function initFontButtons(){
-  document.querySelectorAll('.font-btn').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      document.querySelectorAll('.font-btn').forEach(b=>b.classList.remove('selected'));
-      btn.classList.add('selected');
-      document.getElementById('f-font').value=btn.dataset.font;
+  // Two independent groups (headings / body); each group writes to the hidden
+  // input named in its data-target, so picking a heading font never touches
+  // the body font.
+  document.querySelectorAll('.font-options').forEach(group=>{
+    const input=document.getElementById(group.dataset.target);
+    group.querySelectorAll('.font-btn').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        group.querySelectorAll('.font-btn').forEach(b=>b.classList.remove('selected'));
+        btn.classList.add('selected');
+        input.value=btn.dataset.font;
+      });
     });
   });
 }
@@ -1123,7 +1152,7 @@ function buildPayload(step){
     2:{phone:v('f-phone'),whatsapp:v('f-whatsapp'),email:v('f-email'),address:v('f-address'),city:v('f-city'),country:v('f-country')||'Albania',business_hours:buildBusinessHours(),onboarding_step:2},
     3:{site_title:v('f-site-title'),story:v('f-story'),founded_year:v('f-founded')?parseInt(v('f-founded')):null,meta_description:v('f-meta'),onboarding_step:3},
     4:{facebook:v('f-facebook'),instagram:v('f-instagram'),tiktok:v('f-tiktok'),onboarding_step:4},
-    5:{primary_color:document.getElementById('f-primary-color').value,accent_color:document.getElementById('f-accent-color').value,font_family:document.getElementById('f-font').value,onboarding_step:5},
+    5:{primary_color:document.getElementById('f-primary-color').value,accent_color:document.getElementById('f-accent-color').value,font_heading:document.getElementById('f-font-heading').value,font_body:document.getElementById('f-font-body').value,onboarding_step:5},
   };
   return payloads[step]||{};
 }
@@ -1325,7 +1354,8 @@ function buildSummary(){
     ['Telefon',document.getElementById('f-phone').value||'—'],
     ['Orari',(()=>{const h=buildBusinessHours();const entries=Object.entries(h);return entries.length?entries.map(([d,r])=>`${d}: ${r}`).join(' · '):'—';})()],
     ['Ngjyra',document.getElementById('f-primary-color').value||'—'],
-    ['Fonti',document.getElementById('f-font').value||'—'],
+    ['Fonti i titujve',document.getElementById('f-font-heading').value||'—'],
+    ['Fonti i tekstit',document.getElementById('f-font-body').value||'—'],
   ];
   g.innerHTML=items.map(([l,v])=>`<div class="summary-item"><div class="s-label">${esc(l)}</div><div class="s-val">${esc(v)}</div></div>`).join('');
 }
