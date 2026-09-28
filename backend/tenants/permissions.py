@@ -13,6 +13,8 @@ class TenantDomainOnly(BasePermission):
 
 
 class MainDomainOnly(BasePermission):
+    message = 'Business signup must be done from the main BizAL site, not a business portal.'
+
     def has_permission(self, request, view):
         return request.tenant is None
 

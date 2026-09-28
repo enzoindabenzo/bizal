@@ -70,7 +70,18 @@ _BYPASS_SET = {p.rstrip('/') for p in STRICT_BYPASS_PATHS}
 # This does not affect tenant customer logins on a real subdomain: those
 # resolve request.tenant directly from the host earlier in _resolve_tenant()
 # and never reach this fallback branch at all.
-AUTH_PATHS_EXCLUDE_SESSION_FALLBACK = {'/api/auth/login', '/api/auth/register'}
+AUTH_PATHS_EXCLUDE_SESSION_FALLBACK = {
+    '/api/auth/login',
+    '/api/auth/register',
+    # Business signup / onboarding are MAIN-SITE flows (MainDomainOnly on
+    # signup; /tenants/me and /tenants/create act on user.tenant, not the
+    # host). A tenant slug remembered in the session from an earlier
+    # ?tenant= visit must never leak into them, or signup 403s.
+    '/api/tenants/signup',
+    '/api/tenants/create',
+    '/api/tenants/me',
+    '/api/auth/token/refresh',
+}
 
 
 class TenantMiddleware:
