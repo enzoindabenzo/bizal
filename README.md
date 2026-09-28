@@ -3,9 +3,9 @@
 ![tests](https://github.com/enzoindabenzo/bizal/actions/workflows/tests.yml/badge.svg)
 ![coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/enzoindabenzo/bizal/main/.github/badges/coverage.json)
 
-BizAL is a Django REST Framework backend powering white-label portals for 26 Albanian business types (restaurants, hotels, clinics, car rentals, gyms, pharmacies, retail, and more). Each business gets its own branded subdomain and feature set based on their subscription plan.
+BizAL is a Django REST Framework backend powering white-label portals for 51 Albanian business types (restaurants, hotels, clinics, car rentals, gyms, pharmacies, retail, and more — see `BUSINESS_TYPE_CHOICES` in `tenants/models.py` for the full list). Each business gets its own branded subdomain and feature set based on their subscription plan.
 
-1332 backend tests, 100% coverage (85% enforced in CI), tested against real PostgreSQL — see [Testing](#testing).
+1389 backend tests, ~95% coverage locally against SQLite (CI enforces ≥85%, measured against real PostgreSQL — see [Testing](#testing)).
 
 ---
 
@@ -21,6 +21,7 @@ BizAL is a Django REST Framework backend powering white-label portals for 26 Alb
   - [Celery](#celery)
   - [Settings Modules](#settings-modules)
   - [Credit Ledger](#credit-ledger)
+  - [Concurrency / Row Locking](#concurrency--row-locking)
   - [Homepage Page Builder](#homepage-page-builder)
   - [JWT Storage (Frontend)](#jwt-storage-frontend)
 - [Local Development (Windows)](#local-development-windows)
@@ -28,6 +29,7 @@ BizAL is a Django REST Framework backend powering white-label portals for 26 Alb
 - [API Overview](#api-overview)
 - [Docker / Production](#docker--production)
   - [Free Pilot Deployment](#free-pilot-deployment-no-domain-purchase-no-paid-hosting)
+  - [Railway Deployment](#railway-deployment)
 - [Testing](#testing)
 - [Load Testing](#load-testing)
 - [Research Artifacts](#research-artifacts-thesis)
@@ -62,6 +64,9 @@ bizal/
 │   ├── orders/                                   Storefront cart + fulfillment
 │   ├── payments/                                   Stripe checkout + webhooks
 │   ├── rentals/                                     Rental catalogue + availability
+│   ├── research/                                     SUS usability-survey API (thesis pilot) — a real installed
+│   │                                                  Django app, NOT the same thing as the top-level research/
+│   │                                                  folder below (that one holds the pilot's docs, not code)
 │   ├── reviews/                                       Reviews + platform reviews
 │   ├── staff/                                          Staff roster + schedules
 │   ├── storefront/                                       Page builder, hero slides
@@ -86,20 +91,23 @@ BizAL is a single Django backend serving two logical "zones": the **main platfor
 
 ### Tenant Resolution
 
-Requests are resolved to a tenant via `TenantMiddleware`, which sets `request.tenant` on every request, in this priority order:
+Requests are resolved to a tenant via `TenantMiddleware._resolve_tenant()`, which sets `request.tenant` on every request. It tries, in order:
 
-1. **Subdomain** — `hertz-albania.bizal.al` → slug `hertz-albania`
-2. **Query param** — `localhost:8001/?tenant=hertz-albania` (local dev fallback)
-3. **Session** — persisted slug from a previous request on port 8001 (local dev)
+1. **Subdomain** — `hertz-albania.bizal.al` → slug `hertz-albania` (production), or `hertz-albania.localhost:8001` (local dev, if you've added it to `/etc/hosts`)
+2. **Local-dev query param + session** — on `localhost:8001` (`TENANT_PORT`), `?tenant=hertz-albania` sets the slug for the session; a later request with no `?tenant=` on that same port reuses the remembered slug
+3. **Single-origin "bring-up" fallback** — for a platform-only deployment with no wildcard DNS yet (a bare `*.up.railway.app` domain, before a custom domain is attached), there's no subdomain to resolve a tenant from at all. When `ALLOW_TENANT_QUERY_PARAM=True` (see `.env.railway.example`), the middleware applies the same `?tenant=<slug>` + remembered-session strategy as tier 2, but on whatever host actually served the request
 
 | Environment | Main platform | Tenant portal |
 |---|---|---|
 | Local dev | `localhost:8000` | `localhost:8001/?tenant=x` or `x.localhost:8001` |
-| Production | `bizal.al` | `x.bizal.al` |
+| Production (custom domain) | `bizal.al` | `x.bizal.al` |
+| Production (bare Railway domain, no custom domain yet) | `web-production-xxxx.up.railway.app` | same host, `?tenant=x` |
+
+**Important gotcha in tier 3** (fixed — see `tenants/middleware.py` comments for the full history): a visitor's remembered session tenant must never leak into `/api/auth/login/` or `/api/auth/register/`. Those two paths are excluded from the session fallback (`AUTH_PATHS_EXCLUDE_SESSION_FALLBACK`) so that someone who previously clicked into a tenant demo on the same bare domain can still log into the *main site* afterwards without the login POST silently inheriting that old tenant and getting rejected with "Superadmins must use the admin panel, not a tenant portal." A page load (`GET /`) already always resolves as the main site regardless of session state — this fix makes login/register behave the same way. An explicit `?tenant=` on the login request itself still works; only the *stale remembered* value is ignored.
 
 Resolution outcomes:
-- **Main domain** → `request.tenant = None`
-- **Tenant subdomain** → `request.tenant = <Tenant instance>` (active, or trial-expired with `is_active=False`)
+- **Main domain** (or excluded auth path in tier 3) → `request.tenant = None`
+- **Tenant subdomain / resolved slug** → `request.tenant = <Tenant instance>` (active, or trial-expired with `is_active=False`)
 - **Unknown slug** → `Http404`
 
 All tenant-scoped API views filter querysets by `request.tenant` — never by `request.user.tenant` in tenant-facing views, so isolation is enforced at the middleware level, not per-view.
@@ -173,15 +181,35 @@ Plan capabilities are stored in `TenantFeature` rows (key/value per tenant). `Te
 | Module | Used when |
 |---|---|
 | `settings/base.py` | Shared config inherited by all |
-| `settings/local.py` | Local dev (SQLite, no Redis, no Celery) |
+| `settings/local.py` | Local dev, running directly on the host (`manage.py` / `activate.ps1` / `install.sh`) — SQLite, no Redis, Celery in eager mode |
+| `settings/dev.py` | Dockerized dev stack (`docker-compose.yml`) — real Postgres, real Redis, real (non-eager) Celery, close to production but with relaxed security for plain-HTTP localhost |
 | `settings/test.py` | pytest / CI (SQLite locally; real Postgres in CI — see [Testing](#testing)) |
-| `settings/production.py` | Docker / production (HTTPS headers, structured logging) |
+| `settings/production.py` | Docker Compose production stack **and** Railway — HTTPS headers, structured logging, trusts `X-Forwarded-Proto` |
 
-`DJANGO_SETTINGS_MODULE` is set in `docker-compose.yml` (production) and in `dev.py` / `activate.ps1` (local); it should also be set in `.env` as a safety net.
+Don't confuse `settings/local.py` with `settings/dev.py` — they look similar but target different stacks (bare host vs. Docker); running `settings/dev.py` directly on the host fails immediately since it expects `collectstatic` to have already produced a static manifest.
+
+`DJANGO_SETTINGS_MODULE` is set in `docker-compose.yml` (`bizal.settings.dev`), `docker-compose.prod.yml` and `.env.railway.example` (`bizal.settings.production`), and `dev.py` / `activate.ps1` (`bizal.settings.local`, local host); it should also be set in `.env` as a safety net.
 
 ### Credit Ledger
 
 `Tenant.referral_credits` is the running balance for fast reads. Every change to that balance is mirrored as an append-only `CreditLedger` row (`tenants/models.py`) for audit trail and display. Write credits via `TenantReferral.apply_credit()` only — never mutate `referral_credits` directly.
+
+### Concurrency / Row Locking
+
+Anywhere a `select_for_update()` needs a bound on how long a concurrent caller can block on the row lock (invoice line creation, credit spending, seat/room booking, tenant plan limit checks, etc.), the call site uses `bizal.db_utils.set_lock_timeout(cursor)` rather than raw SQL. It wraps a single call:
+
+```python
+with transaction.atomic():
+    with connection.cursor() as cursor:
+        set_lock_timeout(cursor)   # SET LOCAL lock_timeout = '3s' — Postgres only
+    locked = SomeModel.objects.select_for_update().get(pk=pk)
+```
+
+`SET LOCAL` is PostgreSQL-only syntax; SQLite has no equivalent and raises a syntax error if it's ever sent one directly. `set_lock_timeout()` checks `cursor.db.vendor` and no-ops on SQLite (whose single-writer locking makes the timeout meaningless there anyway), so the exact same code path runs unmodified in local dev (`settings/local.py`, SQLite), the Docker dev stack (`settings/dev.py`, Postgres), tests (`settings/test.py`, SQLite locally / Postgres in CI), and production (`settings/production.py`, Postgres) — instead of every call site needing its own `if connection.vendor == 'postgresql'` guard, or silently breaking on SQLite the way each of these previously did:
+
+`billing/models.py`, `tenants/models.py`, `tenants/limits.py`, `staff/views.py`, `orders/views.py`, `payments/views.py`, `bookings/views.py`, `hotels/views.py`, `inventory/views.py`, `appointments/views.py`.
+
+If you add a new `select_for_update()` call site that needs this guard, import `set_lock_timeout` from `bizal.db_utils` rather than writing the raw `cursor.execute("SET LOCAL ...")` again.
 
 ### Homepage Page Builder
 
@@ -259,6 +287,7 @@ Base URL: `/api/`
 | Storefront | `/api/storefront/` | `pages/`, `hero/`, `sections/` public · `manage/*` owner |
 | CRM | `/api/crm/` | Staff+ · `leads/`, `leads/<pk>/notes/` |
 | Billing | `/api/billing/` | Staff+ · `invoices/`, `invoices/<pk>/lines/` |
+| Research | `/api/research/` | `sus/config/` public · `sus/` owner/manager submit — SUS usability-survey (thesis pilot) |
 | Subscriptions | `/api/subscriptions/` | Staff+ list · owner manage · `mine/` customer |
 | Staff | `/api/staff/` | Staff read · owner manage |
 | Inventory | `/api/inventory/` | `categories/` + list/detail/manage |
@@ -289,6 +318,22 @@ accounts.User: (auth.W004) 'User.email' is named as the 'USERNAME_FIELD', but it
 
 This is expected, not a bug — `email` is deliberately **not** globally unique (see the `NOTE:` comment on `accounts/models.py`'s `User.email` field). BizAL is multi-tenant: the same person can hold a separate account on more than one tenant's portal (e.g. a customer of two different restaurants), so uniqueness is enforced *per-tenant* via a `UniqueConstraint(fields=['email', 'tenant'])` instead of a global one. Django's `auth.W004` check has no way to express "unique per some other field," so it always flags this regardless. Safe to ignore in every environment — don't spend time chasing it, and don't add `unique=True` back to `email` (that was the actual bug it exists to avoid; see the model comment for what broke before).
 
+### Railway Deployment
+
+Railway is a supported production target alongside `docker-compose.prod.yml` — it builds straight from the repo's root `Dockerfile` (see `railway.toml`), not from either docker-compose file.
+
+1. Create a `web` service pointed at this repo. `railway.toml` sets the Dockerfile build, the `/health/` healthcheck, and a restart policy — no further Railway config needed for it.
+2. Add Postgres and Redis (Railway's own plugins, or external ones) and copy the variables from **`.env.railway.example`** into the service's variables — it's kept in sync with what `bizal.settings.production` actually reads, including `DJANGO_SETTINGS_MODULE=bizal.settings.production`.
+3. Create `celery-worker` and `celery-beat` services from the **same** repo/Dockerfile, but override their Start Command in the Railway dashboard (Railway can't express three different start commands from one `railway.toml`) — see the comment at the top of `railway.toml` for the exact commands.
+4. On every deploy, `entrypoint.sh` runs `migrate`, syncs the Celery beat schedule, and runs `collectstatic` — **it does not seed any data or create an admin account.** There's no automatic superadmin bootstrap step at all; see the next point.
+5. **Creating/resetting the admin account**: use Railway's dashboard shell (or `railway ssh` from the CLI — not `railway run`/`railway shell`, which execute *locally* with Railway's env vars injected rather than inside the real deployed container) to run, against the real production DB:
+   ```bash
+   python manage.py createsuperuser          # if admin@bizal.al doesn't exist yet
+   python manage.py changepassword admin@bizal.al   # if it exists but the password is lost
+   ```
+   `seed.py` also works there (it creates the same superadmin plus a full set of demo tenants) if you want Railway to carry the same demo data as local dev — but for a real deployment, `createsuperuser`/`changepassword` alone is usually what you want.
+6. **No wildcard DNS yet?** Until a custom domain with wildcard DNS is attached, set `ALLOW_TENANT_QUERY_PARAM=true` so tenants are still reachable via `?tenant=<slug>` on the bare `*.up.railway.app` domain — see [Tenant Resolution](#tenant-resolution) for exactly how that fallback behaves (and the login/register gotcha it used to have).
+
 ### Free pilot deployment (no domain purchase, no paid hosting)
 
 For a small pilot (a handful of real users trying it, not production traffic), the whole stack can run for **€0**:
@@ -312,24 +357,24 @@ python manage.py test accounts tenants crm   # specific apps
 coverage run manage.py test && coverage report --fail-under=85
 ```
 
-Locally this runs against SQLite (in-memory, no external services required). **CI** (`.github/workflows/tests.yml`) additionally runs the full suite against real **PostgreSQL 16**, specifically to exercise Postgres-only behaviour that SQLite would silently skip: `select_for_update()` locking, `NULLS LAST` ordering, `JSONField` queries, `CheckConstraint` enforcement. CI also enforces `coverage report --fail-under=85` — coverage measured locally (SQLite) at the time of writing is **100%**; the CI run itself (against Postgres) is the authoritative number — check the latest `backend-coverage` artifact on GitHub Actions for the current figure rather than trusting this README.
+Locally this runs against SQLite (in-memory, no external services required) and currently measures **~95% coverage**. **CI** (`.github/workflows/tests.yml`) additionally runs the full suite via `pytest`/`coverage` against real **PostgreSQL 16**, specifically to exercise Postgres-only behaviour that SQLite would silently skip: `select_for_update()` locking (including the `SET LOCAL lock_timeout` guard in [Concurrency / Row Locking](#concurrency--row-locking), which no-ops on SQLite), `NULLS LAST` ordering, `JSONField` queries, `CheckConstraint` enforcement. CI enforces `coverage report --fail-under=85` — the CI run (against Postgres) is the authoritative coverage number, always somewhat higher than the local SQLite figure above precisely because of those Postgres-only branches; check the latest `backend-coverage` artifact on GitHub Actions rather than trusting either number in this README for long.
 
-1332 tests total, all passing, spread across:
+1389 tests total, all passing, spread across:
 
 | App | Tests | App | Tests |
 |---|---|---|---|
-| `tenants` | 275 | `accounts` | 110 |
-| `chatbot` | 104 | `payments` | 100 |
-| `bizal` (dashboard, validators, celery sync, tenant isolation) | 84 | `hotels` | 69 |
-| `bookings` | 61 | `billing` | 59 |
-| `notifications` | 52 | `orders` | 48 |
+| `tenants` | 287 | `accounts` | 120 |
+| `payments` | 119 | `chatbot` | 104 |
+| `bookings` | 74 | `hotels` | 69 |
+| `bizal` (dashboard, validators, celery sync, tenant isolation) | 60 | `billing` | 59 |
+| `notifications` | 52 | `orders` | 51 |
 | `appointments` | 47 | `reviews` | 46 |
 | `storefront` | 40 | `analytics` | 39 |
 | `inventory` | 35 | `staff` | 31 |
 | `rentals` | 30 | `contact` | 24 |
-| `blog` | 16 | `crm` | 16 |
-| `activity` | 16 | `menu` | 15 |
-| `subscriptions` | 15 | | |
+| `research` | 21 | `crm` | 19 |
+| `activity` | 16 | `blog` | 16 |
+| `menu` | 15 | `subscriptions` | 15 |
 
 Isolation checks (a tenant can never read/write another tenant's data) aren't confined to one file — they're woven into nearly every app's test suite, plus a dedicated `bizal/tests/test_tenant_isolation.py`. There's also a separate **static** regression gate (`backend/bizal/tests/check_tenant_isolation.py`, no DB/Django needed — pure `ast`) that scans every DRF view and fails CI if a *new* view is added without a tenant-aware permission class; see `backend/bizal/tests/TENANT_ISOLATION_CHECK_README.md`.
 
@@ -349,7 +394,21 @@ python manage.py runserver 0.0.0.0:8000     # terminal 1
 make loadtest                                # terminal 2 (repo root), defaults: 50 users, 60s
 ```
 
-Latest committed baseline (dev server, SQLite — worst case, not production): **382 requests, 0% failures, 9ms median / 44ms p95** response time across all endpoint types and tenants. Raw data: `backend/loadtest/results/`.
+`backend/loadtest/results/` is gitignored (see `.gitignore`) — none of the CSVs below exist on GitHub, only on whatever machine actually ran the test. The numbers here are transcribed from a local run so they're not lost entirely, but the raw files themselves aren't retrievable from the repo; re-run the commands above if you need the underlying data.
+
+Floor baseline (dev server, single-threaded `runserver`, SQLite — worst case, not production), 30 concurrent users: **382 requests, 0% failures, 9ms median / 44ms p95** response time across all endpoint types and tenants. `backend/loadtest/README.md` has the full per-endpoint breakdown, but note its claim that this is "committed" at `results/baseline_devserver_20260731_stats.csv` is itself stale for the same reason — that path is gitignored too, so the file isn't actually on GitHub either.
+
+Beyond that floor baseline, local runs at higher concurrency (200/500/1000 users, production-mode via `docker-compose.prod.yml` + gunicorn) exist only as local artifacts, never committed and never written up before now:
+
+| Concurrent users | Requests | Failures | Median | Max |
+|---|---|---|---|---|
+| 200 | 6,955 | 0 (0%) | 110ms | 1.5s |
+| 500 | 7,113 | 31 (0.4%) | 3.8s | 30s |
+| 1000 | 11,616 | 1,152 (9.9%) | 9.1s | 54s |
+
+Clean up to ~200 concurrent users, visible degradation by 500, and a real failure rate by 1000 — consistent with the gunicorn worker/thread-count tuning notes in `entrypoint.sh` (re-derive `GUNICORN_WORKERS`/`GUNICORN_WEB_THREADS` from the actual deployment's core count rather than trusting a number carried over from a different machine). None of this is related to the SQLite-only `SET LOCAL` issue described in [Concurrency / Row Locking](#concurrency--row-locking) — these runs already used real Postgres, where that statement always worked correctly; the degradation here is capacity/tuning, not the bug that was fixed.
+
+If these numbers are worth keeping around, either remove `results/` from `.gitignore` for specific named baseline files (not the whole directory — `make loadtest`'s timestamped runs would otherwise flood the repo with one CSV set per run) or copy the numbers into a written summary the way this table does.
 
 ---
 
@@ -378,9 +437,11 @@ python manage.py startapp myapp
 
 Then:
 - Inherit models from `TenantScopedUUIDModel` in `bizal/base_models.py`
-- Add `'myapp'` to `INSTALLED_APPS` in `settings/base.py`
+- Add `'myapp'` to `LOCAL_APPS` in `settings/base.py` (this feeds into `INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS` — don't edit `INSTALLED_APPS` directly)
 - Add `path('api/myapp/', include('myapp.urls'))` in `bizal/urls.py`
 - Run `bizal-migrate`
+
+Pick a name that doesn't collide with a top-level repo directory — `research/` is both a `LOCAL_APPS` entry (`backend/research/`, the SUS survey API) and an unrelated top-level docs folder (thesis materials); see the note in [Repository Layout](#repository-layout). A fresh app name shouldn't repeat that mistake.
 
 ---
 
@@ -389,5 +450,7 @@ Then:
 - The standalone `superadmin.html` SPA was retired in favor of `/django-admin/` via Unfold's dashboard callbacks.
 - Tenant storefront customization is a full drag-and-drop homepage section builder — see [Homepage Page Builder](#homepage-page-builder).
 - Shared typography (Cormorant Garamond + DM Sans) and a warm neutral palette are defined once in `brand.css` / `ui.js` / `auth.js` and reused across storefront and tenant admin.
-- `CSRF_TRUSTED_ORIGINS` is configured for Django running behind an nginx reverse proxy.
+- `CSRF_TRUSTED_ORIGINS` is read from an env var (default `https://bizal.al,https://*.bizal.al`) rather than relying on Django's same-origin check alone — needed because any proxy hop that loses the original scheme (nginx in `docker-compose.prod.yml`, or Railway's edge, which has no nginx at all) can otherwise make same-origin CSRF checks fail on `/django-admin/` and other Django-rendered POST forms.
 - Chatbot endpoints are covered by a dedicated auth-gate test suite (every endpoint rejects anonymous/expired/malformed JWTs on both main domain and tenant subdomains) plus a frontend Jest harness driving the real chat widget in jsdom.
+- `select_for_update()` row-locking guards (`bizal.db_utils.set_lock_timeout`) work unmodified across SQLite and Postgres — see [Concurrency / Row Locking](#concurrency--row-locking) for why a naive `cursor.execute("SET LOCAL ...")` at each call site broke local dev and `seed.py` entirely.
+- On a single-origin deployment with no wildcard DNS (bare Railway domain), `/api/auth/login/` and `/api/auth/register/` deliberately ignore a remembered session tenant that other `/api/...` calls are allowed to fall back to — see [Tenant Resolution](#tenant-resolution) for why, and what broke before this exclusion existed.
